@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
 import { SITE } from '@/constants/site';
 import { Container } from '@/components/ui';
-import { getAllAdvocates, getAdvocateBySlug, getRelatedAdvocates } from '@/lib/advocates';
+import { getAdvocateBySlug, getRelatedAdvocates } from '@/lib/advocates';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileContactCard from '@/components/profile/ProfileContactCard';
 import ProfileAbout from '@/components/profile/ProfileAbout';
@@ -16,11 +16,7 @@ import ProfileFaq from '@/components/profile/ProfileFaq';
 import ProfileMobileBar from '@/components/profile/ProfileMobileBar';
 import RelatedAdvocates from '@/components/profile/RelatedAdvocates';
 
-/** Pre-render every advocate profile at build time. */
-export async function generateStaticParams() {
-  const advocates = await getAllAdvocates();
-  return advocates.map((a) => ({ slug: a.slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
