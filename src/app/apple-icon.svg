@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Legal Care India">
+  <rect width="180" height="180" rx="40" fill="#0f766e"/>
+  <g fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M90 46v88"/>
+    <path d="M62 62h56"/>
+    <path d="M52 66l-16 34h32z"/>
+    <path d="M128 66l-16 34h32z"/>
+    <path d="M66 134h48"/>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+import { createMetadata } from '@/lib/metadata';
+import { Container } from '@/components/ui';
+import PageHeader from '@/components/shared/PageHeader';
+import CityCard from '@/components/cards/CityCard';
+import SectionReveal from '@/components/shared/SectionReveal';
+import { CITIES } from '@/data/cities';
+
+export const metadata = createMetadata({
+  title: 'Find Advocates by City',
+  description:
+    'Browse verified advocates across every major city in India — Delhi, Mumbai, Bengaluru, Hyderabad and more.',
+  path: '/cities',
+});
+
+export default function CitiesPage() {
+  return (
+    <>
+      <PageHeader
+        eyebrow="Browse by City"
+        title="Find Advocates in Your City"
+        subtitle="Select a city to discover verified advocates near you and connect with them directly."
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Cities' }]}
+      />
+      <Container className="py-10 sm:py-12">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {CITIES.map((city, i) => (
+            <SectionReveal key={city.slug} delay={i * 0.04}>
+              <CityCard city={city} />
+            </SectionReveal>
+          ))}
+        </div>
+      </Container>
+    </>
+  );
+}

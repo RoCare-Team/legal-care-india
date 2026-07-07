@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Global design tokens.
+ * Colors are stored as space-separated RGB channels so Tailwind's
+ * `<alpha-value>` syntax (e.g. text-primary/60) works everywhere.
+ */
+:root {
+  /* Brand */
+  --color-primary: 15 118 110;        /* teal 700   #0f766e */
+  --color-primary-light: 20 184 166;  /* teal 500   #14b8a6 */
+  --color-primary-dark: 11 87 80;     /* teal 800   #0b5750 */
+
+  --color-secondary: 30 58 138;       /* blue 900   #1e3a8a */
+  --color-secondary-light: 59 130 246;/* blue 500   #3b82f6 */
+  --color-secondary-dark: 23 37 84;   /* blue 950   #172554 */
+
+  --color-accent: 245 158 11;         /* amber 500  #f59e0b */
+
+  /* Neutrals */
+  --color-surface: 255 255 255;       /* white */
+  --color-muted: 241 245 249;         /* slate 100 */
+  --color-ink: 15 23 42;              /* slate 900 */
+}
+
+@layer base {
+  * {
+    @apply border-ink/10;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-surface font-sans text-ink antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Thin, unobtrusive scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink/20;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
