@@ -175,25 +175,40 @@ export function buildAdvocateProfile(a) {
 
 /** All lean advocate records. */
 export async function getAllAdvocates() {
-  await connectDB();
-  const rows = await Advocate.find({ status: 'published' }).lean();
-  return rows.length > 0 ? rows.map((r) => buildAdvocateProfile(serialize(r))) : ADVOCATES;
+  try {
+    await connectDB();
+    const rows = await Advocate.find({ status: 'published' }).lean();
+    if (rows?.length) return rows.map((r) => buildAdvocateProfile(serialize(r)));
+  } catch (err) {
+    console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
+  }
+  return ADVOCATES;
 }
 
 /** Full profile for a single advocate slug, or null. */
 export async function getAdvocateBySlug(slug) {
-  await connectDB();
-  const advocate = await Advocate.findOne({ slug }).lean();
-  if (advocate) return buildAdvocateProfile(serialize(advocate));
+  try {
+    await connectDB();
+    const advocate = await Advocate.findOne({ slug }).lean();
+    if (advocate) return buildAdvocateProfile(serialize(advocate));
+  } catch (err) {
+    console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
+  }
+
   const base = ADVOCATES.find((a) => a.slug === slug);
   return base ? buildAdvocateProfile(base) : null;
 }
 
 /** All advocate slugs for sitemap and static params. */
 export async function getAllAdvocateSlugs() {
-  await connectDB();
-  const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
-  return rows.length > 0 ? rows.map((a) => a.slug) : ADVOCATES.map((a) => a.slug);
+  try {
+    await connectDB();
+    const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
+    if (rows?.length) return rows.map((a) => a.slug);
+  } catch (err) {
+    console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
+  }
+  return ADVOCATES.map((a) => a.slug);
 }
 
 /** Full profile for a single advocate id from MongoDB, or null. */
