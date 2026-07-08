@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { AnimatePresence, motion } from 'framer-motion';
 import { X, LayoutDashboard, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui';
 import Logo from '@/components/shared/Logo';
@@ -20,27 +19,23 @@ export default function MobileMenu({ isOpen, onClose }) {
   const { advocate, loading } = useAuth();
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm lg:hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            aria-hidden="true"
-          />
-          <motion.aside
-            className="fixed inset-y-0 right-0 z-50 flex w-[82%] max-w-sm flex-col bg-surface shadow-2xl lg:hidden"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.25 }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile navigation"
-          >
+    <>
+      <div
+        className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        className={`fixed inset-y-0 right-0 z-50 flex w-[82%] max-w-sm flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!isOpen}
+        aria-label="Mobile navigation"
+      >
             <div className="flex items-center justify-between border-b border-ink/8 px-5 py-4">
               <Logo />
               <button
@@ -106,9 +101,7 @@ export default function MobileMenu({ isOpen, onClose }) {
                 </>
               )}
             </div>
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
+      </aside>
+    </>
   );
 }

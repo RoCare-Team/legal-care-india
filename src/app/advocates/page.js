@@ -13,8 +13,9 @@ export const metadata = createMetadata({
   path: '/advocates',
 });
 
-// Directory content depends on live registrations — render on each request.
-export const dynamic = 'force-dynamic';
+// The page reads search filters (searchParams) so it renders per request, but
+// the advocate data itself is tag-cached — no MongoDB round-trip each visit.
+export const revalidate = 3600;
 
 /** Resolve the query-string slugs coming from search into filter labels. */
 function resolveInitial(params = {}) {

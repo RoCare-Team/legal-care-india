@@ -18,10 +18,16 @@ export function createMetadata({
   description = SITE.description,
   path = '/',
   keywords = [],
-  image = '/og-image.png',
+  image,
 } = {}) {
   const pageTitle = title ? `${title} | ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
   const canonical = new URL(path, SITE.url).toString();
+
+  // When no explicit image is passed, the dynamic app/opengraph-image.js is
+  // used automatically by Next.js — so we never point at a missing file.
+  const images = image
+    ? [{ url: image, width: 1200, height: 630, alt: SITE.name }]
+    : undefined;
 
   return {
     title: pageTitle,
@@ -35,13 +41,13 @@ export function createMetadata({
       description,
       url: canonical,
       locale: SITE.locale,
-      images: [{ url: image, width: 1200, height: 630, alt: SITE.name }],
+      ...(images ? { images } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: pageTitle,
       description,
-      images: [image],
+      ...(image ? { images: [image] } : {}),
     },
   };
 }

@@ -4,12 +4,16 @@ import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
 import { getAllAdvocates } from '@/lib/advocates';
-import { getServiceBySlug } from '@/data/categories';
+import { getServiceBySlug, CATEGORIES } from '@/data/categories';
 import { formatCompactNumber } from '@/utils/formatters';
 
-// Listing reflects live registrations — render on each request (no build-time
-// prerender, so newly registered advocates appear immediately).
-export const dynamic = 'force-dynamic';
+// Prerender one page per legal service; advocate data is tag-cached so new
+// registrations appear immediately (see lib/advocates).
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return CATEGORIES.map((c) => ({ slug: c.slug }));
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

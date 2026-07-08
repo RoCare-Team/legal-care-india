@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
@@ -56,6 +57,27 @@ export function setAuthCookie(response, token) {
 export function clearAuthCookie(response) {
   response.cookies.set(AUTH_COOKIE, '', cookieOptions(0));
   return response;
+}
+
+/** Reset OTPs live for 10 minutes; allow at most 5 wrong guesses. */
+export const RESET_OTP_TTL_MS = 10 * 60 * 1000;
+export const RESET_OTP_MAX_ATTEMPTS = 5;
+
+/**
+ * Create a 6-digit password-reset OTP. Returns the raw OTP (sent to the user by
+ * SMS/email) and its SHA-256 hash (stored in the DB — the raw OTP is never
+ * persisted).
+ */
+export function createOtp() {
+  const otp = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+  const otpHash = hashOtp(otp);
+  const expires = new Date(Date.now() + RESET_OTP_TTL_MS);
+  return { otp, otpHash, expires };
+}
+
+/** SHA-256 hash of an OTP, used to verify it without storing it raw. */
+export function hashOtp(otp) {
+  return crypto.createHash('sha256').update(String(otp)).digest('hex');
 }
 
 /** Read the current advocate id from the request cookie, or null. */

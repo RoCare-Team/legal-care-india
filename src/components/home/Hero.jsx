@@ -1,9 +1,3 @@
-
-
-
-'use client';
-
-import { motion } from 'framer-motion';
 import { BadgeCheck, ShieldCheck, Users } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
@@ -34,45 +28,31 @@ export default function Hero() {
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             
             {/* Top Indicator */}
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-emerald-400 mb-6 backdrop-blur-sm"
-            >
+            <div className="animate-fade-up inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-emerald-400 mb-6 backdrop-blur-sm">
               <span>🇮🇳</span> India&apos;s Advocate Directory Platform
-            </motion.div>
+            </div>
 
-            {/* Dynamic Typography Heading */}
-            <motion.h1
-              className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15]"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.05 }}
-            >
+            {/* Dynamic Typography Heading — LCP element, renders instantly */}
+            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15]">
               Find Verified Advocates <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-200">
                 Across India
               </span>
-            </motion.h1>
+            </h1>
 
             {/* Clean Secondary Paragraph */}
-            <motion.p
-              className="mt-6 max-w-xl text-base sm:text-lg text-emerald-100/70 leading-relaxed font-normal"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <p
+              className="animate-fade-up mt-6 max-w-xl text-base sm:text-lg text-emerald-100/70 leading-relaxed font-normal"
+              style={{ animationDelay: '0.1s' }}
             >
-              Search, compare, and connect with trusted advocates by legal service, city, 
+              Search, compare, and connect with trusted advocates by legal service, city,
               language, and experience — all in one place.
-            </motion.p>
+            </p>
 
             {/* Integrated Search Bar Section */}
-            <motion.div
-              className="w-full mt-10"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+            <div
+              className="animate-fade-up w-full mt-10"
+              style={{ animationDelay: '0.15s' }}
             >
               {/* Premium Inner Form Background Accent */}
               <div className="p-2 bg-[#03201c] rounded-2xl border border-emerald-900/60 shadow-2xl">
@@ -100,16 +80,14 @@ export default function Hero() {
                   ))
                 )}
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Right Side Column: Modern Graphic/Trust Stats Panel */}
           <div className="hidden lg:block lg:col-span-5 relative pl-6">
-            <motion.div 
-              className="relative mx-auto w-full max-w-md"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <div
+              className="animate-fade-up relative mx-auto w-full max-w-md"
+              style={{ animationDelay: '0.2s' }}
             >
               {/* Decorative Subtle Pillars Accent Box */}
               <div className="absolute inset-0 -m-4 bg-emerald-900/10 border border-emerald-500/5 rounded-3xl pointer-events-none" />
@@ -150,7 +128,7 @@ export default function Hero() {
                 </div>
 
               </div>
-            </motion.div>
+            </div>
           </div>
 
         </div>

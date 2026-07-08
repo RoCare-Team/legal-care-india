@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
+import { ADVOCATES_TAG } from '@/lib/advocates';
 import { hashPassword, signToken, setAuthCookie } from '@/lib/auth';
 import { slugify } from '@/utils/slugify';
 
@@ -80,6 +82,9 @@ export async function POST(request) {
       contact: { phone: phone.trim(), whatsapp: digits, email: normalizedEmail },
       status: 'published',
     });
+
+    // New public advocate — drop the cached directory so it appears at once.
+    revalidateTag(ADVOCATES_TAG);
 
     const token = signToken({ id: String(advocate._id) });
     const res = NextResponse.json(

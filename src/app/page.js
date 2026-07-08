@@ -9,7 +9,9 @@ import Testimonials from '@/components/home/Testimonials';
 import CTA from '@/components/home/CTA';
 
 export const metadata = createMetadata({ path: '/' });
-export const dynamic = 'force-dynamic';
+// Statically rendered and served from the CDN. The advocate data it shows is
+// tag-cached, so registrations/edits refresh it instantly (see lib/advocates).
+export const revalidate = 3600;
 
 /**
  * Home — composes the homepage from independent, reusable sections.

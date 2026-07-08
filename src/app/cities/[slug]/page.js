@@ -7,9 +7,13 @@ import { getAllAdvocates } from '@/lib/advocates';
 import { CITIES } from '@/data/cities';
 import { formatCompactNumber } from '@/utils/formatters';
 
-// Listing reflects live registrations — render on each request (no build-time
-// prerender, so newly registered advocates appear immediately).
-export const dynamic = 'force-dynamic';
+// Prerender one page per city; advocate data is tag-cached so new
+// registrations appear immediately (see lib/advocates).
+export const revalidate = 3600;
+
+export function generateStaticParams() {
+  return CITIES.map((c) => ({ slug: c.slug }));
+}
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

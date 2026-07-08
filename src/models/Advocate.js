@@ -31,6 +31,12 @@ const AdvocateSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
 
+    // Password reset via OTP (SHA-256 hash of the 6-digit code + expiry).
+    // `resetOtpAttempts` guards against brute-forcing the code.
+    resetOtpHash: { type: String, default: null, select: false },
+    resetOtpExpires: { type: Date, default: null, select: false },
+    resetOtpAttempts: { type: Number, default: 0, select: false },
+
     // Identity
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, index: true },

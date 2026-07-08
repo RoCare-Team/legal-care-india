@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
-import { getSessionAdvocateId } from '@/lib/auth';
-import { getAdvocateById } from '@/lib/advocates';
+import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
+import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
 
 /**
  * GET /api/dashboard/profile — the logged-in advocate's full profile.
@@ -81,10 +82,41 @@ export async function PUT(request) {
   try {
     await connectDB();
     await Advocate.findByIdAndUpdate(id, { $set: update }, { runValidators: true });
+    // Public profile/listing changed — refresh the cached directory.
+    revalidateTag(ADVOCATES_TAG);
     const advocate = await getAdvocateById(id);
     return NextResponse.json({ ok: true, advocate });
   } catch (err) {
     console.error('profile update error', err);
     return NextResponse.json({ error: 'Could not save changes. Please try again.' }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/dashboard/profile — permanently deletes the logged-in advocate's
+ * account, removes them from the public directory and clears the session.
+ */
+export async function DELETE() {
+  const id = await getSessionAdvocateId();
+  if (!id) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+
+  try {
+    await connectDB();
+    const deleted = await Advocate.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
+    }
+    // Advocate removed from the public listing — refresh the cached directory.
+    revalidateTag(ADVOCATES_TAG);
+
+    // Sign the user out by clearing the session cookie.
+    const res = NextResponse.json({ ok: true });
+    return clearAuthCookie(res);
+  } catch (err) {
+    console.error('account delete error', err);
+    return NextResponse.json(
+      { error: 'Could not delete your account. Please try again.' },
+      { status: 500 }
+    );
   }
 }

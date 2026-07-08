@@ -1,7 +1,17 @@
+import { unstable_cache } from 'next/cache';
 import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { slugify } from '@/utils/slugify';
+
+/**
+ * Public advocate reads are cached and tagged so pages can render statically
+ * (ISR) instead of hitting MongoDB on every request. The cache is invalidated
+ * the moment an advocate registers or edits their profile via
+ * `revalidateTag(ADVOCATES_TAG)`, so new records still appear immediately.
+ */
+export const ADVOCATES_TAG = 'advocates';
+const CACHE_TTL = 3600; // seconds — safety refresh; writes invalidate sooner
 
 /**
  * Advocate data-access layer.
@@ -173,43 +183,55 @@ export function buildAdvocateProfile(a) {
   };
 }
 
-/** All lean advocate records. */
-export async function getAllAdvocates() {
-  try {
-    await connectDB();
-    const rows = await Advocate.find({ status: 'published' }).lean();
-    if (rows?.length) return rows.map((r) => buildAdvocateProfile(serialize(r)));
-  } catch (err) {
-    console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
-  }
-  return ADVOCATES;
-}
+/** All lean advocate records. Cached + tagged for ISR. */
+export const getAllAdvocates = unstable_cache(
+  async () => {
+    try {
+      await connectDB();
+      const rows = await Advocate.find({ status: 'published' }).lean();
+      if (rows?.length) return rows.map((r) => buildAdvocateProfile(serialize(r)));
+    } catch (err) {
+      console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
+    }
+    return ADVOCATES;
+  },
+  ['all-advocates'],
+  { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
+);
 
-/** Full profile for a single advocate slug, or null. */
-export async function getAdvocateBySlug(slug) {
-  try {
-    await connectDB();
-    const advocate = await Advocate.findOne({ slug }).lean();
-    if (advocate) return buildAdvocateProfile(serialize(advocate));
-  } catch (err) {
-    console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
-  }
+/** Full profile for a single advocate slug, or null. Cached + tagged for ISR. */
+export const getAdvocateBySlug = unstable_cache(
+  async (slug) => {
+    try {
+      await connectDB();
+      const advocate = await Advocate.findOne({ slug }).lean();
+      if (advocate) return buildAdvocateProfile(serialize(advocate));
+    } catch (err) {
+      console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
+    }
 
-  const base = ADVOCATES.find((a) => a.slug === slug);
-  return base ? buildAdvocateProfile(base) : null;
-}
+    const base = ADVOCATES.find((a) => a.slug === slug);
+    return base ? buildAdvocateProfile(base) : null;
+  },
+  ['advocate-by-slug'],
+  { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
+);
 
-/** All advocate slugs for sitemap and static params. */
-export async function getAllAdvocateSlugs() {
-  try {
-    await connectDB();
-    const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
-    if (rows?.length) return rows.map((a) => a.slug);
-  } catch (err) {
-    console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
-  }
-  return ADVOCATES.map((a) => a.slug);
-}
+/** All advocate slugs for sitemap and static params. Cached + tagged for ISR. */
+export const getAllAdvocateSlugs = unstable_cache(
+  async () => {
+    try {
+      await connectDB();
+      const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
+      if (rows?.length) return rows.map((a) => a.slug);
+    } catch (err) {
+      console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
+    }
+    return ADVOCATES.map((a) => a.slug);
+  },
+  ['all-advocate-slugs'],
+  { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
+);
 
 /** Full profile for a single advocate id from MongoDB, or null. */
 export async function getAdvocateById(id) {

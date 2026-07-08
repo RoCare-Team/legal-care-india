@@ -4,8 +4,9 @@ import { Container } from '@/components/ui';
 import { cn } from '@/utils/cn';
 
 /**
- * PageHeader — a consistent gradient banner for interior pages, with an
- * optional breadcrumb, eyebrow, title, subtitle and right-aligned slot.
+ * PageHeader — a premium dark-teal gradient banner for interior pages, matching
+ * the homepage hero. Includes an optional breadcrumb, eyebrow, title, subtitle,
+ * a right-aligned actions slot and a content slot below (e.g. filters).
  *
  * @param {object} props
  * @param {string} props.title
@@ -28,23 +29,29 @@ export default function PageHeader({
   return (
     <section
       className={cn(
-        'border-b border-ink/8 bg-gradient-to-b from-primary/5 via-secondary/5 to-transparent',
+        'relative overflow-hidden border-b border-emerald-950 bg-gradient-to-br from-[#0C5E57] via-[#0C5E57] to-[#021c19] text-white',
         className
       )}
     >
-      <Container className="py-10 sm:py-14">
+      {/* Subtle dotted watermark pattern */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03]" />
+      {/* Soft ambient glows */}
+      <div className="pointer-events-none absolute -top-40 right-0 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[140px]" />
+      <div className="pointer-events-none absolute bottom-0 left-10 h-[300px] w-[300px] rounded-full bg-teal-500/5 blur-[100px]" />
+
+      <Container className="relative z-10 py-12 sm:py-16">
         {breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="mb-4">
-            <ol className="flex flex-wrap items-center gap-1 text-sm text-ink/50">
+          <nav aria-label="Breadcrumb" className="animate-fade-up mb-5">
+            <ol className="flex flex-wrap items-center gap-1 text-sm text-emerald-200/60">
               {breadcrumbs.map((crumb, i) => (
                 <li key={crumb.label} className="flex items-center gap-1">
                   {i > 0 && <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
                   {crumb.href ? (
-                    <Link href={crumb.href} className="hover:text-primary">
+                    <Link href={crumb.href} className="transition-colors hover:text-white">
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="text-ink/70">{crumb.label}</span>
+                    <span className="text-emerald-100">{crumb.label}</span>
                   )}
                 </li>
               ))}
@@ -55,15 +62,24 @@ export default function PageHeader({
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             {eyebrow && (
-              <span className="mb-2 inline-block text-sm font-semibold uppercase tracking-wider text-primary">
+              <span
+                className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-medium uppercase tracking-wider text-emerald-300 backdrop-blur-sm"
+                style={{ animationDelay: '0.05s' }}
+              >
                 {eyebrow}
               </span>
             )}
-            <h1 className="font-display text-3xl font-semibold leading-tight text-ink sm:text-4xl">
+            <h1
+              className="animate-fade-up font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
+              style={{ animationDelay: '0.1s' }}
+            >
               {title}
             </h1>
             {subtitle && (
-              <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink/60">
+              <p
+                className="animate-fade-up mt-4 max-w-2xl text-base leading-relaxed text-emerald-100/70"
+                style={{ animationDelay: '0.15s' }}
+              >
                 {subtitle}
               </p>
             )}
