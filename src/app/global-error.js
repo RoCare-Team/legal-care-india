@@ -31,7 +31,7 @@ export default function GlobalError({ error, reset }) {
               padding: '0.6rem 1.25rem',
               borderRadius: '0.75rem',
               border: 'none',
-              background: '#0f766e',
+              background: '#1E3A5F',
               color: '#fff',
               fontWeight: 600,
               cursor: 'pointer',

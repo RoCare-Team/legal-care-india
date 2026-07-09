@@ -10,7 +10,9 @@ import { cn } from '@/utils/cn';
  * @param {object} props.advocate  full profile
  */
 export default function ProfileContactCard({ advocate }) {
-  const { contact = {}, consultationFee, timing = [], name } = advocate;
+  const { contact = {}, consultationFee, name } = advocate;
+  // Only keep timing rows that actually have a day + hours filled in.
+  const timing = (advocate.timing || []).filter((t) => t && t.day && t.hours);
   const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India and would like a consultation.`);
 
   return (
@@ -58,22 +60,24 @@ export default function ProfileContactCard({ advocate }) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-          Office Timing
-        </h3>
-        <ul className="mt-3 space-y-2 text-sm">
-          {timing.map((t) => (
-            <li key={t.day} className="flex items-center justify-between">
-              <span className="text-ink/60">{t.day}</span>
-              <span className={cn('font-medium', t.open ? 'text-ink/80' : 'text-ink/45')}>
-                {t.hours}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {timing.length > 0 && (
+        <div className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+            Office Timing
+          </h3>
+          <ul className="mt-3 space-y-2 text-sm">
+            {timing.map((t) => (
+              <li key={t.day} className="flex items-center justify-between">
+                <span className="text-ink/60">{t.day}</span>
+                <span className={cn('font-medium', t.open ? 'text-ink/80' : 'text-ink/45')}>
+                  {t.hours}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </aside>
   );
 }

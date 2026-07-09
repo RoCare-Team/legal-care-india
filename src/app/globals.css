@@ -8,21 +8,21 @@
  * `<alpha-value>` syntax (e.g. text-primary/60) works everywhere.
  */
 :root {
-  /* Brand */
-  --color-primary: 15 118 110;        /* teal 700   #0f766e */
-  --color-primary-light: 20 184 166;  /* teal 500   #14b8a6 */
-  --color-primary-dark: 11 87 80;     /* teal 800   #0b5750 */
+  /* Brand — Navy & Gold */
+  --color-primary: 30 58 95;          /* navy       #1E3A5F */
+  --color-primary-light: 52 85 127;   /* light navy #34557F */
+  --color-primary-dark: 20 40 66;     /* deep navy  #142842 */
 
-  --color-secondary: 30 58 138;       /* blue 900   #1e3a8a */
-  --color-secondary-light: 59 130 246;/* blue 500   #3b82f6 */
-  --color-secondary-dark: 23 37 84;   /* blue 950   #172554 */
+  --color-secondary: 15 23 42;        /* dark       #0F172A */
+  --color-secondary-light: 51 65 85;  /* slate 600  #334155 */
+  --color-secondary-dark: 8 12 22;    /* near black #080C16 */
 
-  --color-accent: 245 158 11;         /* amber 500  #f59e0b */
+  --color-accent: 212 175 55;         /* gold       #D4AF37 */
 
   /* Neutrals */
-  --color-surface: 255 255 255;       /* white */
+  --color-surface: 255 255 255;       /* white      #FFFFFF */
   --color-muted: 241 245 249;         /* slate 100 */
-  --color-ink: 15 23 42;              /* slate 900 */
+  --color-ink: 15 23 42;              /* dark       #0F172A */
 }
 
 @layer base {
@@ -83,6 +83,35 @@
       opacity: 1;
       transform: none;
     }
+  }
+
+  /* Long-form content pages (legal, info).
+     Selectors are wrapped in :where() to keep specificity at (0,0,1) so any
+     component with utility classes (e.g. Button) inside the article still wins. */
+  :where(.prose-content) > :first-child {
+    margin-top: 0;
+  }
+  :where(.prose-content) h2 {
+    @apply mt-8 mb-3 font-display text-xl font-semibold text-ink;
+  }
+  :where(.prose-content) h3 {
+    @apply mt-6 mb-2 font-semibold text-ink;
+  }
+  :where(.prose-content) p {
+    @apply mb-4 leading-relaxed text-ink/70;
+  }
+  :where(.prose-content) ul {
+    @apply mb-4 ml-5 list-disc space-y-1.5 text-ink/70;
+  }
+  :where(.prose-content) li {
+    @apply leading-relaxed;
+  }
+  /* Only style inline links inside text — not Button CTAs. */
+  :where(.prose-content p, .prose-content li) a {
+    @apply font-medium text-primary hover:underline;
+  }
+  :where(.prose-content) strong {
+    @apply font-semibold text-ink;
   }
 
   /* Thin, unobtrusive scrollbar */

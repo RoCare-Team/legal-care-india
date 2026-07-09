@@ -8,7 +8,10 @@ import ProfileSection from './ProfileSection';
  * @param {object} props.advocate
  */
 export default function ProfileCredentials({ advocate }) {
-  const { certificates = [], awards = [] } = advocate;
+  const certificates = (advocate.certificates || []).filter((c) => c && c.title);
+  const awards = (advocate.awards || []).filter((a) => a && a.title);
+  // Nothing to show until the advocate adds certificates or awards.
+  if (certificates.length === 0 && awards.length === 0) return null;
 
   return (
     <ProfileSection id="credentials" title="Certificates & Awards" icon={Award}>
@@ -31,6 +34,7 @@ export default function ProfileCredentials({ advocate }) {
 }
 
 function CredentialList({ icon: Icon, heading, items, renderMeta }) {
+  if (!items || items.length === 0) return null;
   return (
     <div>
       <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink/45">

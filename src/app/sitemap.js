@@ -25,6 +25,13 @@ export default async function sitemap() {
     { path: '/contact', priority: 0.5, changeFrequency: 'monthly' },
     { path: '/register', priority: 0.7, changeFrequency: 'monthly' },
     { path: '/login', priority: 0.4, changeFrequency: 'monthly' },
+    { path: '/verification', priority: 0.4, changeFrequency: 'monthly' },
+    { path: '/success-stories', priority: 0.3, changeFrequency: 'monthly' },
+    { path: '/careers', priority: 0.3, changeFrequency: 'monthly' },
+    { path: '/privacy', priority: 0.3, changeFrequency: 'yearly' },
+    { path: '/terms', priority: 0.3, changeFrequency: 'yearly' },
+    { path: '/disclaimer', priority: 0.3, changeFrequency: 'yearly' },
+    { path: '/refund', priority: 0.3, changeFrequency: 'yearly' },
   ].map((route) => ({
     url: new URL(route.path, base).toString(),
     lastModified: now,

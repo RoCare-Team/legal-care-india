@@ -29,9 +29,9 @@ export default function SearchBar({ className }) {
   return (
     <form
       onSubmit={onSubmit}
-      className={`flex flex-col gap-2 rounded-2xl border border-ink/8 bg-surface p-2 shadow-card sm:flex-row ${className || ''}`}
+      className={`flex flex-col gap-2 rounded-2xl border border-ink/8 bg-surface p-2 shadow-card transition-colors focus-within:border-primary/40 sm:flex-row ${className || ''}`}
     >
-      <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5">
+      <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5 transition-colors focus-within:bg-ink/[0.035] focus-within:[&_svg]:text-primary">
         <Search className="h-5 w-5 shrink-0 text-ink/40" aria-hidden="true" />
         <input
           type="text"
@@ -39,13 +39,13 @@ export default function SearchBar({ className }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Legal service, e.g. Family Law"
           aria-label="Search legal service or keyword"
-          className="w-full bg-transparent text-sm text-ink placeholder:text-ink/40 focus:outline-none"
+          className="w-full bg-transparent text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </label>
 
       <span className="hidden w-px bg-ink/8 sm:block" aria-hidden="true" />
 
-      <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5">
+      <label className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5 transition-colors focus-within:bg-ink/[0.035] focus-within:[&_svg]:text-primary">
         <MapPin className="h-5 w-5 shrink-0 text-ink/40" aria-hidden="true" />
         <input
           type="text"
@@ -53,7 +53,7 @@ export default function SearchBar({ className }) {
           onChange={(e) => setCity(e.target.value)}
           placeholder="City, e.g. Mumbai"
           aria-label="Search by city"
-          className="w-full bg-transparent text-sm text-ink placeholder:text-ink/40 focus:outline-none"
+          className="w-full bg-transparent text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
       </label>
 

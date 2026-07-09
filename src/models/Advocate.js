@@ -24,6 +24,15 @@ const TimingSchema = new Schema(
   { _id: false }
 );
 const GallerySchema = new Schema({ label: String, url: String }, { _id: false });
+const ReviewSchema = new Schema(
+  {
+    author: { type: String, required: true, trim: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    text: { type: String, required: true, trim: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
 
 const AdvocateSchema = new Schema(
   {
@@ -82,9 +91,10 @@ const AdvocateSchema = new Schema(
     awards: { type: [CredentialSchema], default: [] },
     gallery: { type: [GallerySchema], default: [] },
 
-    // Ratings (populated by real reviews later)
+    // Ratings — derived from reviewsList whenever a review is added.
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
+    reviewsList: { type: [ReviewSchema], default: [] },
 
     // Visibility
     status: { type: String, enum: ['pending', 'published'], default: 'published' },

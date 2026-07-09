@@ -20,50 +20,74 @@ export async function POST(request) {
   }
 
   const email = String(body?.email || '').trim().toLowerCase();
+  // Which channel to deliver the OTP on — 'email' (default) or 'phone'.
+  const channel = body?.channel === 'phone' ? 'phone' : 'email';
+
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
   }
+
+  /** Mask an email like ro****@gmail.com. */
+  const maskEmail = (e) => {
+    const [user, domain] = e.split('@');
+    const head = user.slice(0, 2);
+    return `${head}${'•'.repeat(Math.max(2, user.length - 2))}@${domain}`;
+  };
 
   try {
     await connectDB();
     const advocate = await Advocate.findOne({ email });
 
     if (advocate) {
+      const phone = advocate.phone || advocate.contact?.phone;
+      const mobile = normalizeIndianMobile(phone);
+
+      // If they asked for SMS but we have no valid mobile on record, stop early.
+      if (channel === 'phone' && mobile.length !== 10) {
+        return NextResponse.json(
+          { error: 'No valid phone number is saved on this account. Try email instead.' },
+          { status: 400 }
+        );
+      }
+
       const { otp, otpHash, expires } = createOtp();
       advocate.resetOtpHash = otpHash;
       advocate.resetOtpExpires = expires;
       advocate.resetOtpAttempts = 0;
       await advocate.save();
 
-      const phone = advocate.phone || advocate.contact?.phone;
+      // Send only on the chosen channel.
+      if (channel === 'phone') {
+        await sendOtpSms({ phone, otp });
+      } else {
+        await sendEmail({ to: email, ...passwordResetEmail({ name: advocate.name, otp }) });
+      }
 
-      // Send to both channels. Failures are logged but never block the response.
-      await Promise.allSettled([
-        sendEmail({ to: email, ...passwordResetEmail({ name: advocate.name, otp }) }),
-        phone ? sendOtpSms({ phone, otp }) : Promise.resolve(),
-      ]);
-
-      // A masked phone hint helps the user without revealing the full number.
-      const mobile = normalizeIndianMobile(phone);
-      const phoneHint = mobile.length === 10 ? `••••••${mobile.slice(-4)}` : null;
+      const sentTo =
+        channel === 'phone' ? `••••••${mobile.slice(-4)}` : maskEmail(email);
 
       return NextResponse.json({
         ok: true,
-        phoneHint,
-        message: 'We sent a 6-digit code to your registered email and phone.',
+        channel,
+        sentTo,
+        message: `We sent a 6-digit code to your ${channel === 'phone' ? 'phone' : 'email'}.`,
       });
     }
 
     // No account — same shape, generic wording (no enumeration).
     return NextResponse.json({
       ok: true,
-      phoneHint: null,
+      channel,
+      sentTo: null,
       message: 'If an account exists for that email, a 6-digit code is on its way.',
     });
   } catch (err) {
     console.error('forgot-password error', err);
-    return NextResponse.json(
-      { ok: true, phoneHint: null, message: 'If an account exists for that email, a code is on its way.' }
-    );
+    return NextResponse.json({
+      ok: true,
+      channel,
+      sentTo: null,
+      message: 'If an account exists for that email, a code is on its way.',
+    });
   }
 }

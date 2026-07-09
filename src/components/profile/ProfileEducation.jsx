@@ -8,7 +8,9 @@ import ProfileSection from './ProfileSection';
  * @param {object} props.advocate
  */
 export default function ProfileEducation({ advocate }) {
-  const education = advocate.education || [];
+  const education = (advocate.education || []).filter((e) => e && e.degree);
+  // Hide the section entirely until the advocate adds qualifications.
+  if (education.length === 0) return null;
 
   return (
     <ProfileSection id="education" title="Education" icon={GraduationCap}>

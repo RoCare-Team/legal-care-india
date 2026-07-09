@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Send, Lock, KeyRound, ShieldCheck, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Mail, Send, Lock, KeyRound, ShieldCheck, CheckCircle2, ArrowLeft, Smartphone } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 
 /**
@@ -12,7 +12,8 @@ import { Button, FormField, Input } from '@/components/ui';
 export default function ForgotPasswordForm() {
   const [step, setStep] = useState(1); // 1 = request, 2 = verify, 3 = done
   const [email, setEmail] = useState('');
-  const [phoneHint, setPhoneHint] = useState(null);
+  const [channel, setChannel] = useState('email'); // 'email' | 'phone'
+  const [sentTo, setSentTo] = useState(null);
 
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
@@ -35,14 +36,14 @@ export default function ForgotPasswordForm() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, channel }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(payload.error || 'Something went wrong. Please try again.');
         return;
       }
-      setPhoneHint(payload.phoneHint || null);
+      setSentTo(payload.sentTo || null);
       setStep(2);
     } catch {
       setError('Network error. Check your connection and try again.');
@@ -123,9 +124,9 @@ export default function ForgotPasswordForm() {
         </span>
         <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Enter the code</h1>
         <p className="mt-1 text-sm text-ink/55">
-          We sent a 6-digit code to <span className="font-medium text-ink">{email}</span>
-          {phoneHint ? (
-            <> and your phone <span className="font-medium text-ink">{phoneHint}</span></>
+          We sent a 6-digit code to your {channel === 'phone' ? 'phone' : 'email'}
+          {sentTo ? (
+            <> <span className="font-medium text-ink">{sentTo}</span></>
           ) : null}
           . It is valid for 10 minutes.
         </p>
@@ -205,8 +206,7 @@ export default function ForgotPasswordForm() {
     >
       <h1 className="font-display text-2xl font-semibold text-ink">Forgot password?</h1>
       <p className="mt-1 text-sm text-ink/55">
-        Enter your registered email. We&apos;ll send a 6-digit code to your email and phone to
-        reset your password.
+        Enter your registered email and choose where to receive your 6-digit reset code.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -221,10 +221,38 @@ export default function ForgotPasswordForm() {
           />
         </FormField>
 
+        <div>
+          <p className="mb-2 text-sm font-medium text-ink">Send code via</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { key: 'email', label: 'Email', icon: Mail },
+              { key: 'phone', label: 'Phone (SMS)', icon: Smartphone },
+            ].map(({ key, label, icon: Icon }) => {
+              const active = channel === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setChannel(key)}
+                  aria-pressed={active}
+                  className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors ${
+                    active
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {error && <p className="text-xs text-red-600">{error}</p>}
 
         <Button type="submit" fullWidth disabled={loading} leftIcon={<Send className="h-4 w-4" />}>
-          {loading ? 'Sending…' : 'Send code'}
+          {loading ? 'Sending…' : `Send code to ${channel === 'phone' ? 'phone' : 'email'}`}
         </Button>
       </div>
 

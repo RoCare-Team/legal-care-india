@@ -55,13 +55,13 @@ export function passwordResetEmail({ name, otp }) {
     text: `Hi ${safeName},\n\nYour password reset OTP is: ${otp}\n\nEnter this code on the reset page to set a new password. It is valid for 10 minutes.\n\nIf you didn't request this, you can safely ignore this email.\n\n— Legal Care India`,
     html: `
       <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
-        <div style="background:#0f766e;border-radius:14px;padding:20px 24px;color:#fff">
+        <div style="background:#1E3A5F;border-radius:14px;padding:20px 24px;color:#fff">
           <strong style="font-size:18px">Legal Care India</strong>
         </div>
         <h2 style="margin:24px 0 8px">Your password reset code</h2>
         <p style="color:#475569;line-height:1.6">Hi ${safeName}, use the code below to reset your password. It is valid for <strong>10 minutes</strong>.</p>
         <div style="margin:24px 0;text-align:center">
-          <span style="display:inline-block;background:#f0fdfa;border:1px solid #99f6e4;color:#0f766e;font-size:34px;font-weight:800;letter-spacing:10px;padding:16px 28px;border-radius:14px">${otp}</span>
+          <span style="display:inline-block;background:#f8fafc;border:1px solid #D4AF37;color:#1E3A5F;font-size:34px;font-weight:800;letter-spacing:10px;padding:16px 28px;border-radius:14px">${otp}</span>
         </div>
         <p style="color:#94a3b8;font-size:13px;margin-top:24px">If you didn't request this, you can safely ignore this email — your password won't change. Never share this code with anyone.</p>
       </div>

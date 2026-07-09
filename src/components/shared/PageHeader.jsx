@@ -29,20 +29,20 @@ export default function PageHeader({
   return (
     <section
       className={cn(
-        'relative overflow-hidden border-b border-emerald-950 bg-gradient-to-br from-[#0C5E57] via-[#0C5E57] to-[#021c19] text-white',
+        'relative overflow-hidden border-b border-[#0F172A] bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F] to-[#0F172A] text-white',
         className
       )}
     >
       {/* Subtle dotted watermark pattern */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03]" />
       {/* Soft ambient glows */}
-      <div className="pointer-events-none absolute -top-40 right-0 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[140px]" />
-      <div className="pointer-events-none absolute bottom-0 left-10 h-[300px] w-[300px] rounded-full bg-teal-500/5 blur-[100px]" />
+      <div className="pointer-events-none absolute -top-40 right-0 h-[420px] w-[420px] rounded-full bg-[#D4AF37]/10 blur-[140px]" />
+      <div className="pointer-events-none absolute bottom-0 left-10 h-[300px] w-[300px] rounded-full bg-[#34557F]/20 blur-[100px]" />
 
       <Container className="relative z-10 py-12 sm:py-16">
         {breadcrumbs.length > 0 && (
           <nav aria-label="Breadcrumb" className="animate-fade-up mb-5">
-            <ol className="flex flex-wrap items-center gap-1 text-sm text-emerald-200/60">
+            <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-300/70">
               {breadcrumbs.map((crumb, i) => (
                 <li key={crumb.label} className="flex items-center gap-1">
                   {i > 0 && <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -51,7 +51,7 @@ export default function PageHeader({
                       {crumb.label}
                     </Link>
                   ) : (
-                    <span className="text-emerald-100">{crumb.label}</span>
+                    <span className="text-white">{crumb.label}</span>
                   )}
                 </li>
               ))}
@@ -63,7 +63,7 @@ export default function PageHeader({
           <div>
             {eyebrow && (
               <span
-                className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-1 text-xs font-medium uppercase tracking-wider text-emerald-300 backdrop-blur-sm"
+                className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 px-3.5 py-1 text-xs font-medium uppercase tracking-wider text-[#D4AF37] backdrop-blur-sm"
                 style={{ animationDelay: '0.05s' }}
               >
                 {eyebrow}
@@ -77,7 +77,7 @@ export default function PageHeader({
             </h1>
             {subtitle && (
               <p
-                className="animate-fade-up mt-4 max-w-2xl text-base leading-relaxed text-emerald-100/70"
+                className="animate-fade-up mt-4 max-w-2xl text-base leading-relaxed text-slate-300"
                 style={{ animationDelay: '0.15s' }}
               >
                 {subtitle}

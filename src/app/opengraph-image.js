@@ -21,7 +21,7 @@ export default function OgImage() {
           flexDirection: 'column',
           justifyContent: 'center',
           padding: '80px',
-          background: 'linear-gradient(135deg, #0f766e 0%, #0b5750 55%, #04211d 100%)',
+          background: 'linear-gradient(135deg, #1E3A5F 0%, #142842 55%, #0F172A 100%)',
           color: '#ffffff',
           fontFamily: 'sans-serif',
         }}
@@ -29,7 +29,7 @@ export default function OgImage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <svg width="88" height="88" viewBox="0 0 64 64">
             <rect width="64" height="64" rx="14" fill="#ffffff" />
-            <g fill="none" stroke="#0f766e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <g fill="none" stroke="#1E3A5F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M32 16v32" />
               <path d="M22 22h20" />
               <path d="M18 24l-6 12h12z" />
@@ -44,7 +44,7 @@ export default function OgImage() {
           Find Verified Advocates Across India
         </div>
 
-        <div style={{ display: 'flex', fontSize: 32, color: '#a7f3d0', marginTop: 28, maxWidth: 900 }}>
+        <div style={{ display: 'flex', fontSize: 32, color: '#D4AF37', marginTop: 28, maxWidth: 900 }}>
           Discover, compare and connect with verified advocates by legal service, city and experience.
         </div>
       </div>

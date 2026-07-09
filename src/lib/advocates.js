@@ -77,13 +77,25 @@ const CERTIFICATES_POOL = [
   { title: 'Certificate in Company Law', issuer: 'ICSI', year: 2016 },
 ];
 
-const REVIEW_AUTHORS = ['Rahul V.', 'Sneha K.', 'Imran A.', 'Divya R.', 'Aakash M.', 'Fatima S.'];
-const REVIEW_TEXTS = [
-  'Extremely professional and approachable. Explained every step of my case clearly and got a favourable outcome.',
-  'Very knowledgeable and responsive. I could reach out on WhatsApp whenever I had a doubt.',
-  'Handled my matter with great patience and honesty about fees and timelines. Highly recommended.',
-  'Deep expertise and a calm, reassuring approach. Made a stressful situation much easier.',
-];
+/** Human-friendly "time ago" label from an ISO date string. */
+function timeAgo(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  const secs = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  const units = [
+    ['year', 31536000],
+    ['month', 2592000],
+    ['week', 604800],
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60],
+  ];
+  for (const [name, size] of units) {
+    const n = Math.floor(secs / size);
+    if (n >= 1) return `${n} ${name}${n > 1 ? 's' : ''} ago`;
+  }
+  return 'just now';
+}
 
 /** Build the fixed FAQ block, lightly personalised. */
 function buildFaqs(a) {
@@ -126,8 +138,28 @@ export function buildAdvocateProfile(a) {
   const area = pick(OFFICE_AREAS, seed);
   const phone = `+91 ${90000 + (seed % 9999)} ${String(10000 + (seed % 89999))}`;
 
+  // Real client reviews (newest first) + derived aggregate rating.
+  const reviewsList = (a.reviewsList || [])
+    .filter((r) => r && r.text && r.rating)
+    .map((r) => ({
+      id: r._id || r.id,
+      author: r.author,
+      rating: r.rating,
+      text: r.text,
+      date: timeAgo(r.createdAt),
+      createdAt: r.createdAt,
+    }))
+    .sort((x, y) => new Date(y.createdAt) - new Date(x.createdAt));
+  const reviewsCount = reviewsList.length;
+  const avgRating = reviewsCount
+    ? Math.round((reviewsList.reduce((s, r) => s + r.rating, 0) / reviewsCount) * 10) / 10
+    : 0;
+
   return {
     ...a,
+    rating: avgRating,
+    reviews: reviewsCount,
+    reviewsList,
     initials,
     coverImage: a.coverImage || '',
     barCouncilNumber:
@@ -165,15 +197,6 @@ export function buildAdvocateProfile(a) {
         id: `${a.slug}-img-${i}`,
         label: ['Reception', 'Meeting Room', 'Library', 'Cabin', 'Waiting Area', 'Entrance'][i],
       })),
-    reviewsList:
-      a.reviewsList ||
-      Array.from({ length: 4 }, (_, i) => ({
-        id: `${a.slug}-rev-${i}`,
-        author: REVIEW_AUTHORS[(seed + i) % REVIEW_AUTHORS.length],
-        rating: i === 0 ? 5 : 5 - (i % 2),
-        date: ['2 weeks ago', '1 month ago', '3 months ago', '5 months ago'][i],
-        text: REVIEW_TEXTS[(seed + i) % REVIEW_TEXTS.length],
-      })),
     faqs: a.faqs || buildFaqs(a),
     metrics: a.metrics || {
       cases: 120 + (seed % 400),
@@ -183,55 +206,74 @@ export function buildAdvocateProfile(a) {
   };
 }
 
-/** All lean advocate records. Cached + tagged for ISR. */
-export const getAllAdvocates = unstable_cache(
+/**
+ * The cached readers below deliberately DO NOT swallow DB errors: if the read
+ * throws (e.g. MongoDB is temporarily unreachable), unstable_cache does not
+ * cache anything and rethrows. The thin public wrappers catch that and return
+ * the static fallback WITHOUT caching it — so once the DB recovers, the very
+ * next request fetches fresh data instead of serving a stale empty list.
+ * A successful-but-empty result is still cached (it's a real "no advocates").
+ */
+const _getAllAdvocates = unstable_cache(
   async () => {
-    try {
-      await connectDB();
-      const rows = await Advocate.find({ status: 'published' }).lean();
-      if (rows?.length) return rows.map((r) => buildAdvocateProfile(serialize(r)));
-    } catch (err) {
-      console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
-    }
-    return ADVOCATES;
+    await connectDB();
+    const rows = await Advocate.find({ status: 'published' }).lean();
+    return rows.map((r) => buildAdvocateProfile(serialize(r)));
   },
   ['all-advocates'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** Full profile for a single advocate slug, or null. Cached + tagged for ISR. */
-export const getAdvocateBySlug = unstable_cache(
-  async (slug) => {
-    try {
-      await connectDB();
-      const advocate = await Advocate.findOne({ slug }).lean();
-      if (advocate) return buildAdvocateProfile(serialize(advocate));
-    } catch (err) {
-      console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
-    }
+/** All lean advocate records (falls back to static data if the DB is down). */
+export async function getAllAdvocates() {
+  try {
+    return await _getAllAdvocates();
+  } catch (err) {
+    console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
+    return ADVOCATES;
+  }
+}
 
-    const base = ADVOCATES.find((a) => a.slug === slug);
-    return base ? buildAdvocateProfile(base) : null;
+const _getAdvocateBySlug = unstable_cache(
+  async (slug) => {
+    await connectDB();
+    const advocate = await Advocate.findOne({ slug }).lean();
+    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
   },
   ['advocate-by-slug'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** All advocate slugs for sitemap and static params. Cached + tagged for ISR. */
-export const getAllAdvocateSlugs = unstable_cache(
+/** Full profile for a single advocate slug, or null. */
+export async function getAdvocateBySlug(slug) {
+  try {
+    return await _getAdvocateBySlug(slug);
+  } catch (err) {
+    console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
+    const base = ADVOCATES.find((a) => a.slug === slug);
+    return base ? buildAdvocateProfile(base) : null;
+  }
+}
+
+const _getAllAdvocateSlugs = unstable_cache(
   async () => {
-    try {
-      await connectDB();
-      const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
-      if (rows?.length) return rows.map((a) => a.slug);
-    } catch (err) {
-      console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
-    }
-    return ADVOCATES.map((a) => a.slug);
+    await connectDB();
+    const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
+    return rows.map((a) => a.slug);
   },
   ['all-advocate-slugs'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
+
+/** All advocate slugs for sitemap and static params. */
+export async function getAllAdvocateSlugs() {
+  try {
+    return await _getAllAdvocateSlugs();
+  } catch (err) {
+    console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
+    return ADVOCATES.map((a) => a.slug);
+  }
+}
 
 /** Full profile for a single advocate id from MongoDB, or null. */
 export async function getAdvocateById(id) {
