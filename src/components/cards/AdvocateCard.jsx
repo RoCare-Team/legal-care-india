@@ -2,22 +2,22 @@ import {
   MapPin,
   BadgeCheck,
   Languages,
-  IndianRupee,
   Phone,
   Mail,
   MessageCircle,
   Briefcase,
+  ArrowRight,
 } from "lucide-react";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
 
 /**
- * AdvocateCard — directory listing card for a single advocate.
- * Presentational: receives a single `advocate` record from src/data.
+ * AdvocateCard — premium directory listing card for a single advocate.
+ * Presentational: receives a single `advocate` record.
  *
  * @param {object} props
- * @param {import('@/data/advocates').ADVOCATES[number]} props.advocate
+ * @param {object} props.advocate
  */
 export default function AdvocateCard({ advocate }) {
   const {
@@ -40,16 +40,30 @@ export default function AdvocateCard({ advocate }) {
     <Card
       hoverable
       padding="none"
-      className="group flex h-full flex-col overflow-hidden"
+      className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1"
     >
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        {/* Header: photo + identity + quick contact */}
-        <div className="flex items-center gap-3">
+      {/* Brand gradient accent header */}
+      <div className="relative h-14 bg-gradient-to-br from-primary via-primary to-primary-dark">
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.12]" />
+        <span className="absolute right-3 top-2.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+          ₹{consultationFee}
+          <span className="font-normal text-white/70"> / consult</span>
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col px-4 pb-4 sm:px-5 sm:pb-5">
+        {/* Identity — transparent avatar on the card */}
+        <div className="mt-4 flex items-center gap-3">
           <div className="relative shrink-0">
-            <Avatar src={photo} name={name} size="md" className="rounded-xl" />
+            <Avatar
+              src={photo}
+              name={name}
+              size="lg"
+              className="rounded-2xl !bg-transparent ring-1 ring-ink/10"
+            />
             {verified && (
               <span
-                className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-surface shadow-sm"
+                className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-surface shadow"
                 aria-label="Verified advocate"
               >
                 <BadgeCheck className="h-4 w-4 text-primary" />
@@ -58,11 +72,11 @@ export default function AdvocateCard({ advocate }) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <h3 className="truncate font-semibold leading-tight text-ink">
+            <h3 className="truncate font-display text-base font-semibold leading-tight text-ink">
               {name}
             </h3>
             <p className="mt-0.5 flex items-center gap-1 text-xs text-ink/60">
-              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
               <span className="truncate">
                 {city}, {state}
               </span>
@@ -82,7 +96,7 @@ export default function AdvocateCard({ advocate }) {
           </div>
         )}
 
-        {/* Compact meta row */}
+        {/* Meta row */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink/70">
           <span className="inline-flex items-center gap-1.5">
             <Briefcase className="h-3.5 w-3.5 text-primary/70" aria-hidden="true" />
@@ -90,55 +104,68 @@ export default function AdvocateCard({ advocate }) {
               {formatExperience(experience)}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Languages className="h-3.5 w-3.5 text-primary/70" aria-hidden="true" />
-            <span className="truncate">{languages.join(", ")}</span>
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <IndianRupee className="h-3.5 w-3.5 text-primary/70" aria-hidden="true" />
-            <span className="font-medium text-ink/80">₹{consultationFee}</span>
-            <span className="text-ink/50">consult</span>
-          </span>
+          {languages.length > 0 && (
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Languages className="h-3.5 w-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+              <span className="truncate">{languages.join(", ")}</span>
+            </span>
+          )}
         </div>
 
-        {/* Footer: quick contact + CTA */}
-        <div className="mt-4 flex items-center gap-2 border-t border-ink/8 pt-4">
-          <a
-            href={`tel:${contact?.phone || ""}`}
-            aria-label={`Call ${name}`}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium text-blue-600 transition-colors hover:border-blue-300 hover:bg-blue-50"
-          >
-            <Phone className="h-4 w-4" />
-            Call
-          </a>
-          <a
-            href={`https://wa.me/${contact?.whatsapp || ""}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`WhatsApp ${name}`}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium text-green-600 transition-colors hover:border-green-300 hover:bg-green-50"
-          >
-            <MessageCircle className="h-4 w-4" />
-            Chat
-          </a>
-          <a
-            href={`mailto:${contact?.email || ""}`}
-            aria-label={`Email ${name}`}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium text-red-500 transition-colors hover:border-red-300 hover:bg-red-50"
-          >
-            <Mail className="h-4 w-4" />
-            Email
-          </a>
+        {/* Footer: quick contact + primary CTA */}
+        <div className="mt-auto pt-4">
+          <div className="grid grid-cols-3 gap-2 border-t border-ink/8 pt-4">
+            <ContactAction
+              href={`tel:${contact?.phone || ""}`}
+              label={`Call ${name}`}
+              icon={Phone}
+              text="Call"
+              className="text-blue-600 hover:border-blue-300 hover:bg-blue-50"
+            />
+            <ContactAction
+              href={`https://wa.me/${contact?.whatsapp || ""}`}
+              external
+              label={`WhatsApp ${name}`}
+              icon={MessageCircle}
+              text="Chat"
+              className="text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50"
+            />
+            <ContactAction
+              href={`mailto:${contact?.email || ""}`}
+              label={`Email ${name}`}
+              icon={Mail}
+              text="Email"
+              className="text-red-500 hover:border-red-300 hover:bg-red-50"
+            />
+          </div>
 
           <Button
             href={`/advocates/${slug}`}
-            size="md"
-            className="flex-[1.6] whitespace-nowrap"
+            fullWidth
+            className="mt-2 group/btn"
+            rightIcon={
+              <ArrowRight className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+            }
           >
             View Profile
           </Button>
         </div>
       </div>
     </Card>
+  );
+}
+
+/** A single quick-contact action button. */
+function ContactAction({ href, external, label, icon: Icon, text, className }) {
+  return (
+    <a
+      href={href}
+      aria-label={label}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className={`flex items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium transition-colors ${className}`}
+    >
+      <Icon className="h-4 w-4" />
+      {text}
+    </a>
   );
 }

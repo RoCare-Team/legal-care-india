@@ -1,15 +1,14 @@
 import { UserPlus } from 'lucide-react';
 import { Section, Heading, Button } from '@/components/ui';
-import AdvocateCard from '@/components/cards/AdvocateCard';
-import SectionReveal from '@/components/shared/SectionReveal';
+import FeaturedCarousel from './FeaturedCarousel';
 import { getAllAdvocates } from '@/lib/advocates';
 
 /**
- * FeaturedAdvocates — the most recently registered verified advocates.
- * Reads live from the database; shows a friendly prompt when none exist yet.
+ * FeaturedAdvocates — the most recently registered verified advocates,
+ * shown as a horizontal slider. Reads live from the database.
  */
 export default async function FeaturedAdvocates() {
-  const advocates = (await getAllAdvocates()).slice(0, 6);
+  const advocates = (await getAllAdvocates()).slice(0, 12);
 
   return (
     <Section className="bg-muted/50">
@@ -28,13 +27,7 @@ export default async function FeaturedAdvocates() {
       </div>
 
       {advocates.length > 0 ? (
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {advocates.map((advocate, i) => (
-  <SectionReveal key={advocate.slug} delay={i * 0.05}>
-    <AdvocateCard advocate={advocate} />
-  </SectionReveal>
-))}
-        </div>
+        <FeaturedCarousel advocates={advocates} />
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">
           <UserPlus className="h-10 w-10 text-primary/60" aria-hidden="true" />
