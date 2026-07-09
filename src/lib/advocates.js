@@ -198,10 +198,11 @@ export function buildAdvocateProfile(a) {
         label: ['Reception', 'Meeting Room', 'Library', 'Cabin', 'Waiting Area', 'Entrance'][i],
       })),
     faqs: a.faqs || buildFaqs(a),
-    metrics: a.metrics || {
-      cases: 120 + (seed % 400),
-      clients: 90 + (seed % 300),
-      successRate: 88 + (seed % 11),
+    // Real practice highlights entered by the advocate (0 when not provided).
+    metrics: {
+      cases: a.metrics?.cases || 0,
+      clients: a.metrics?.clients || 0,
+      successRate: a.metrics?.successRate || 0,
     },
   };
 }

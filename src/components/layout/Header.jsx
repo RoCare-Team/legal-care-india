@@ -23,6 +23,7 @@ export default function Header() {
   const { advocate, loading } = useAuth();
 
   return (
+    <>
     <header
       className={cn(
         'sticky top-0 z-40 w-full border-b transition-colors duration-200',
@@ -77,8 +78,11 @@ export default function Header() {
           <Menu className="h-6 w-6" />
         </button>
       </div>
-
-      <MobileMenu isOpen={menu.isOpen} onClose={menu.close} />
     </header>
+
+    {/* Rendered OUTSIDE the header so the header's backdrop-blur (a containing
+        block for fixed elements) can't break the drawer's full-screen overlay. */}
+    <MobileMenu isOpen={menu.isOpen} onClose={menu.close} />
+    </>
   );
 }

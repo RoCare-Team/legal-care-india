@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { createMetadata } from '@/lib/metadata';
-import { Container, Badge, Button } from '@/components/ui';
+import { Container, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
 import { BLOGS } from '@/data/blogs';

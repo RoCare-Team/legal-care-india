@@ -12,10 +12,10 @@ export default function DashboardTopbar({ advocate }) {
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-ink/8 bg-surface p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 min-w-0">
         <Avatar src={advocate.photo} name={advocate.name} size="lg" />
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-display text-xl font-semibold text-ink">{advocate.name}</h1>
             {advocate.verified && (
               <Badge variant="success" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
@@ -23,7 +23,7 @@ export default function DashboardTopbar({ advocate }) {
               </Badge>
             )}
           </div>
-          <p className="mt-0.5 text-sm text-ink/55">
+          <p className="mt-0.5 break-words text-sm text-ink/55">
             {advocate.city}, {advocate.state} · {advocate.contact?.email}
           </p>
         </div>

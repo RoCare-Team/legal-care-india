@@ -25,8 +25,8 @@ export default async function DashboardLayout({ children }) {
     <Container className="py-8 sm:py-10">
       <DashboardTopbar advocate={advocate} />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[16rem_1fr]">
-        <aside className="lg:col-span-1">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside className="min-w-0 lg:col-span-1">
           <DashboardSidebar />
         </aside>
         <div className="min-w-0">{children}</div>

@@ -36,6 +36,7 @@ export async function PUT(request) {
   const {
     fullName, photo, coverImage, gallery, tagline, city, state, about,
     services, languages, barCouncil, experience,
+    cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
     phone, whatsapp, email, fee, social,
@@ -58,6 +59,11 @@ export async function PUT(request) {
   if (Array.isArray(languages)) update.languages = languages;
   if (barCouncil !== undefined) update.barCouncilNumber = barCouncil;
   if (experience !== undefined) update.experience = Number(experience) || 0;
+  if (cases !== undefined) update['metrics.cases'] = Number(cases) || 0;
+  if (clients !== undefined) update['metrics.clients'] = Number(clients) || 0;
+  if (successRate !== undefined) {
+    update['metrics.successRate'] = Math.min(100, Math.max(0, Number(successRate) || 0));
+  }
   if (Array.isArray(education)) update.education = education;
   if (Array.isArray(certificates)) update.certificates = certificates;
   if (Array.isArray(awards)) update.awards = awards;

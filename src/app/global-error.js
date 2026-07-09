@@ -4,7 +4,7 @@
  * global-error.js catches errors in the root layout itself.
  * It must render its own <html>/<body> because the layout has failed.
  */
-export default function GlobalError({ error, reset }) {
+export default function GlobalError({ reset }) {
   return (
     <html lang="en">
       <body

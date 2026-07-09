@@ -15,8 +15,3 @@ export const COLORS = {
   muted: '#f1f5f9',
   ink: '#0F172A',
 };
-
-export const GRADIENTS = {
-  brand: 'linear-gradient(135deg, #1E3A5F 0%, #0F172A 100%)',
-  hero: 'linear-gradient(160deg, #f8fafc 0%, #eef2f7 100%)',
-};

@@ -25,16 +25,16 @@ export default function ProfileHeader({ advocate }) {
         <div className="pointer-events-none absolute inset-0 bg-black/10" aria-hidden="true" />
       </div>
 
-      <div className="px-6 pb-6 sm:px-8 sm:pb-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:gap-5">
+      <div className="px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-6">
+        <div className="flex flex-row items-center gap-4 sm:items-end sm:gap-5">
           <Avatar
             src={photo}
             name={name}
             size="xl"
             ring
-            className="-mt-12 shadow-card sm:-mt-16"
+            className="h-24 w-24 shadow-card sm:-mt-12 sm:h-28 sm:w-28"
           />
-          <div className="mt-4 flex-1 sm:mt-0 sm:pb-1">
+          <div className="flex-1 sm:pb-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
                 {name}
@@ -52,18 +52,18 @@ export default function ProfileHeader({ advocate }) {
           </div>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-ink/8 pt-5 sm:grid-cols-4">
+        <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-ink/8 pt-5 sm:grid-cols-4">
           <Meta icon={MapPin} label="Location" value={`${city}, ${state}`} />
           <Meta icon={Briefcase} label="Experience" value={formatExperience(experience).replace(' experience', '')} />
           <Meta icon={Scale} label="Bar Council No." value={barCouncilNumber} />
           <Meta icon={Languages} label="Languages" value={languages.join(', ')} />
         </dl>
 
-        {metrics && (
+        {metrics && (metrics.cases > 0 || metrics.clients > 0 || metrics.successRate > 0) && (
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <Stat value={`${metrics.cases}+`} label="Cases Handled" />
-            <Stat value={`${metrics.clients}+`} label="Clients Advised" />
-            <Stat value={`${metrics.successRate}%`} label="Success Rate" />
+            {metrics.cases > 0 && <Stat value={`${metrics.cases}+`} label="Cases Handled" />}
+            {metrics.clients > 0 && <Stat value={`${metrics.clients}+`} label="Clients Advised" />}
+            {metrics.successRate > 0 && <Stat value={`${metrics.successRate}%`} label="Success Rate" />}
           </div>
         )}
       </div>
@@ -73,11 +73,13 @@ export default function ProfileHeader({ advocate }) {
 
 function Meta({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-start gap-2">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+    <div className="flex items-center gap-2.5 rounded-xl border border-ink/8 bg-muted/40 p-2.5">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
       <div className="min-w-0">
-        <dt className="text-xs text-ink/45">{label}</dt>
-        <dd className="truncate text-sm font-medium text-ink/80">{value}</dd>
+        <dt className="text-[11px] uppercase tracking-wide text-ink/40">{label}</dt>
+        <dd className="text-sm font-semibold leading-snug text-ink/85">{value || '—'}</dd>
       </div>
     </div>
   );
@@ -85,9 +87,9 @@ function Meta({ icon: Icon, label, value }) {
 
 function Stat({ value, label }) {
   return (
-    <div className="rounded-xl bg-muted/60 px-3 py-3 text-center">
-      <p className="font-display text-lg font-semibold text-primary">{value}</p>
-      <p className="mt-0.5 text-xs text-ink/55">{label}</p>
+    <div className="rounded-xl border border-ink/8 bg-gradient-to-b from-muted/50 to-surface px-3 py-4 text-center shadow-sm">
+      <p className="font-display text-2xl font-bold text-primary">{value}</p>
+      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink/50">{label}</p>
     </div>
   );
 }

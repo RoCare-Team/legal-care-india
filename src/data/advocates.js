@@ -12,6 +12,3 @@
 
 /** @type {AdvocateRecord[]} */
 export const ADVOCATES = [];
-
-/** @type {AdvocateRecord[]} */
-export const FEATURED_ADVOCATES = [];

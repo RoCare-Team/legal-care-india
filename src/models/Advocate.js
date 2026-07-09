@@ -96,6 +96,13 @@ const AdvocateSchema = new Schema(
     reviews: { type: Number, default: 0 },
     reviewsList: { type: [ReviewSchema], default: [] },
 
+    // Practice highlights shown on the profile (entered by the advocate).
+    metrics: {
+      cases: { type: Number, default: 0 },
+      clients: { type: Number, default: 0 },
+      successRate: { type: Number, default: 0 },
+    },
+
     // Visibility
     status: { type: String, enum: ['pending', 'published'], default: 'published' },
     verified: { type: Boolean, default: false },

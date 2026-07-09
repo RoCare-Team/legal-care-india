@@ -18,6 +18,22 @@ export default function SectionExperienceEducation({ data, set }) {
             <Input id="d-exp" type="number" min="0" value={data.experience} onChange={(e) => set('experience', e.target.value)} />
           </FormField>
         </div>
+
+        <p className="mt-6 mb-3 text-sm font-medium text-ink">
+          Practice Highlights{' '}
+          <span className="font-normal text-ink/45">(shown on your public profile — leave 0 to hide)</span>
+        </p>
+        <div className="grid gap-5 sm:grid-cols-3">
+          <FormField label="Cases Handled" htmlFor="d-cases">
+            <Input id="d-cases" type="number" min="0" value={data.cases} onChange={(e) => set('cases', e.target.value)} placeholder="e.g. 250" />
+          </FormField>
+          <FormField label="Clients Advised" htmlFor="d-clients">
+            <Input id="d-clients" type="number" min="0" value={data.clients} onChange={(e) => set('clients', e.target.value)} placeholder="e.g. 180" />
+          </FormField>
+          <FormField label="Success Rate (%)" htmlFor="d-success">
+            <Input id="d-success" type="number" min="0" max="100" value={data.successRate} onChange={(e) => set('successRate', e.target.value)} placeholder="e.g. 92" />
+          </FormField>
+        </div>
       </DashboardSection>
 
       <DashboardSection id="education" title="Education" description="Add your degrees and qualifications." icon={GraduationCap}>

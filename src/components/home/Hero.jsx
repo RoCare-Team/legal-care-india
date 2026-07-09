@@ -13,7 +13,7 @@ export default function Hero() {
   const popular = CATEGORIES.slice(0, 5);
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F] to-[#0F172A] text-white py-16 lg:py-24 border-b border-[#0F172A]">
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F] to-[#0F172A] text-white py-10 sm:py-14 lg:py-24 border-b border-[#0F172A]">
       {/* Background Subtle Watermark/Pattern Overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
 
@@ -28,13 +28,13 @@ export default function Hero() {
           <div className="lg:col-span-7 flex flex-col items-start text-left">
             
             {/* Top Indicator */}
-            <div className="animate-fade-up inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-[#D4AF37] mb-6 backdrop-blur-sm">
+            <div className="animate-fade-up inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-[#D4AF37] mb-4 sm:mb-6 backdrop-blur-sm">
               <span>🇮🇳</span> India&apos;s Advocate Directory Platform
             </div>
 
             {/* Dynamic Typography Heading — LCP element, renders instantly */}
-            <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15]">
-              Find Verified Advocates <br />
+            <h1 className="font-display text-[2rem] font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15]">
+              Find Verified Advocates <br className="hidden sm:block" />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E7C766] to-[#D4AF37]">
                 Across India
               </span>
@@ -42,7 +42,7 @@ export default function Hero() {
 
             {/* Clean Secondary Paragraph */}
             <p
-              className="animate-fade-up mt-6 max-w-xl text-base sm:text-lg text-slate-300 leading-relaxed font-normal"
+              className="animate-fade-up mt-4 max-w-xl text-sm sm:text-lg text-slate-300 leading-relaxed font-normal"
               style={{ animationDelay: '0.1s' }}
             >
               Search, compare, and connect with trusted advocates by legal service, city,
@@ -51,7 +51,7 @@ export default function Hero() {
 
             {/* Integrated Search Bar Section */}
             <div
-              className="animate-fade-up w-full mt-10"
+              className="animate-fade-up w-full mt-6 sm:mt-9"
               style={{ animationDelay: '0.15s' }}
             >
               {/* Premium Inner Form Background Accent */}
@@ -60,7 +60,7 @@ export default function Hero() {
               </div>
 
               {/* Popular Specializations Tags */}
-              <div className="mt-5 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                 <span className="font-semibold text-[#D4AF37]/80 tracking-wide uppercase text-[11px]">Popular:</span>
                 {popular.length > 0 ? (
                   popular.map((c) => (

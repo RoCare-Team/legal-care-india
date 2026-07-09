@@ -32,9 +32,6 @@ export const CATEGORIES = [
   { slug: 'immigration-law', name: 'Immigration Law', icon: Globe2, advocates: 600, description: 'Visa, citizenship and travel matters.' },
 ];
 
-/** Preferred alias — "Legal Services" is the platform-wide term. */
-export const LEGAL_SERVICES = CATEGORIES;
-
 /** Flat list of service names, handy for form selects and filters. */
 export const LEGAL_SERVICE_NAMES = CATEGORIES.map((c) => c.name);
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { X, LayoutDashboard, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -17,6 +18,17 @@ import { logout } from '@/utils/logout';
  */
 export default function MobileMenu({ isOpen, onClose }) {
   const { advocate, loading } = useAuth();
+
+  // Lock background scroll while the drawer is open so the page behind it
+  // stays put. Always restore on close/unmount.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const original = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [isOpen]);
 
   return (
     <>
