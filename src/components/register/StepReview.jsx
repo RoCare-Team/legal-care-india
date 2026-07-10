@@ -43,6 +43,17 @@ export default function StepReview({ data, set, errors }) {
         </div>
       </div>
 
+      {(data.subServices || []).length > 0 && (
+        <div>
+          <p className="mb-2 text-xs text-ink/45">Specific Areas</p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.subServices.map((s) => (
+              <Badge key={s} variant="neutral" size="sm">{s}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       <label className="flex items-start gap-3 rounded-xl border border-ink/8 p-4">
         <input
           type="checkbox"

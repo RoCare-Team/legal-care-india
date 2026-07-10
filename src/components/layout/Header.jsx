@@ -1,16 +1,13 @@
 'use client';
 
-import { Menu, LayoutDashboard, LogOut } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { cn } from '@/utils/cn';
-import { Button } from '@/components/ui';
 import Logo from '@/components/shared/Logo';
 import Navbar from './Navbar';
 import MobileMenu from './MobileMenu';
-import { AUTH_NAV } from '@/constants/navigation';
+import HeaderAuth from './HeaderAuth';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
 import { useDisclosure } from '@/hooks/useDisclosure';
-import { useAuth } from '@/hooks/useAuth';
-import { logout } from '@/utils/logout';
 
 /**
  * Header — sticky top bar with logo, desktop nav, CTAs and a mobile menu trigger.
@@ -20,7 +17,6 @@ export default function Header() {
   const scrollY = useScrollPosition();
   const menu = useDisclosure(false);
   const scrolled = scrollY > 8;
-  const { advocate, loading } = useAuth();
 
   return (
     <>
@@ -38,35 +34,7 @@ export default function Header() {
         <Navbar className="hidden lg:flex" />
 
         <div className="hidden items-center gap-2 lg:flex">
-          {loading ? null : advocate ? (
-            <>
-              <Button
-                href="/dashboard"
-                variant="ghost"
-                size="sm"
-                leftIcon={<LayoutDashboard className="h-4 w-4" />}
-              >
-                Dashboard
-              </Button>
-              <Button
-                type="button"
-                onClick={() => logout('/')}
-                size="sm"
-                leftIcon={<LogOut className="h-4 w-4" />}
-              >
-                Log out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button href={AUTH_NAV.login.href} variant="ghost" size="sm">
-                {AUTH_NAV.login.label}
-              </Button>
-              <Button href={AUTH_NAV.register.href} size="sm">
-                {AUTH_NAV.register.label}
-              </Button>
-            </>
-          )}
+          <HeaderAuth />
         </div>
 
         <button

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import Advocate from '@/models/Advocate';
+import User from '@/models/User';
 import { comparePassword, signToken, setAuthCookie } from '@/lib/auth';
 
 /**
- * POST /api/auth/login
- * Verifies advocate credentials and issues the session cookie.
+ * POST /api/auth/user/login
+ * Verifies client (user) credentials and issues the session cookie (role: 'user').
  */
 export async function POST(request) {
   let body;
@@ -22,21 +22,21 @@ export async function POST(request) {
 
   try {
     await connectDB();
-    const advocate = await Advocate.findOne({ email: email.trim().toLowerCase() });
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
-    // Same message for "no such user" and "wrong password" (no account enumeration).
-    if (!advocate || !(await comparePassword(password, advocate.passwordHash))) {
+    // Same message for "no such account" and "wrong password" (no enumeration).
+    if (!user || !(await comparePassword(password, user.passwordHash))) {
       return NextResponse.json({ error: 'Incorrect email or password.' }, { status: 401 });
     }
 
-    const token = signToken({ id: String(advocate._id), role: 'advocate' });
+    const token = signToken({ id: String(user._id), role: 'user' });
     const res = NextResponse.json({
       ok: true,
-      advocate: { id: String(advocate._id), slug: advocate.slug, name: advocate.name },
+      user: { id: String(user._id), name: user.name, email: user.email },
     });
     return setAuthCookie(res, token);
   } catch (err) {
-    console.error('login error', err);
+    console.error('user login error', err);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }

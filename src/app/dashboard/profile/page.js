@@ -16,6 +16,7 @@ function toSnapshot(a) {
     state: a.state,
     about: a.about || '',
     services: a.specializations || [],
+    subServices: a.subSpecializations || [],
     languages: a.languages || [],
     barCouncil: a.barCouncilNumber || '',
     experience: String(a.experience || ''),

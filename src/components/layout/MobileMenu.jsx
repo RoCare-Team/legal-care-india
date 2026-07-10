@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { X, LayoutDashboard, LogOut } from 'lucide-react';
+import { X, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui';
 import Logo from '@/components/shared/Logo';
 import { MAIN_NAV, AUTH_NAV } from '@/constants/navigation';
@@ -17,7 +17,7 @@ import { logout } from '@/utils/logout';
  * @param {() => void} props.onClose
  */
 export default function MobileMenu({ isOpen, onClose }) {
-  const { advocate, loading } = useAuth();
+  const { role, loading } = useAuth();
 
   // Lock background scroll while the drawer is open so the page behind it
   // stays put. Always restore on close/unmount.
@@ -74,7 +74,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             </nav>
 
             <div className="space-y-2 border-t border-ink/8 p-5">
-              {loading ? null : advocate ? (
+              {loading ? null : role === 'advocate' ? (
                 <>
                   <Button
                     href="/dashboard"
@@ -97,10 +97,41 @@ export default function MobileMenu({ isOpen, onClose }) {
                     Log out
                   </Button>
                 </>
+              ) : role === 'user' ? (
+                <>
+                  <Button
+                    href="/account"
+                    fullWidth
+                    onClick={onClose}
+                    leftIcon={<UserRound className="h-4 w-4" />}
+                  >
+                    My Account
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    fullWidth
+                    onClick={() => {
+                      onClose();
+                      logout('/');
+                    }}
+                    leftIcon={<LogOut className="h-4 w-4" />}
+                  >
+                    Log out
+                  </Button>
+                </>
               ) : (
                 <>
-                  <Button href={AUTH_NAV.register.href} fullWidth onClick={onClose}>
-                    {AUTH_NAV.register.label}
+                  <Button href={AUTH_NAV.userSignup.href} fullWidth onClick={onClose}>
+                    {AUTH_NAV.userSignup.label}
+                  </Button>
+                  <Button
+                    href={AUTH_NAV.userLogin.href}
+                    variant="outline"
+                    fullWidth
+                    onClick={onClose}
+                  >
+                    {AUTH_NAV.userLogin.label}
                   </Button>
                   <Button
                     href={AUTH_NAV.login.href}
@@ -109,6 +140,14 @@ export default function MobileMenu({ isOpen, onClose }) {
                     onClick={onClose}
                   >
                     {AUTH_NAV.login.label}
+                  </Button>
+                  <Button
+                    href={AUTH_NAV.register.href}
+                    variant="ghost"
+                    fullWidth
+                    onClick={onClose}
+                  >
+                    {AUTH_NAV.register.label}
                   </Button>
                 </>
               )}

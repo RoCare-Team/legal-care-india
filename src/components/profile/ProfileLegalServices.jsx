@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Scale, ArrowUpRight } from 'lucide-react';
+import { Badge } from '@/components/ui';
 import ProfileSection from './ProfileSection';
 
 /**
@@ -11,6 +12,7 @@ import ProfileSection from './ProfileSection';
  */
 export default function ProfileLegalServices({ advocate }) {
   const services = advocate.legalServices || [];
+  const subServices = advocate.subSpecializations || [];
 
   return (
     <ProfileSection id="legal-services" title="Legal Services" icon={Scale}>
@@ -28,6 +30,19 @@ export default function ProfileLegalServices({ advocate }) {
           </Link>
         ))}
       </div>
+
+      {subServices.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink/45">
+            Specific areas
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {subServices.map((s) => (
+              <Badge key={s} variant="neutral" size="sm">{s}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
     </ProfileSection>
   );
 }

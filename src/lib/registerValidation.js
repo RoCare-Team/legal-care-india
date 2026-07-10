@@ -36,7 +36,7 @@ export function validateStep(step, data) {
 
 export const INITIAL_REGISTER_DATA = {
   fullName: '', email: '', phone: '', password: '', confirm: '',
-  barCouncil: '', experience: '', city: '', state: '', services: [], languages: [],
+  barCouncil: '', experience: '', city: '', state: '', services: [], subServices: [], languages: [],
   officeName: '', officeAddress: '', fee: '', tagline: '', about: '',
   terms: false,
 };

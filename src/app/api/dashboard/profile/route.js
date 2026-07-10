@@ -36,7 +36,7 @@ export async function PUT(request) {
 
   const {
     fullName, photo, coverImage, gallery, tagline, city, state, about,
-    services, languages, barCouncil, experience,
+    services, subServices, languages, barCouncil, experience,
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
@@ -63,6 +63,7 @@ export async function PUT(request) {
   if (state !== undefined) update.state = state;
   if (about !== undefined) update.about = about;
   if (Array.isArray(services)) update.specializations = services;
+  if (Array.isArray(subServices)) update.subSpecializations = subServices;
   if (Array.isArray(languages)) update.languages = languages;
   if (barCouncil !== undefined) update.barCouncilNumber = barCouncil;
   if (experience !== undefined) update.experience = Number(experience) || 0;

@@ -1,6 +1,6 @@
 import { FormField, Input, Select } from '@/components/ui';
 import ChipMultiSelect from '@/components/shared/ChipMultiSelect';
-import { LEGAL_SERVICE_NAMES } from '@/data/categories';
+import { LEGAL_SERVICE_NAMES, getSubServices } from '@/data/categories';
 import { LANGUAGES, STATES } from '@/data/languages';
 import { CITIES } from '@/data/cities';
 
@@ -13,6 +13,25 @@ import { CITIES } from '@/data/cities';
  * @param {Record<string,string>} props.errors
  */
 export default function StepProfessional({ data, set, errors }) {
+  const subServices = data.subServices || [];
+
+  // Pick main services; drop any sub-types whose parent service was removed.
+  const onServicesChange = (nextServices) => {
+    set('services', nextServices);
+    const allowed = new Set(nextServices.flatMap((s) => getSubServices(s)));
+    const pruned = subServices.filter((s) => allowed.has(s));
+    if (pruned.length !== subServices.length) set('subServices', pruned);
+  };
+
+  // Merge a single category's sub-type selection back into the flat list.
+  const onSubChange = (options, nextForCategory) => {
+    const others = subServices.filter((s) => !options.includes(s));
+    set('subServices', [...others, ...nextForCategory]);
+  };
+
+  // Selected services that actually have sub-types to offer.
+  const servicesWithSubs = (data.services || []).filter((s) => getSubServices(s).length > 0);
+
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       <FormField label="Bar Council Number" htmlFor="barCouncil" required error={errors.barCouncil}>
@@ -73,10 +92,35 @@ export default function StepProfessional({ data, set, errors }) {
         <ChipMultiSelect
           options={LEGAL_SERVICE_NAMES}
           value={data.services}
-          onChange={(next) => set('services', next)}
+          onChange={onServicesChange}
           max={4}
         />
       </FormField>
+
+      {servicesWithSubs.length > 0 && (
+        <div className="sm:col-span-2 space-y-4 rounded-xl border border-ink/8 bg-muted/30 p-4">
+          <p className="text-sm font-medium text-ink/80">
+            Specific areas you handle{' '}
+            <span className="font-normal text-ink/45">(optional — helps clients find you)</span>
+          </p>
+          {servicesWithSubs.map((service) => {
+            const options = getSubServices(service);
+            const selected = subServices.filter((s) => options.includes(s));
+            return (
+              <div key={service}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary/80">
+                  {service}
+                </p>
+                <ChipMultiSelect
+                  options={options}
+                  value={selected}
+                  onChange={(next) => onSubChange(options, next)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <FormField label="Languages" required error={errors.languages} className="sm:col-span-2">
         <ChipMultiSelect

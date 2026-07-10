@@ -2,9 +2,6 @@ import {
   MapPin,
   BadgeCheck,
   Languages,
-  Phone,
-  Mail,
-  MessageCircle,
   Briefcase,
   ArrowRight,
   Scale,
@@ -14,6 +11,7 @@ import { Card, Badge, Button, Avatar } from "@/components/ui";
 import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
 import { advocateProfilePath } from "@/utils/advocateUrl";
+import CardContactActions from "./CardContactActions";
 
 /**
  * AdvocateCard — premium directory listing card for a single advocate.
@@ -126,28 +124,7 @@ export default function AdvocateCard({ advocate }) {
         {/* Footer: quick contact + primary CTA */}
         <div className="mt-auto pt-4">
           <div className="grid grid-cols-3 gap-2 border-t border-ink/8 pt-4">
-            <ContactAction
-              href={`tel:${contact?.phone || ""}`}
-              label={`Call ${name}`}
-              icon={Phone}
-              text="Call"
-              className="text-blue-600 hover:border-blue-300 hover:bg-blue-50"
-            />
-            <ContactAction
-              href={`https://wa.me/${contact?.whatsapp || ""}`}
-              external
-              label={`WhatsApp ${name}`}
-              icon={MessageCircle}
-              text="Chat"
-              className="text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50"
-            />
-            <ContactAction
-              href={`mailto:${contact?.email || ""}`}
-              label={`Email ${name}`}
-              icon={Mail}
-              text="Email"
-              className="text-red-500 hover:border-red-300 hover:bg-red-50"
-            />
+            <CardContactActions contact={contact} name={name} />
           </div>
 
           <Button
@@ -163,20 +140,5 @@ export default function AdvocateCard({ advocate }) {
         </div>
       </div>
     </Card>
-  );
-}
-
-/** A single quick-contact action button. */
-function ContactAction({ href, external, label, icon: Icon, text, className }) {
-  return (
-    <a
-      href={href}
-      aria-label={label}
-      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className={`flex items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium transition-colors ${className}`}
-    >
-      <Icon className="h-4 w-4" />
-      {text}
-    </a>
   );
 }

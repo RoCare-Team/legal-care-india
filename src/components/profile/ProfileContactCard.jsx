@@ -1,6 +1,6 @@
-import { Phone, MessageCircle, Mail, IndianRupee, Clock, CalendarCheck } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { IndianRupee, Clock } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import ProfileContactActions from './ProfileContactActions';
 
 /**
  * ProfileContactCard — sticky sidebar with consultation fee, direct contact
@@ -26,38 +26,7 @@ export default function ProfileContactCard({ advocate }) {
           </span>
         </div>
 
-        <div className="mt-4 space-y-2">
-          {contact.phone && (
-            <Button href={`tel:${contact.phone.replace(/\s/g, '')}`} fullWidth leftIcon={<Phone className="h-4 w-4" />}>
-              Call Now
-            </Button>
-          )}
-          {contact.whatsapp && (
-            <Button
-              href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              fullWidth
-              className="bg-emerald-600 hover:bg-emerald-700"
-              leftIcon={<MessageCircle className="h-4 w-4" />}
-            >
-              WhatsApp
-            </Button>
-          )}
-          {contact.email && (
-            <Button
-              href={`mailto:${contact.email}`}
-              variant="outline"
-              fullWidth
-              leftIcon={<Mail className="h-4 w-4" />}
-            >
-              Send Email
-            </Button>
-          )}
-          <Button variant="ghost" fullWidth disabled leftIcon={<CalendarCheck className="h-4 w-4" />}>
-            Book Consultation (Soon)
-          </Button>
-        </div>
+        <ProfileContactActions contact={contact} name={name} waText={waText} />
       </div>
 
       {timing.length > 0 && (

@@ -73,6 +73,7 @@ const AdvocateSchema = new Schema(
     about: { type: String, default: '' },
 
     specializations: { type: [String], default: [] },
+    subSpecializations: { type: [String], default: [] },
     languages: { type: [String], default: [] },
     consultationFee: { type: Number, default: 0 },
 

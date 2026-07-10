@@ -16,6 +16,8 @@ export const MAIN_NAV = [
 export const AUTH_NAV = {
   login: { label: 'Advocate Login', href: '/login' },
   register: { label: 'Register as Advocate', href: '/register' },
+  userLogin: { label: 'User Login', href: '/user/login' },
+  userSignup: { label: 'Sign Up', href: '/user/signup' },
 };
 
 export const FOOTER_NAV = [

@@ -80,11 +80,28 @@ export function hashOtp(otp) {
   return crypto.createHash('sha256').update(String(otp)).digest('hex');
 }
 
-/** Read the current advocate id from the request cookie, or null. */
-export async function getSessionAdvocateId() {
+/**
+ * Read the decoded session from the request cookie, or null.
+ * Returns `{ id, role }`. Tokens issued before roles existed have no `role`,
+ * so a missing role is treated as 'advocate' for backward compatibility.
+ */
+export async function getSession() {
   const store = await cookies();
   const token = store.get(AUTH_COOKIE)?.value;
   if (!token) return null;
   const payload = verifyToken(token);
-  return payload?.id || null;
+  if (!payload?.id) return null;
+  return { id: payload.id, role: payload.role || 'advocate' };
+}
+
+/** Current advocate id, or null if not signed in as an advocate. */
+export async function getSessionAdvocateId() {
+  const session = await getSession();
+  return session && session.role === 'advocate' ? session.id : null;
+}
+
+/** Current user id, or null if not signed in as a user. */
+export async function getSessionUserId() {
+  const session = await getSession();
+  return session && session.role === 'user' ? session.id : null;
 }

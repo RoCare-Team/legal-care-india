@@ -35,7 +35,7 @@ export async function POST(request) {
   const {
     fullName, email, phone, password,
     barCouncil, experience, city, state,
-    services = [], languages = [],
+    services = [], subServices = [], languages = [],
     officeName, officeAddress, fee, tagline, about,
   } = body || {};
 
@@ -84,6 +84,7 @@ export async function POST(request) {
       tagline: tagline || '',
       about: about || '',
       specializations: Array.isArray(services) ? services : [],
+      subSpecializations: Array.isArray(subServices) ? subServices : [],
       languages: Array.isArray(languages) ? languages : [],
       consultationFee: Number(fee) || 0,
       office: { name: officeName || '', address: officeAddress || '' },
@@ -94,7 +95,7 @@ export async function POST(request) {
     // New public advocate — drop the cached directory so it appears at once.
     revalidateTag(ADVOCATES_TAG);
 
-    const token = signToken({ id: String(advocate._id) });
+    const token = signToken({ id: String(advocate._id), role: 'advocate' });
     const res = NextResponse.json(
       {
         ok: true,
