@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import EditProfileForm from '@/components/dashboard/EditProfileForm';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /** Flatten a full advocate profile into the editable form snapshot. */
 function toSnapshot(a) {
@@ -57,7 +58,7 @@ export default async function EditProfilePage() {
           Keep your profile complete and up to date — changes reflect on your public profile.
         </p>
       </div>
-      <EditProfileForm initial={initial} previewHref={`/advocates/${advocate.slug}`} />
+      <EditProfileForm initial={initial} previewHref={`/advocates/${advocateProfilePath(advocate)}`} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { BadgeCheck, MapPin, Briefcase, Scale, Languages } from 'lucide-react';
+import { BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint } from 'lucide-react';
 import { Avatar, Badge } from '@/components/ui';
 import Rating from '@/components/shared/Rating';
 import { formatExperience } from '@/utils/formatters';
@@ -13,7 +13,7 @@ import { formatExperience } from '@/utils/formatters';
 export default function ProfileHeader({ advocate }) {
   const {
     name, photo, coverImage, city, state, experience, rating, reviews, verified,
-    barCouncilNumber, tagline, languages = [], metrics,
+    barCouncilNumber, tagline, languages = [], metrics, legalCareId,
   } = advocate;
 
   return (
@@ -46,8 +46,17 @@ export default function ProfileHeader({ advocate }) {
               )}
             </div>
             {tagline && <p className="mt-1 text-sm text-ink/60">{tagline}</p>}
-            <div className="mt-2">
+            <div className="mt-2 flex flex-wrap items-center gap-3">
               <Rating value={rating} reviews={reviews} size="sm" />
+              {legalCareId && (
+                <span
+                  title="Legal Care India ID"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-primary ring-1 ring-primary/10"
+                >
+                  <Fingerprint className="h-3.5 w-3.5" aria-hidden="true" />
+                  {legalCareId}
+                </span>
+              )}
             </div>
           </div>
         </div>

@@ -13,7 +13,7 @@ import { formatRating, pluralize } from '@/utils/formatters';
  * @param {object} props.advocate
  */
 export default function ProfileReviews({ advocate }) {
-  const { rating, reviews, reviewsList = [], slug } = advocate;
+  const { rating, reviews, reviewsList = [], legalCareId } = advocate;
   const hasReviews = reviewsList.length > 0;
 
   return (
@@ -60,7 +60,7 @@ export default function ProfileReviews({ advocate }) {
         </div>
       )}
 
-      <ReviewForm slug={slug} />
+      <ReviewForm legalCareId={legalCareId} />
     </ProfileSection>
   );
 }

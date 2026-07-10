@@ -3,6 +3,8 @@ import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import CityCard from '@/components/cards/CityCard';
 import SectionReveal from '@/components/shared/SectionReveal';
+import JsonLd from '@/components/shared/JsonLd';
+import { breadcrumbSchema } from '@/lib/schema';
 import { CITIES } from '@/data/cities';
 
 export const metadata = createMetadata({
@@ -15,6 +17,12 @@ export const metadata = createMetadata({
 export default function CitiesPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Cities', path: '/cities' },
+        ])}
+      />
       <PageHeader
         eyebrow="Browse by City"
         title="Find Advocates in Your City"

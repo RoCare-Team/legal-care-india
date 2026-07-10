@@ -2,6 +2,8 @@ import { ShieldCheck, Search, HeartHandshake, Scale } from 'lucide-react';
 import { createMetadata } from '@/lib/metadata';
 import { Container, Section, Heading, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
+import JsonLd from '@/components/shared/JsonLd';
+import { webPageSchema, breadcrumbSchema } from '@/lib/schema';
 import { PLATFORM_STATS } from '@/data/stats';
 import { formatCompactNumber } from '@/utils/formatters';
 
@@ -22,6 +24,20 @@ const VALUES = [
 export default function AboutPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          webPageSchema({
+            type: 'AboutPage',
+            name: 'About Legal Care India',
+            description: 'Legal Care India is a premium advocate discovery platform helping clients find verified advocates.',
+            path: '/about',
+          }),
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'About', path: '/about' },
+          ]),
+        ]}
+      />
       <PageHeader
         eyebrow="About Legal Care India"
         title="Connecting India with trusted advocates"

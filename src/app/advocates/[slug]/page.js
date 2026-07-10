@@ -1,8 +1,14 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
 import { SITE } from '@/constants/site';
 import { Container } from '@/components/ui';
-import { getAdvocateBySlug, getRelatedAdvocates, getAllAdvocateSlugs } from '@/lib/advocates';
+import {
+  getAdvocateBySlug,
+  getAdvocateByLegalCareId,
+  getRelatedAdvocates,
+  getAllAdvocateParams,
+} from '@/lib/advocates';
+import { parseAdvocateParam } from '@/utils/advocateUrl';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileContactCard from '@/components/profile/ProfileContactCard';
 import ProfileAbout from '@/components/profile/ProfileAbout';
@@ -22,30 +28,42 @@ import RelatedAdvocates from '@/components/profile/RelatedAdvocates';
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
-  const slugs = await getAllAdvocateSlugs();
-  return slugs.map((slug) => ({ slug }));
+  const params = await getAllAdvocateParams();
+  return params.map((slug) => ({ slug }));
+}
+
+/**
+ * Resolve an advocate from the route param. Primary lookup is by the permanent
+ * Legal Care India ID embedded in the URL; a bare slug is a legacy URL that we
+ * look up best-effort so we can 308-redirect it to the canonical path.
+ */
+async function resolveAdvocate(param) {
+  const { legalCareId } = parseAdvocateParam(param);
+  if (legalCareId) return getAdvocateByLegalCareId(legalCareId);
+  return getAdvocateBySlug(param);
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const advocate = await getAdvocateBySlug(slug);
+  const advocate = await resolveAdvocate(slug);
   if (!advocate) return createMetadata({ title: 'Advocate Not Found', path: '/advocates' });
 
   return createMetadata({
     title: `${advocate.name} — ${advocate.specializations?.[0] || 'Advocate'} in ${advocate.city}`,
     description: `${advocate.name} is a verified advocate in ${advocate.city} with ${advocate.experience}+ years of experience in ${advocate.specializations?.join(', ')}. View profile, reviews, office and contact details.`,
-    path: `/advocates/${advocate.slug}`,
-    keywords: [`advocate in ${advocate.city}`, ...(advocate.specializations || [])],
+    path: `/advocates/${advocate.profilePath}`,
+    keywords: [`advocate in ${advocate.city}`, advocate.legalCareId, ...(advocate.specializations || [])],
   });
 }
 
 /** JSON-LD structured data for richer search results. */
 function buildSchema(advocate) {
-  const url = new URL(`/advocates/${advocate.slug}`, SITE.url).toString();
+  const url = new URL(`/advocates/${advocate.profilePath}`, SITE.url).toString();
 
   const attorney = {
     '@type': 'Attorney',
     '@id': `${url}#attorney`,
+    identifier: advocate.legalCareId,
     name: advocate.name,
     description: advocate.about,
     telephone: advocate.contact?.phone,
@@ -101,9 +119,15 @@ function buildSchema(advocate) {
 }
 
 export default async function AdvocateProfilePage({ params }) {
-  const { slug } = await params;
-  const advocate = await getAdvocateBySlug(slug);
+  const { slug: param } = await params;
+  const advocate = await resolveAdvocate(param);
   if (!advocate) notFound();
+
+  // Enforce a single canonical URL — legacy or renamed-slug URLs 308-redirect
+  // to `<slug>-lci-<id>`, so there are never duplicate profile URLs.
+  if (param !== advocate.profilePath) {
+    permanentRedirect(`/advocates/${advocate.profilePath}`);
+  }
 
   const related = getRelatedAdvocates(advocate, 3);
 

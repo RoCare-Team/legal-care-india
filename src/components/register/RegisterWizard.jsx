@@ -52,7 +52,7 @@ export default function RegisterWizard() {
         setServerError(payload.error || 'Registration failed. Please try again.');
         return;
       }
-      setSlug(payload.advocate?.slug || '');
+      setSlug(payload.advocate?.profilePath || payload.advocate?.slug || '');
       setSubmitted(true);
     } catch {
       setServerError('Network error. Check your connection and try again.');

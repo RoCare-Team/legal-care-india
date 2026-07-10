@@ -1,5 +1,6 @@
 import { BadgeCheck, ExternalLink } from 'lucide-react';
 import { Avatar, Badge, Button } from '@/components/ui';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /**
  * DashboardTopbar — identity banner at the top of the dashboard shell.
@@ -29,7 +30,7 @@ export default function DashboardTopbar({ advocate }) {
         </div>
       </div>
       <Button
-        href={`/advocates/${advocate.slug}`}
+        href={`/advocates/${advocateProfilePath(advocate)}`}
         target="_blank"
         rel="noopener noreferrer"
         variant="outline"

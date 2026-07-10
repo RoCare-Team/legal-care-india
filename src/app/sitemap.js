@@ -1,7 +1,7 @@
 import { SITE } from '@/constants/site';
 import { CATEGORIES } from '@/data/categories';
 import { CITIES } from '@/data/cities';
-import { getAllAdvocateSlugs } from '@/lib/advocates';
+import { getAllAdvocateParams } from '@/lib/advocates';
 import { BLOGS } from '@/data/blogs';
 
 /**
@@ -46,16 +46,18 @@ export default async function sitemap() {
     priority: 0.7,
   }));
 
+  // City routes carry their landmark image (image sitemap extension).
   const cityRoutes = CITIES.map((c) => ({
     url: new URL(`/cities/${c.slug}`, base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.7,
+    ...(c.image ? { images: [c.image] } : {}),
   }));
 
-  const advocateSlugs = await getAllAdvocateSlugs();
-  const advocateRoutes = advocateSlugs.map((slug) => ({
-    url: new URL(`/advocates/${slug}`, base).toString(),
+  const advocateParams = await getAllAdvocateParams();
+  const advocateRoutes = advocateParams.map((param) => ({
+    url: new URL(`/advocates/${param}`, base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.6,

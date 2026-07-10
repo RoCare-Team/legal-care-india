@@ -10,9 +10,9 @@ import { Button, FormField, Input, Textarea } from '@/components/ui';
  * On success it refreshes the server data so the new review appears.
  *
  * @param {object} props
- * @param {string} props.slug  advocate slug (API target)
+ * @param {string} props.legalCareId  advocate's Legal Care India ID (API target)
  */
-export default function ReviewForm({ slug }) {
+export default function ReviewForm({ legalCareId }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [author, setAuthor] = useState('');
@@ -31,7 +31,7 @@ export default function ReviewForm({ slug }) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`/api/advocates/${slug}/reviews`, {
+      const res = await fetch(`/api/advocates/${legalCareId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ author, rating, text }),

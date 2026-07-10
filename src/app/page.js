@@ -23,9 +23,8 @@ export default function HomePage() {
       <FeaturedAdvocates />
       <Categories />
       <Stats />
-      
-      <HowItWorks />
       <PopularCities />
+      <HowItWorks />
       <Testimonials />
       <CTA />
     </>

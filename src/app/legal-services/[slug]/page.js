@@ -3,6 +3,8 @@ import { createMetadata } from '@/lib/metadata';
 import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
+import JsonLd from '@/components/shared/JsonLd';
+import { serviceSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
 import { getServiceBySlug, CATEGORIES } from '@/data/categories';
 import { formatCompactNumber } from '@/utils/formatters';
@@ -37,6 +39,16 @@ export default async function LegalServicePage({ params }) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          serviceSchema(service),
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Legal Services', path: '/legal-services' },
+            { name: service.name, path: `/legal-services/${service.slug}` },
+          ]),
+        ]}
+      />
       <PageHeader
         eyebrow={`${formatCompactNumber(service.advocates)}+ advocates`}
         title={`${service.name} Advocates`}

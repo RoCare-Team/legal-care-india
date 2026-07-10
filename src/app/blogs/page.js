@@ -3,6 +3,8 @@ import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
 import SectionReveal from '@/components/shared/SectionReveal';
+import JsonLd from '@/components/shared/JsonLd';
+import { breadcrumbSchema } from '@/lib/schema';
 import { BLOGS } from '@/data/blogs';
 
 export const metadata = createMetadata({
@@ -15,6 +17,12 @@ export const metadata = createMetadata({
 export default function BlogsPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Blogs', path: '/blogs' },
+        ])}
+      />
       <PageHeader
         eyebrow="Legal Blogs & Guides"
         title="Understand your legal matters"

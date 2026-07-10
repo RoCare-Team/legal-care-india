@@ -48,7 +48,18 @@ const AdvocateSchema = new Schema(
 
     // Identity
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, index: true },
+    // Permanent, unique public ID — the stable key behind every profile URL.
+    legalCareId: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    // SEO slug — no longer unique (the legalCareId disambiguates), so two
+    // advocates with the same name can both be "manoj-sharma".
+    slug: { type: String, required: true, index: true },
     phone: { type: String, required: true },
 
     // Profile basics

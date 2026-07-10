@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
 import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
+import { slugify } from '@/utils/slugify';
 
 /**
  * GET /api/dashboard/profile — the logged-in advocate's full profile.
@@ -43,7 +44,13 @@ export async function PUT(request) {
   } = body || {};
 
   const update = {};
-  if (fullName !== undefined) update.name = String(fullName).trim();
+  if (fullName !== undefined) {
+    update.name = String(fullName).trim();
+    // Keep the SEO slug in sync with the name (the legalCareId stays the same,
+    // so the canonical URL just gets a fresher slug — old URLs 308-redirect).
+    const nextSlug = slugify(update.name);
+    if (nextSlug) update.slug = nextSlug;
+  }
   if (photo !== undefined) update.photo = photo;
   if (coverImage !== undefined) update.coverImage = coverImage;
   if (Array.isArray(gallery)) {

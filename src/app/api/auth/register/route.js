@@ -4,7 +4,19 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
 import { hashPassword, signToken, setAuthCookie } from '@/lib/auth';
+import { generateLegalCareId } from '@/lib/legalCareId';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 import { slugify } from '@/utils/slugify';
+
+/** Generate a Legal Care India ID that isn't already taken (retries on clash). */
+async function uniqueLegalCareId() {
+  for (let i = 0; i < 12; i += 1) {
+    const id = generateLegalCareId();
+    // eslint-disable-next-line no-await-in-loop
+    if (!(await Advocate.exists({ legalCareId: id }))) return id;
+  }
+  throw new Error('Could not generate a unique Legal Care India ID');
+}
 
 /**
  * POST /api/auth/register
@@ -50,15 +62,10 @@ export async function POST(request) {
       );
     }
 
-    // Build a unique, URL-safe slug from the advocate's name.
-    const base = slugify(fullName) || 'advocate';
-    let slug = base;
-    let n = 1;
-    // eslint-disable-next-line no-await-in-loop
-    while (await Advocate.findOne({ slug })) {
-      n += 1;
-      slug = `${base}-${n}`;
-    }
+    // SEO slug (need not be unique — the Legal Care India ID disambiguates).
+    const slug = slugify(fullName) || 'advocate';
+    // Permanent, unique public identifier.
+    const legalCareId = await uniqueLegalCareId();
 
     const passwordHash = await hashPassword(password);
     const digits = phone.replace(/[^0-9]/g, '');
@@ -68,6 +75,7 @@ export async function POST(request) {
       passwordHash,
       name: fullName.trim(),
       slug,
+      legalCareId,
       phone: phone.trim(),
       city: city || '',
       state: state || '',
@@ -88,7 +96,16 @@ export async function POST(request) {
 
     const token = signToken({ id: String(advocate._id) });
     const res = NextResponse.json(
-      { ok: true, advocate: { id: String(advocate._id), slug: advocate.slug, name: advocate.name } },
+      {
+        ok: true,
+        advocate: {
+          id: String(advocate._id),
+          slug: advocate.slug,
+          legalCareId: advocate.legalCareId,
+          profilePath: advocateProfilePath(advocate),
+          name: advocate.name,
+        },
+      },
       { status: 201 }
     );
     return setAuthCookie(res, token);

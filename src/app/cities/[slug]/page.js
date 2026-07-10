@@ -3,6 +3,8 @@ import { createMetadata } from '@/lib/metadata';
 import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
+import JsonLd from '@/components/shared/JsonLd';
+import { breadcrumbSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
 import { CITIES } from '@/data/cities';
 import { formatCompactNumber } from '@/utils/formatters';
@@ -37,6 +39,13 @@ export default async function CityPage({ params }) {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Cities', path: '/cities' },
+          { name: city.name, path: `/cities/${city.slug}` },
+        ])}
+      />
       <PageHeader
         eyebrow={`${formatCompactNumber(city.advocates)}+ advocates`}
         title={`Advocates in ${city.name}`}

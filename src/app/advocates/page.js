@@ -2,6 +2,8 @@ import { createMetadata } from '@/lib/metadata';
 import PageHeader from '@/components/shared/PageHeader';
 import { Container } from '@/components/ui';
 import AdvocateListing from '@/components/listing/AdvocateListing';
+import JsonLd from '@/components/shared/JsonLd';
+import { breadcrumbSchema, collectionSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
 import { getServiceBySlug } from '@/data/categories';
 import { CITIES } from '@/data/cities';
@@ -39,6 +41,21 @@ export default async function AdvocatesPage({ searchParams }) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Find Advocates', path: '/advocates' },
+          ]),
+          collectionSchema({
+            name: 'Find Verified Advocates Across India',
+            path: '/advocates',
+            description:
+              'Search and compare verified advocates across India by legal service, city and experience.',
+            advocates,
+          }),
+        ]}
+      />
       <PageHeader
         eyebrow="Advocate Directory"
         title="Find Verified Advocates Across India"

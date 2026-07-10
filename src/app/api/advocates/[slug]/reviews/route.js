@@ -10,7 +10,8 @@ import { ADVOCATES_TAG } from '@/lib/advocates';
  * rating. Anyone can submit; basic validation guards against junk input.
  */
 export async function POST(request, { params }) {
-  const { slug } = await params;
+  // The route segment carries the advocate's Legal Care India ID.
+  const { slug: legalCareId } = await params;
 
   let body;
   try {
@@ -35,7 +36,9 @@ export async function POST(request, { params }) {
 
   try {
     await connectDB();
-    const advocate = await Advocate.findOne({ slug });
+    const advocate = await Advocate.findOne({
+      legalCareId: String(legalCareId).toUpperCase(),
+    });
     if (!advocate) {
       return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
     }

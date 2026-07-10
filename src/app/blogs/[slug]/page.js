@@ -4,6 +4,8 @@ import { createMetadata } from '@/lib/metadata';
 import { Container, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
+import JsonLd from '@/components/shared/JsonLd';
+import { articleSchema, breadcrumbSchema } from '@/lib/schema';
 import { BLOGS } from '@/data/blogs';
 
 export function generateStaticParams() {
@@ -14,7 +16,27 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const post = BLOGS.find((p) => p.slug === slug);
   if (!post) return createMetadata({ title: 'Article Not Found', path: '/blogs' });
-  return createMetadata({ title: post.title, description: post.excerpt, path: `/blogs/${post.slug}` });
+
+  const meta = createMetadata({
+    title: post.title,
+    description: post.excerpt,
+    path: `/blogs/${post.slug}`,
+    keywords: [post.category, `${post.category} india`],
+  });
+  let publishedTime;
+  try {
+    publishedTime = post.date ? new Date(post.date).toISOString() : undefined;
+  } catch {
+    publishedTime = undefined;
+  }
+  return {
+    ...meta,
+    openGraph: {
+      ...meta.openGraph,
+      type: 'article',
+      ...(publishedTime ? { publishedTime } : {}),
+    },
+  };
 }
 
 export default async function BlogPostPage({ params }) {
@@ -26,6 +48,16 @@ export default async function BlogPostPage({ params }) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          articleSchema(post),
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Blogs', path: '/blogs' },
+            { name: post.title, path: `/blogs/${post.slug}` },
+          ]),
+        ]}
+      />
       <PageHeader
         eyebrow={post.category}
         title={post.title}

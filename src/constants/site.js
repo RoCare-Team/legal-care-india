@@ -10,6 +10,8 @@ export const SITE = {
     'Legal Care India is a trusted advocate directory platform to discover, compare and connect with verified advocates across every city and legal service in India.',
   url: 'https://www.legalcareindia.com',
   locale: 'en_IN',
+  language: 'en-IN',
+  twitterHandle: '@legalcareindia',
   themeColor: '#1E3A5F',
   keywords: [
     'advocate directory india',

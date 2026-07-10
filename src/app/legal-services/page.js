@@ -3,6 +3,8 @@ import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import CategoryCard from '@/components/cards/CategoryCard';
 import SectionReveal from '@/components/shared/SectionReveal';
+import JsonLd from '@/components/shared/JsonLd';
+import { breadcrumbSchema } from '@/lib/schema';
 import { CATEGORIES } from '@/data/categories';
 
 export const metadata = createMetadata({
@@ -15,6 +17,12 @@ export const metadata = createMetadata({
 export default function LegalServicesPage() {
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Legal Services', path: '/legal-services' },
+        ])}
+      />
       <PageHeader
         eyebrow="Browse by Legal Service"
         title="Explore Legal Services"

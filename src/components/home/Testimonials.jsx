@@ -1,29 +1,40 @@
+import { MessageSquarePlus } from 'lucide-react';
 import { Section, Heading } from '@/components/ui';
-import TestimonialCard from '@/components/cards/TestimonialCard';
-import SectionReveal from '@/components/shared/SectionReveal';
-import { TESTIMONIALS } from '@/data/testimonials';
+import TestimonialsCarousel from './TestimonialsCarousel';
+import TestimonialForm from './TestimonialForm';
+import { getTestimonials } from '@/lib/testimonials';
 
 /**
- * Testimonials — social proof from clients who used the platform.
+ * Testimonials — real reviews of the platform submitted by visitors, shown as a
+ * slider. Anyone can add their own via the "Share your experience" button.
  */
-export default function Testimonials() {
+export default async function Testimonials() {
+  const testimonials = await getTestimonials();
+
   return (
     <Section className="bg-muted/50">
-      <Heading
-        centered
-        eyebrow="Client Stories"
-        subtitle="Real experiences from people who found the right advocate through our platform."
-      >
-        Trusted by Thousands
-      </Heading>
-
-      <div className="mt-12 grid gap-6 md:grid-cols-3">
-        {TESTIMONIALS.map((testimonial, i) => (
-          <SectionReveal key={testimonial.id} delay={i * 0.1}>
-            <TestimonialCard testimonial={testimonial} />
-          </SectionReveal>
-        ))}
+      <div className="flex flex-col items-center gap-5">
+        <Heading
+          centered
+          eyebrow="Client Stories"
+          subtitle="Real reviews from people who used Legal Care India. Share yours too."
+        >
+          Trusted by Thousands
+        </Heading>
+        <TestimonialForm />
       </div>
+
+      {testimonials.length > 0 ? (
+        <TestimonialsCarousel testimonials={testimonials} />
+      ) : (
+        <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">
+          <MessageSquarePlus className="h-10 w-10 text-primary/60" aria-hidden="true" />
+          <h3 className="mt-4 font-semibold text-ink">No reviews yet</h3>
+          <p className="mt-1 max-w-sm text-sm text-ink/55">
+            Be the first to share your experience using Legal Care India.
+          </p>
+        </div>
+      )}
     </Section>
   );
 }

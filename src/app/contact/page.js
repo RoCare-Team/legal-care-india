@@ -3,6 +3,8 @@ import { createMetadata } from '@/lib/metadata';
 import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import ContactForm from '@/components/contact/ContactForm';
+import JsonLd from '@/components/shared/JsonLd';
+import { webPageSchema, breadcrumbSchema } from '@/lib/schema';
 import { CONTACT } from '@/constants/site';
 
 export const metadata = createMetadata({
@@ -21,6 +23,20 @@ const INFO = [
 export default function ContactPage() {
   return (
     <>
+      <JsonLd
+        data={[
+          webPageSchema({
+            type: 'ContactPage',
+            name: 'Contact Legal Care India',
+            description: 'Get in touch with the Legal Care India team for support, partnerships or feedback.',
+            path: '/contact',
+          }),
+          breadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Contact', path: '/contact' },
+          ]),
+        ]}
+      />
       <PageHeader
         eyebrow="We're here to help"
         title="Contact Legal Care India"

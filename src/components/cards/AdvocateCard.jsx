@@ -7,10 +7,13 @@ import {
   MessageCircle,
   Briefcase,
   ArrowRight,
+  Scale,
+  Gavel,
 } from "lucide-react";
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
+import { advocateProfilePath } from "@/utils/advocateUrl";
 
 /**
  * AdvocateCard — premium directory listing card for a single advocate.
@@ -21,7 +24,6 @@ import { formatExperience } from "@/utils/formatters";
  */
 export default function AdvocateCard({ advocate }) {
   const {
-    slug,
     name,
     photo,
     city,
@@ -42,10 +44,19 @@ export default function AdvocateCard({ advocate }) {
       padding="none"
       className="group flex h-full flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1"
     >
-      {/* Brand gradient accent header */}
-      <div className="relative h-14 bg-gradient-to-br from-primary via-primary to-primary-dark">
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.12]" />
-        <span className="absolute right-3 top-2.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+      {/* Legal-themed header banner */}
+      <div className="relative h-16 overflow-hidden bg-gradient-to-br from-primary via-primary to-primary-dark">
+        {/* Faded courtroom motifs */}
+        <Scale
+          className="pointer-events-none absolute -left-3 -top-4 h-24 w-24 rotate-12 text-white/[0.07]"
+          aria-hidden="true"
+        />
+        <Gavel
+          className="pointer-events-none absolute bottom-1 left-24 h-11 w-11 -rotate-12 text-accent/25"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.08]" />
+        <span className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
           ₹{consultationFee}
           <span className="font-normal text-white/70"> / consult</span>
         </span>
@@ -140,7 +151,7 @@ export default function AdvocateCard({ advocate }) {
           </div>
 
           <Button
-            href={`/advocates/${slug}`}
+            href={`/advocates/${advocateProfilePath(advocate)}`}
             fullWidth
             className="mt-2 group/btn"
             rightIcon={

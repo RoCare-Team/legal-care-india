@@ -3,6 +3,7 @@ import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { slugify } from '@/utils/slugify';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /**
  * Public advocate reads are cached and tagged so pages can render statically
@@ -157,6 +158,8 @@ export function buildAdvocateProfile(a) {
 
   return {
     ...a,
+    legalCareId: a.legalCareId || '',
+    profilePath: advocateProfilePath(a),
     rating: avgRating,
     reviews: reviewsCount,
     reviewsList,
@@ -245,7 +248,10 @@ const _getAdvocateBySlug = unstable_cache(
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** Full profile for a single advocate slug, or null. */
+/**
+ * Full profile for a legacy slug lookup, or null. Only used to redirect old
+ * slug-only URLs — the primary key is now the Legal Care India ID.
+ */
 export async function getAdvocateBySlug(slug) {
   try {
     return await _getAdvocateBySlug(slug);
@@ -256,23 +262,46 @@ export async function getAdvocateBySlug(slug) {
   }
 }
 
-const _getAllAdvocateSlugs = unstable_cache(
-  async () => {
+const _getAdvocateByLegalCareId = unstable_cache(
+  async (legalCareId) => {
     await connectDB();
-    const rows = await Advocate.find({ status: 'published' }).select('slug').lean();
-    return rows.map((a) => a.slug);
+    const advocate = await Advocate.findOne({ legalCareId }).lean();
+    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
   },
-  ['all-advocate-slugs'],
+  ['advocate-by-lci'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** All advocate slugs for sitemap and static params. */
-export async function getAllAdvocateSlugs() {
+/** Full profile for a permanent Legal Care India ID, or null. */
+export async function getAdvocateByLegalCareId(legalCareId) {
   try {
-    return await _getAllAdvocateSlugs();
+    return await _getAdvocateByLegalCareId(legalCareId);
   } catch (err) {
-    console.warn('getAllAdvocateSlugs: MongoDB unavailable, falling back to static slugs', err);
-    return ADVOCATES.map((a) => a.slug);
+    console.warn('getAdvocateByLegalCareId: MongoDB unavailable', err);
+    const base = ADVOCATES.find((a) => a.legalCareId === legalCareId);
+    return base ? buildAdvocateProfile(base) : null;
+  }
+}
+
+const _getAllAdvocateParams = unstable_cache(
+  async () => {
+    await connectDB();
+    const rows = await Advocate.find({ status: 'published' })
+      .select('slug legalCareId')
+      .lean();
+    return rows.map((a) => advocateProfilePath(a));
+  },
+  ['all-advocate-params'],
+  { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
+);
+
+/** Canonical profile path segments (`slug-lci-id`) for sitemap + static params. */
+export async function getAllAdvocateParams() {
+  try {
+    return await _getAllAdvocateParams();
+  } catch (err) {
+    console.warn('getAllAdvocateParams: MongoDB unavailable, falling back to static', err);
+    return ADVOCATES.map((a) => advocateProfilePath(a));
   }
 }
 
