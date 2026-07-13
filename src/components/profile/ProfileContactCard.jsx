@@ -11,6 +11,7 @@ import ProfileContactActions from './ProfileContactActions';
  */
 export default function ProfileContactCard({ advocate }) {
   const { contact = {}, consultationFee, name } = advocate;
+  const advocateId = advocate._id || advocate.id || '';
   // Only keep timing rows that actually have a day + hours filled in.
   const timing = (advocate.timing || []).filter((t) => t && t.day && t.hours);
   const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India and would like a consultation.`);
@@ -26,7 +27,7 @@ export default function ProfileContactCard({ advocate }) {
           </span>
         </div>
 
-        <ProfileContactActions contact={contact} name={name} waText={waText} />
+        <ProfileContactActions contact={contact} name={name} waText={waText} advocateId={advocateId} />
       </div>
 
       {timing.length > 0 && (

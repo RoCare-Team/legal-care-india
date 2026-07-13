@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, revalidatePath } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
@@ -92,8 +92,12 @@ export async function POST(request) {
       status: 'published',
     });
 
-    // New public advocate — drop the cached directory so it appears at once.
+    // New public advocate — drop the cached directory AND purge the pages that
+    // list advocates, so the new profile shows up on the next visit without a
+    // manual browser refresh.
     revalidateTag(ADVOCATES_TAG);
+    revalidatePath('/');
+    revalidatePath('/advocates');
 
     const token = signToken({ id: String(advocate._id), role: 'advocate' });
     const res = NextResponse.json(

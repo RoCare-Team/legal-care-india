@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
-import { Container } from '@/components/ui';
 import AccountView from '@/components/account/AccountView';
 import { getSessionUserId } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
+import { getUserActivity } from '@/lib/activity';
+import { getEnquiriesForUser } from '@/lib/enquiries';
 
 export const metadata = createMetadata({
   title: 'My Account',
@@ -18,9 +19,16 @@ export default async function AccountPage() {
   const user = await getUserById(id);
   if (!user) redirect('/user/login');
 
-  return (
-    <Container className="py-10 sm:py-16">
-      <AccountView user={user} />
-    </Container>
-  );
+  const [activity, enquiries] = await Promise.all([
+    getUserActivity(id),
+    getEnquiriesForUser(id),
+  ]);
+
+  // Latest booking status per advocate (enquiries are newest-first).
+  const bookingStatus = {};
+  for (const e of enquiries) {
+    if (!(e.advocateId in bookingStatus)) bookingStatus[e.advocateId] = e.status;
+  }
+
+  return <AccountView user={user} activity={activity} bookingStatus={bookingStatus} />;
 }

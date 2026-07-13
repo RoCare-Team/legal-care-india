@@ -4,7 +4,7 @@
   "private": true,
   "description": "Legal Care India — an advocate directory platform for finding verified advocates across India.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

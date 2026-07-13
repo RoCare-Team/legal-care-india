@@ -6,20 +6,21 @@ import AdvocateListing from '@/components/listing/AdvocateListing';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
-import { CITIES } from '@/data/cities';
+import { getAllCities, getCityBySlug } from '@/lib/cities';
 import { formatCompactNumber } from '@/utils/formatters';
 
 // Prerender one page per city; advocate data is tag-cached so new
 // registrations appear immediately (see lib/advocates).
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return CITIES.map((c) => ({ slug: c.slug }));
+export async function generateStaticParams() {
+  const cities = await getAllCities();
+  return cities.map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const city = CITIES.find((c) => c.slug === slug);
+  const city = await getCityBySlug(slug);
   if (!city) return createMetadata({ title: 'City Not Found', path: '/cities' });
 
   return createMetadata({
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }) {
 
 export default async function CityPage({ params }) {
   const { slug } = await params;
-  const city = CITIES.find((c) => c.slug === slug);
+  const city = await getCityBySlug(slug);
   if (!city) notFound();
 
   const advocates = await getAllAdvocates();

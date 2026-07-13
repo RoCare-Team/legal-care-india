@@ -30,3 +30,6 @@ yarn-error.log*
 # editor
 .idea
 .vscode
+
+# Admin-uploaded images (city photos, etc.)
+/public/uploads/

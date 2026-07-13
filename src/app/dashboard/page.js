@@ -5,6 +5,7 @@ import ProfileCompletion from '@/components/dashboard/ProfileCompletion';
 import RecentEnquiries from '@/components/dashboard/RecentEnquiries';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
+import { getEnquiriesForAdvocate } from '@/lib/enquiries';
 
 /** Build the completion checklist from which fields the profile has filled. */
 function buildChecklist(a) {
@@ -28,20 +29,21 @@ export default async function DashboardOverviewPage() {
   const advocate = await getAdvocateById(id);
   if (!advocate) redirect('/login');
 
+  const enquiries = await getEnquiriesForAdvocate(id);
   const checklist = buildChecklist(advocate);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <DashboardStatCard icon={Eye} value="0" label="Profile Views" tone="primary" />
-        <DashboardStatCard icon={PhoneCall} value="0" label="Enquiries" tone="secondary" />
+        <DashboardStatCard icon={PhoneCall} value={enquiries.length} label="Enquiries" tone="secondary" />
         <DashboardStatCard icon={Star} value={advocate.rating || 0} label="Average Rating" tone="accent" />
         <DashboardStatCard icon={MessageSquare} value={advocate.reviews || 0} label="Total Reviews" tone="success" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ProfileCompletion checklist={checklist} />
-        <RecentEnquiries />
+        <RecentEnquiries enquiries={enquiries} />
       </div>
     </div>
   );

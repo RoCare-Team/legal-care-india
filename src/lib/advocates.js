@@ -221,7 +221,11 @@ export function buildAdvocateProfile(a) {
 const _getAllAdvocates = unstable_cache(
   async () => {
     await connectDB();
-    const rows = await Advocate.find({ status: 'published' }).lean();
+    // Newest registrations first, so a freshly registered advocate shows up
+    // at the start of the directory and the featured slider.
+    const rows = await Advocate.find({ status: 'published' })
+      .sort({ createdAt: -1 })
+      .lean();
     return rows.map((r) => buildAdvocateProfile(serialize(r)));
   },
   ['all-advocates'],

@@ -42,3 +42,16 @@ export function pluralize(count, singular, plural = `${singular}s`) {
 export function formatExperience(years = 0) {
   return `${years}+ ${years === 1 ? 'year' : 'years'} experience`;
 }
+
+/**
+ * Format an ISO date string as "12 Jul 2026" (stable, locale-independent).
+ * @param {string|Date} value
+ * @returns {string}
+ */
+export function formatDate(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}

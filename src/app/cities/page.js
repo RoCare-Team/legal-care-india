@@ -5,7 +5,7 @@ import CityCard from '@/components/cards/CityCard';
 import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema } from '@/lib/schema';
-import { CITIES } from '@/data/cities';
+import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
   title: 'Find Advocates by City',
@@ -14,7 +14,9 @@ export const metadata = createMetadata({
   path: '/cities',
 });
 
-export default function CitiesPage() {
+export default async function CitiesPage() {
+  const CITIES = await getAllCities();
+
   return (
     <>
       <JsonLd

@@ -1,6 +1,6 @@
 import { SITE } from '@/constants/site';
 import { CATEGORIES } from '@/data/categories';
-import { CITIES } from '@/data/cities';
+import { getAllCities } from '@/lib/cities';
 import { getAllAdvocateParams } from '@/lib/advocates';
 import { BLOGS } from '@/data/blogs';
 
@@ -47,7 +47,8 @@ export default async function sitemap() {
   }));
 
   // City routes carry their landmark image (image sitemap extension).
-  const cityRoutes = CITIES.map((c) => ({
+  const cities = await getAllCities();
+  const cityRoutes = cities.map((c) => ({
     url: new URL(`/cities/${c.slug}`, base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',

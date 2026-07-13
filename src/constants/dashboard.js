@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
   Clock, IndianRupee, FileBadge, Award, GraduationCap, Briefcase, Languages,
-  Share2, Settings,
+  Share2, Settings, Inbox,
 } from 'lucide-react';
 
 /**
@@ -15,6 +15,7 @@ export const DASHBOARD_NAV = [
     title: 'Overview',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Enquiries', href: '/dashboard/enquiries', icon: Inbox },
       { label: 'Edit Profile', href: '/dashboard/profile', icon: UserRound },
       { label: 'Settings', href: '/dashboard/settings', icon: Settings },
     ],

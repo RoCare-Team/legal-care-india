@@ -1,12 +1,16 @@
 import { Section, Heading, Button } from '@/components/ui';
 import CityCard from '@/components/cards/CityCard';
 import SectionReveal from '@/components/shared/SectionReveal';
-import { CITIES } from '@/data/cities';
+import { getAllCities } from '@/lib/cities';
 
 /**
  * PopularCities — quick access to advocate listings by major city.
  */
-export default function PopularCities() {
+export default async function PopularCities() {
+  // Homepage shows only the first 12 cities; the rest live on the /cities page
+  // ("View all cities").
+  const CITIES = (await getAllCities()).slice(0, 12);
+
   return (
     <Section>
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">

@@ -5,23 +5,39 @@ import { Phone, MessageCircle, Mail, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import AuthGateModal from './AuthGateModal';
+import BookConsultationModal from './BookConsultationModal';
 
 /**
- * ProfileContactActions — the Call / WhatsApp / Email actions on a profile.
- * Signed-out visitors are prompted to create an account before contacting.
+ * ProfileContactActions — the Call / WhatsApp / Email / Book Consultation
+ * actions on a profile. Signed-out visitors are prompted to create an account
+ * before contacting or booking.
  *
  * @param {object} props
  * @param {{ phone?: string, whatsapp?: string, email?: string }} props.contact
  * @param {string} props.name
- * @param {string} props.waText  pre-encoded WhatsApp message
+ * @param {string} props.waText      pre-encoded WhatsApp message
+ * @param {string} props.advocateId  advocate MongoDB _id (for enquiries)
  */
-export default function ProfileContactActions({ contact = {}, name, waText }) {
-  const { role, loading } = useAuth();
+export default function ProfileContactActions({ contact = {}, name, waText, advocateId }) {
+  const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
   const authed = role !== null;
 
+  // Fire-and-forget: log a contact tap to the user's activity history.
+  const track = (type) => {
+    if (role !== 'user' || !advocateId) return;
+    fetch('/api/activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ advocateId, type }),
+      keepalive: true,
+    }).catch(() => {});
+  };
+
   // Signed out → block the action and show the sign-up prompt instead.
-  const gate = (e) => {
+  // Signed in → let the link proceed and log the interaction.
+  const gate = (type) => (e) => {
     if (loading) {
       e.preventDefault();
       return;
@@ -29,7 +45,19 @@ export default function ProfileContactActions({ contact = {}, name, waText }) {
     if (!authed) {
       e.preventDefault();
       setGateOpen(true);
+      return;
     }
+    track(type);
+  };
+
+  // Book Consultation: signed-out → gate; signed-in → open the enquiry form.
+  const onBook = () => {
+    if (loading) return;
+    if (!authed) {
+      setGateOpen(true);
+      return;
+    }
+    setBookOpen(true);
   };
 
   return (
@@ -38,7 +66,7 @@ export default function ProfileContactActions({ contact = {}, name, waText }) {
         {contact.phone && (
           <Button
             href={`tel:${contact.phone.replace(/\s/g, '')}`}
-            onClick={gate}
+            onClick={gate('call')}
             fullWidth
             leftIcon={<Phone className="h-4 w-4" />}
           >
@@ -50,7 +78,7 @@ export default function ProfileContactActions({ contact = {}, name, waText }) {
             href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={gate}
+            onClick={gate('whatsapp')}
             fullWidth
             className="bg-emerald-600 hover:bg-emerald-700"
             leftIcon={<MessageCircle className="h-4 w-4" />}
@@ -61,7 +89,7 @@ export default function ProfileContactActions({ contact = {}, name, waText }) {
         {contact.email && (
           <Button
             href={`mailto:${contact.email}`}
-            onClick={gate}
+            onClick={gate('email')}
             variant="outline"
             fullWidth
             leftIcon={<Mail className="h-4 w-4" />}
@@ -69,12 +97,25 @@ export default function ProfileContactActions({ contact = {}, name, waText }) {
             Send Email
           </Button>
         )}
-        <Button variant="ghost" fullWidth disabled leftIcon={<CalendarCheck className="h-4 w-4" />}>
-          Book Consultation (Soon)
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBook}
+          fullWidth
+          leftIcon={<CalendarCheck className="h-4 w-4" />}
+        >
+          Book Consultation
         </Button>
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
+      <BookConsultationModal
+        open={bookOpen}
+        onClose={() => setBookOpen(false)}
+        advocateId={advocateId}
+        advocateName={name}
+        user={user}
+      />
     </>
   );
 }

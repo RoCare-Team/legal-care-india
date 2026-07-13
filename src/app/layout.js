@@ -7,6 +7,7 @@ import { MAIN_NAV } from '@/constants/navigation';
 import { siteNavigationSchema } from '@/lib/schema';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
 import Analytics from '@/components/shared/Analytics';
 
@@ -88,11 +89,15 @@ export default function RootLayout({ children }) {
         >
           Skip to content
         </a>
-        <Header />
+        <HideOnAdmin>
+          <Header />
+        </HideOnAdmin>
         <main id="main" className="flex-1">
           {children}
         </main>
-        <Footer />
+        <HideOnAdmin>
+          <Footer />
+        </HideOnAdmin>
         <ScrollToTop />
         <Analytics />
       </body>
