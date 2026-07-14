@@ -2,11 +2,30 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, LogOut, UserRound, ChevronDown, Scale } from 'lucide-react';
+import { LayoutDashboard, LogOut, UserRound, ChevronDown, Scale, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useDisclosure } from '@/hooks/useDisclosure';
 import { logout } from '@/utils/logout';
+
+/** Compact rupee label, e.g. 1500 -> "₹1,500". */
+function formatMoney(value = 0) {
+  return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+/** Wallet pill for signed-in users — shows balance, links to the wallet tab. */
+function WalletPill({ balance = 0 }) {
+  return (
+    <Link
+      href="/account?tab=wallet"
+      title="Your wallet"
+      className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3 py-1.5 text-sm font-semibold text-ink shadow-sm transition-colors hover:border-primary/40 hover:text-primary"
+    >
+      <Wallet className="h-4 w-4 text-primary" aria-hidden="true" />
+      {formatMoney(balance)}
+    </Link>
+  );
+}
 
 /**
  * HeaderAuth — desktop auth actions for the header.
@@ -15,7 +34,7 @@ import { logout } from '@/utils/logout';
  * account link + log out.
  */
 export default function HeaderAuth() {
-  const { role, loading } = useAuth();
+  const { role, user, loading } = useAuth();
 
   if (loading) return <div className="h-9 w-40" aria-hidden="true" />;
 
@@ -33,6 +52,7 @@ export default function HeaderAuth() {
   if (role === 'user') {
     return (
       <div className="flex items-center gap-2">
+        <WalletPill balance={user?.walletBalance || 0} />
         <Button href="/account" variant="ghost" size="sm" leftIcon={<UserRound className="h-4 w-4" />}>
           My Account
         </Button>

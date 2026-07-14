@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { X, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
+import { X, LayoutDashboard, LogOut, UserRound, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui';
 import Logo from '@/components/shared/Logo';
 import { MAIN_NAV, AUTH_NAV } from '@/constants/navigation';
@@ -17,7 +17,7 @@ import { logout } from '@/utils/logout';
  * @param {() => void} props.onClose
  */
 export default function MobileMenu({ isOpen, onClose }) {
-  const { role, loading } = useAuth();
+  const { role, user, loading } = useAuth();
 
   // Lock background scroll while the drawer is open so the page behind it
   // stays put. Always restore on close/unmount.
@@ -99,6 +99,15 @@ export default function MobileMenu({ isOpen, onClose }) {
                 </>
               ) : role === 'user' ? (
                 <>
+                  <Button
+                    href="/account?tab=wallet"
+                    variant="outline"
+                    fullWidth
+                    onClick={onClose}
+                    leftIcon={<Wallet className="h-4 w-4" />}
+                  >
+                    Wallet · ₹{Number(user?.walletBalance || 0).toLocaleString('en-IN')}
+                  </Button>
                   <Button
                     href="/account"
                     fullWidth

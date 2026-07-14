@@ -5,6 +5,7 @@ import { getSessionUserId } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { getUserActivity } from '@/lib/activity';
 import { getEnquiriesForUser } from '@/lib/enquiries';
+import { getUserConsultations } from '@/lib/consultations';
 
 export const metadata = createMetadata({
   title: 'My Account',
@@ -19,9 +20,10 @@ export default async function AccountPage() {
   const user = await getUserById(id);
   if (!user) redirect('/user/login');
 
-  const [activity, enquiries] = await Promise.all([
+  const [activity, enquiries, consultations] = await Promise.all([
     getUserActivity(id),
     getEnquiriesForUser(id),
+    getUserConsultations(id),
   ]);
 
   // Latest booking status per advocate (enquiries are newest-first).
@@ -30,5 +32,12 @@ export default async function AccountPage() {
     if (!(e.advocateId in bookingStatus)) bookingStatus[e.advocateId] = e.status;
   }
 
-  return <AccountView user={user} activity={activity} bookingStatus={bookingStatus} />;
+  return (
+    <AccountView
+      user={user}
+      activity={activity}
+      bookingStatus={bookingStatus}
+      consultations={consultations}
+    />
+  );
 }

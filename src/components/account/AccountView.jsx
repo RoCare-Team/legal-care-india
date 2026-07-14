@@ -1,12 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
   ArrowUpRight, Inbox, UserRound, LayoutDashboard, Users, Clock,
+  Wallet, Plus, ArrowDownLeft, Loader2,
 } from 'lucide-react';
 import { Avatar, Button } from '@/components/ui';
 import { logout } from '@/utils/logout';
+import { formatDate } from '@/utils/formatters';
 import { USER_STATUS_META } from '@/constants/enquiryStatus';
 
 /** Per-activity-type presentation: icon, label and accent colour. */
@@ -20,8 +23,24 @@ const ACTIVITY_META = {
 const NAV = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
   { key: 'advocates', label: 'My Advocates', icon: Users },
+  { key: 'consultations', label: 'Consultations', icon: CalendarCheck },
+  { key: 'wallet', label: 'Wallet', icon: Wallet },
   { key: 'profile', label: 'Profile', icon: UserRound },
 ];
+
+/** Presentation for each consultation status. */
+const CONSULT_STATUS_META = {
+  ended: { label: 'Completed', tone: 'bg-emerald-500/10 text-emerald-700' },
+  active: { label: 'Ongoing', tone: 'bg-blue-500/10 text-blue-700' },
+  pending: { label: 'Not answered', tone: 'bg-amber-500/10 text-amber-700' },
+  rejected: { label: 'Declined', tone: 'bg-red-500/10 text-red-600' },
+  cancelled: { label: 'Cancelled', tone: 'bg-ink/10 text-ink/50' },
+};
+
+/** Format a paise-safe rupee amount, e.g. 1500 -> "₹1,500". */
+function formatMoney(value = 0) {
+  return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
 
 /** Group a flat activity feed into one entry per advocate, with type counts. */
 function groupByAdvocate(activity) {
@@ -57,11 +76,15 @@ function groupByAdvocate(activity) {
  * @param {{ name: string, email: string, phone?: string, city?: string, photo?: string }} props.user
  * @param {Array} [props.activity]  the user's advocate interactions, newest first
  */
-export default function AccountView({ user, activity = [], bookingStatus = {} }) {
+export default function AccountView({ user, activity = [], bookingStatus = {}, consultations = [] }) {
   const groups = useMemo(() => groupByAdvocate(activity), [activity]);
-  const [view, setView] = useState('overview');
+  const searchParams = useSearchParams();
+  const initialTab = NAV.some((n) => n.key === searchParams.get('tab'))
+    ? searchParams.get('tab')
+    : 'overview';
+  const [view, setView] = useState(initialTab);
 
-  const bookings = activity.filter((a) => a.type === 'booking').length;
+  const bookings = consultations.filter((c) => c.charged).length;
 
   return (
     <div className="w-full border-b border-ink/8 bg-surface">
@@ -138,6 +161,8 @@ export default function AccountView({ user, activity = [], bookingStatus = {} })
             />
           )}
           {view === 'advocates' && <AdvocatesView groups={groups} bookingStatus={bookingStatus} />}
+          {view === 'consultations' && <ConsultationsView consultations={consultations} />}
+          {view === 'wallet' && <WalletView user={user} />}
           {view === 'profile' && <ProfileView user={user} />}
         </main>
       </div>
@@ -156,7 +181,8 @@ function OverviewView({ user, activity, advocateCount, bookings, onSeeAdvocates 
       <h2 className="font-display text-2xl font-semibold text-ink">Hi, {firstName} 👋</h2>
       <p className="mt-1 text-sm text-ink/55">Here&apos;s a summary of your activity.</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard icon={Wallet} value={formatMoney(user.walletBalance || 0)} label="Wallet balance" tone="text-amber-600 bg-amber-500/10" />
         <StatCard icon={Users} value={advocateCount} label="Advocates contacted" tone="text-primary bg-primary/10" />
         <StatCard icon={CalendarCheck} value={bookings} label="Consultations booked" tone="text-emerald-600 bg-emerald-500/10" />
         <StatCard icon={Clock} value={activity.length} label="Total interactions" tone="text-blue-600 bg-blue-500/10" />
@@ -304,6 +330,225 @@ function AdvocatesView({ groups, bookingStatus = {} }) {
           </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Consultations ────────────────────────────────────────────────────── */
+
+function ConsultationsView({ consultations = [] }) {
+  if (consultations.length === 0) {
+    return (
+      <div>
+        <h2 className="font-display text-2xl font-semibold text-ink">Consultations</h2>
+        <p className="mt-1 text-sm text-ink/55">Your booked chat consultations with advocates.</p>
+        <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-ink/15 py-12 text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-ink/5 text-ink/40">
+            <CalendarCheck className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-sm font-medium text-ink/70">No consultations yet</p>
+            <p className="mt-0.5 text-xs text-ink/45">
+              Book a consultation from any advocate&apos;s profile to start a live chat.
+            </p>
+          </div>
+          <Button href="/advocates" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
+            Find Advocates
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-ink">Consultations</h2>
+      <p className="mt-1 text-sm text-ink/55">Advocates you booked and how long you talked.</p>
+
+      <ul className="mt-6 space-y-3">
+        {consultations.map((c) => {
+          const meta = CONSULT_STATUS_META[c.status] || CONSULT_STATUS_META.cancelled;
+          return (
+            <li key={c.id} className="rounded-2xl border border-ink/8 p-4 shadow-card">
+              <div className="flex items-start gap-3">
+                <Avatar name={c.advocateName} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-display text-base font-semibold text-ink">
+                      {c.advocateName}
+                    </p>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
+                      {meta.label}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-ink/45">{formatDate(c.createdAt)}</p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-ink">
+                  {c.charged ? formatMoney(c.price) : '—'}
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink/8 pt-3 text-xs text-ink/60">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarCheck className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
+                  Booked {c.minutes} min
+                </span>
+                {c.charged && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
+                    Talked {c.talkedMinutes} min
+                  </span>
+                )}
+                {c.charged && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MessageCircle className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
+                    {c.messagesCount} {c.messagesCount === 1 ? 'message' : 'messages'}
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/* ── Wallet ───────────────────────────────────────────────────────────── */
+
+const QUICK_AMOUNTS = [100, 500, 1000, 2000];
+
+function WalletView({ user }) {
+  const [balance, setBalance] = useState(user.walletBalance || 0);
+  const [transactions, setTransactions] = useState(user.walletTransactions || []);
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const addMoney = async () => {
+    setError('');
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0) {
+      setError('Enter a valid amount.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: value }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not add money.');
+        return;
+      }
+      setBalance(data.balance);
+      setTransactions(data.transactions);
+      setAmount('');
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold text-ink">Wallet</h2>
+      <p className="mt-1 text-sm text-ink/55">Add money to your wallet and track your balance.</p>
+
+      {/* Balance card */}
+      <div className="mt-6 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1E3A5F] to-[#0F172A] p-6 text-white shadow-card">
+        <div className="flex items-center gap-2 text-white/70">
+          <Wallet className="h-4 w-4" aria-hidden="true" />
+          <span className="text-xs font-medium uppercase tracking-wider">Available balance</span>
+        </div>
+        <p className="mt-2 font-display text-4xl font-bold">{formatMoney(balance)}</p>
+      </div>
+
+      {/* Add money */}
+      <div className="mt-6 rounded-2xl border border-ink/8 p-5">
+        <h3 className="font-display text-base font-semibold text-ink">Add money</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {QUICK_AMOUNTS.map((amt) => (
+            <button
+              key={amt}
+              type="button"
+              onClick={() => setAmount(String(amt))}
+              className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
+                String(amt) === amount
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-ink/12 text-ink/70 hover:border-primary/40 hover:text-primary'
+              }`}
+            >
+              ₹{amt.toLocaleString('en-IN')}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/50">₹</span>
+            <input
+              type="number"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="w-full rounded-xl border border-ink/12 py-2.5 pl-7 pr-3 text-sm text-ink outline-none transition-colors focus:border-primary"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={addMoney}
+            disabled={loading}
+            leftIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          >
+            {loading ? 'Adding…' : 'Add money'}
+          </Button>
+        </div>
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      </div>
+
+      {/* Transaction history */}
+      <div className="mt-8">
+        <h3 className="font-display text-lg font-semibold text-ink">Transaction history</h3>
+        {transactions.length === 0 ? (
+          <div className="mt-3 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-ink/15 py-10 text-center">
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-ink/5 text-ink/40">
+              <Wallet className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <p className="text-sm font-medium text-ink/70">No transactions yet</p>
+            <p className="text-xs text-ink/45">Money you add will show up here.</p>
+          </div>
+        ) : (
+          <ul className="mt-3 space-y-2.5">
+            {transactions.map((t) => {
+              const credit = t.type === 'credit';
+              return (
+                <li key={t.id} className="flex items-center gap-3 rounded-xl border border-ink/8 p-3.5">
+                  <span
+                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${
+                      credit ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'
+                    }`}
+                  >
+                    {credit ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{t.note || (credit ? 'Added to wallet' : 'Spent')}</p>
+                    <p className="text-xs text-ink/45">{formatDate(t.createdAt)}</p>
+                  </div>
+                  <span className={`shrink-0 text-sm font-semibold ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {credit ? '+' : '−'}{formatMoney(t.amount)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

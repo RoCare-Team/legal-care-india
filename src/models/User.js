@@ -9,6 +9,17 @@ import mongoose from 'mongoose';
  */
 const { Schema } = mongoose;
 
+/** A single wallet ledger entry (money added or spent). */
+const WalletTxnSchema = new Schema(
+  {
+    type: { type: String, enum: ['credit', 'debit'], default: 'credit' },
+    amount: { type: Number, required: true, min: 0 },
+    note: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true }
+);
+
 const UserSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -17,6 +28,9 @@ const UserSchema = new Schema(
     phone: { type: String, default: '' },
     photo: { type: String, default: '' },
     city: { type: String, default: '' },
+    // Wallet: prepaid balance (in ₹) the user tops up themselves, plus a ledger.
+    walletBalance: { type: Number, default: 0, min: 0 },
+    walletTransactions: { type: [WalletTxnSchema], default: [] },
   },
   { timestamps: true }
 );

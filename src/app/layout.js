@@ -10,6 +10,7 @@ import Footer from '@/components/layout/Footer';
 import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
 import Analytics from '@/components/shared/Analytics';
+import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
 
 /** Root metadata for every route (extend per-page with createMetadata). */
 export const metadata = baseMetadata;
@@ -99,6 +100,7 @@ export default function RootLayout({ children }) {
           <Footer />
         </HideOnAdmin>
         <ScrollToTop />
+        <AdvocateCallListener />
         <Analytics />
       </body>
     </html>

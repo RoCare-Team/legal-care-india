@@ -1,199 +1,272 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, CalendarCheck, Send, CheckCircle2 } from 'lucide-react';
-import { Button, FormField, Input, Textarea } from '@/components/ui';
+import Link from 'next/link';
+import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff } from 'lucide-react';
+import ConsultationModal from '@/components/consultation/ConsultationModal';
+import ChatPanel from '@/components/consultation/ChatPanel';
+import { CONSULTATION_PLANS } from '@/constants/consultationPlans';
+import { useSessionPoll } from '@/hooks/useSessionPoll';
 
 /**
- * BookConsultationModal — the form a signed-in user fills to request a
- * consultation with an advocate. On submit it POSTs to /api/enquiries and the
- * enquiry lands in that advocate's dashboard.
- *
- * @param {object} props
- * @param {boolean} props.open
- * @param {() => void} props.onClose
- * @param {string} props.advocateId    advocate MongoDB _id
- * @param {string} props.advocateName
- * @param {object} [props.user]         logged-in user (to prefill name/phone/email)
+ * BookConsultationModal — the user side of the paid live-chat flow:
+ * pick a plan → connecting (waiting for the advocate) → chat (charged) → ended.
  */
-export default function BookConsultationModal({ open, onClose, advocateId, advocateName, user }) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [preferredDate, setPreferredDate] = useState('');
-  const [message, setMessage] = useState('');
+export default function BookConsultationModal({ open, onClose, advocateId, advocateName, walletBalance = 0 }) {
+  const [sessionId, setSessionId] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [insufficient, setInsufficient] = useState(false);
+  const [offline, setOffline] = useState('');
 
-  // Prefill from the logged-in user when the modal opens.
+  const [session, setSession, refresh] = useSessionPoll(sessionId, {
+    enabled: open && Boolean(sessionId),
+    interval: 2000,
+  });
+
+  // Reset everything when the modal closes — including the polled session, so
+  // reopening always starts fresh at plan selection (not the last ended chat).
   useEffect(() => {
-    if (open && user) {
-      setName((n) => n || user.name || '');
-      setPhone((p) => p || user.phone || '');
-      setEmail((e) => e || user.email || '');
+    if (!open) {
+      setSessionId(null);
+      setSession(null);
+      setError('');
+      setInsufficient(false);
+      setOffline('');
+      setCreating(false);
     }
-  }, [open, user]);
+  }, [open, setSession]);
 
+  const status = session?.status;
+
+  // When the consultation ends (time up or either side hangs up), close the
+  // whole modal shortly after — the chat and its timer disappear.
   useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => e.key === 'Escape' && !loading && onClose();
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-    };
-  }, [open, loading, onClose]);
+    if (status === 'ended') {
+      const t = setTimeout(onClose, 1200);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [status, onClose]);
 
-  if (!open) return null;
+  // Don't hang on "Connecting…" forever — if the advocate doesn't accept in
+  // time (e.g. they went offline), cancel and show an offline notice.
+  useEffect(() => {
+    if (status !== 'pending' || !sessionId) return undefined;
+    const t = setTimeout(async () => {
+      await fetch(`/api/consultations/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      }).catch(() => {});
+      setSessionId(null);
+      setOffline(`${advocateName} didn't respond. Please try again later.`);
+    }, 45000);
+    return () => clearTimeout(t);
+  }, [status, sessionId, advocateName]);
 
-  const close = () => {
-    if (loading) return;
+  const book = async (plan) => {
     setError('');
-    // Reset the success/message state so reopening shows a fresh form.
-    if (done) {
-      setDone(false);
-      setMessage('');
-      setPreferredDate('');
+    setInsufficient(false);
+    setCreating(true);
+    try {
+      const res = await fetch('/api/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ advocateId, planId: plan.id }),
+      });
+      const data = await res.json();
+      if (res.status === 409 && data.error === 'offline') {
+        setOffline(data.message || `${advocateName} is offline right now.`);
+        return;
+      }
+      if (res.status === 402) {
+        setInsufficient(true);
+        setError(data.message || 'Insufficient wallet balance.');
+        return;
+      }
+      if (!res.ok) {
+        setError(data.error || 'Could not start the request.');
+        return;
+      }
+      setSessionId(data.session.id);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const cancel = async () => {
+    if (sessionId) {
+      await fetch(`/api/consultations/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      }).catch(() => {});
     }
     onClose();
   };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    if (name.trim().length < 2) return setError('Please enter your name.');
-    if (phone.replace(/\D/g, '').length < 10) return setError('Please enter a valid phone number.');
-    if (message.trim().length < 10) return setError('Please describe your legal matter briefly.');
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/enquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, name, phone, email, preferredDate, message }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(payload.error || 'Could not send your request. Please try again.');
-        return;
-      }
-      setDone(true);
-    } catch {
-      setError('Network error. Check your connection and try again.');
-    } finally {
-      setLoading(false);
+  const sendMessage = async (text) => {
+    if (!sessionId) return;
+    const res = await fetch(`/api/consultations/${sessionId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // Optimistic-ish: adopt the server's authoritative message list.
+      if (data.session) refresh();
     }
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="book-title"
-      onClick={close}
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-surface p-6 shadow-card-hover"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
-              <CalendarCheck className="h-5 w-5" />
-            </span>
-            <h2 id="book-title" className="font-display text-lg font-semibold text-ink">
-              Book Consultation
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
-            className="grid h-8 w-8 place-items-center rounded-lg text-ink/50 hover:bg-ink/5"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  const endNow = async () => {
+    if (!sessionId) return;
+    await fetch(`/api/consultations/${sessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'end' }),
+    }).catch(() => {});
+    refresh();
+  };
 
-        {done ? (
-          <div className="mt-6 flex flex-col items-center gap-2 py-4 text-center">
-            <CheckCircle2 className="h-10 w-10 text-emerald-500" aria-hidden="true" />
-            <p className="font-semibold text-ink">Request sent!</p>
-            <p className="text-sm text-ink/55">
-              {advocateName || 'The advocate'} has received your consultation request and will
-              reach out to you soon.
+  // ── Chat (connected) — full-width modal ──────────────────────────────────
+  if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
+    return (
+      <ConsultationModal open={open} onClose={onClose} title={`Consultation · ${advocateName}`} icon={CalendarCheck}>
+        <ChatPanel
+          session={session}
+          viewerRole="user"
+          otherName={advocateName}
+          onSend={sendMessage}
+          onEnd={endNow}
+        />
+      </ConsultationModal>
+    );
+  }
+
+  return (
+    <ConsultationModal
+      open={open}
+      onClose={status === 'pending' ? cancel : onClose}
+      closable={status !== 'pending'}
+      title="Book Consultation"
+      icon={CalendarCheck}
+    >
+      <div className="p-5">
+        {/* Advocate offline */}
+        {offline ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
+              <WifiOff className="h-7 w-7" />
+            </span>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Advocate offline</h4>
+            <p className="mt-1 text-sm text-ink/55">{offline}</p>
+            <p className="mt-1 text-xs text-ink/45">You were not charged.</p>
+            <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+              Close
+            </button>
+          </div>
+        ) : status === 'pending' ? (
+          <div className="flex flex-col items-center py-6 text-center">
+            <span className="relative grid h-16 w-16 place-items-center">
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-primary/10 text-primary">
+                <Loader2 className="h-7 w-7 animate-spin" />
+              </span>
+            </span>
+            <h4 className="mt-5 font-display text-lg font-semibold text-ink">Connecting…</h4>
+            <p className="mt-1 text-sm text-ink/55">
+              Waiting for {advocateName} to accept your request.
             </p>
-            <Button type="button" className="mt-3" onClick={close}>
-              Done
-            </Button>
+            <button
+              type="button"
+              onClick={cancel}
+              className="mt-6 rounded-xl border border-ink/15 px-5 py-2 text-sm font-medium text-ink/70 transition-colors hover:border-red-300 hover:text-red-600"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : status === 'rejected' ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <XCircle className="h-12 w-12 text-red-500" />
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Request declined</h4>
+            <p className="mt-1 text-sm text-ink/55">
+              {advocateName} can&apos;t take your consultation right now. You were not charged.
+            </p>
+            <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+              Close
+            </button>
+          </div>
+        ) : status === 'ended' || status === 'cancelled' ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Consultation ended</h4>
+            <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+              Close
+            </button>
           </div>
         ) : (
+          // Plan selection
           <>
-            <p className="mt-1.5 text-sm text-ink/60">
-              Share a few details and {advocateName || 'the advocate'} will get back to you.
+            <p className="text-sm text-ink/60">
+              Choose a consultation length. You&apos;ll connect over live chat once {advocateName}{' '}
+              accepts, and only then is your wallet charged.
             </p>
-            <form onSubmit={onSubmit} className="mt-4 space-y-4">
-              <FormField label="Your name" htmlFor="b-name">
-                <Input
-                  id="b-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Priya Sharma"
-                  maxLength={80}
-                />
-              </FormField>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField label="Phone" htmlFor="b-phone">
-                  <Input
-                    id="b-phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98xxxxxxx"
-                    maxLength={20}
-                  />
-                </FormField>
-                <FormField label="Email (optional)" htmlFor="b-email">
-                  <Input
-                    id="b-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@email.com"
-                    maxLength={120}
-                  />
-                </FormField>
+
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
+              <span className="flex items-center gap-2 text-sm text-ink/60">
+                <Wallet className="h-4 w-4 text-primary" /> Wallet balance
+              </span>
+              <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {CONSULTATION_PLANS.map((plan) => {
+                const affordable = walletBalance >= plan.price;
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    disabled={creating}
+                    onClick={() => book(plan)}
+                    className="group flex flex-col rounded-2xl border border-ink/10 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card disabled:opacity-60"
+                  >
+                    <span className="flex items-center gap-1.5 text-primary">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-display text-base font-bold text-ink">{plan.label}</span>
+                    </span>
+                    <span className="mt-1 text-xs text-ink/50">{plan.tagline}</span>
+                    <span className="mt-3 font-display text-xl font-bold text-ink">₹{plan.price}</span>
+                    {!affordable && (
+                      <span className="mt-1 text-[11px] font-medium text-amber-600">Add money to book</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {creating && (
+              <p className="mt-4 flex items-center justify-center gap-2 text-sm text-ink/55">
+                <Loader2 className="h-4 w-4 animate-spin" /> Sending request…
+              </p>
+            )}
+            {error && (
+              <div className="mt-4 rounded-xl bg-red-500/5 px-3.5 py-2.5 text-sm text-red-600">
+                {error}
+                {insufficient && (
+                  <Link href="/account?tab=wallet" onClick={onClose} className="mt-1 block font-semibold underline">
+                    Add money to wallet →
+                  </Link>
+                )}
               </div>
-              <FormField label="Preferred date/time (optional)" htmlFor="b-date">
-                <Input
-                  id="b-date"
-                  value={preferredDate}
-                  onChange={(e) => setPreferredDate(e.target.value)}
-                  placeholder="e.g. This Saturday morning"
-                  maxLength={40}
-                />
-              </FormField>
-              <FormField label="Describe your legal matter" htmlFor="b-message">
-                <Textarea
-                  id="b-message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
-                  maxLength={1000}
-                  placeholder="Briefly explain what you need help with…"
-                />
-              </FormField>
-
-              {error && <p className="text-xs text-red-600">{error}</p>}
-
-              <Button type="submit" fullWidth disabled={loading} leftIcon={<Send className="h-4 w-4" />}>
-                {loading ? 'Sending…' : 'Send request'}
-              </Button>
-            </form>
+            )}
           </>
         )}
       </div>
-    </div>
+    </ConsultationModal>
   );
 }

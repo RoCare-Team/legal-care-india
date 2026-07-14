@@ -10,19 +10,29 @@ import BookConsultationModal from './BookConsultationModal';
 /**
  * ProfileContactActions — the Call / WhatsApp / Email / Book Consultation
  * actions on a profile. Signed-out visitors are prompted to create an account
- * before contacting or booking.
+ * before contacting or booking; the paid live-chat booking is user-only.
  *
  * @param {object} props
  * @param {{ phone?: string, whatsapp?: string, email?: string }} props.contact
  * @param {string} props.name
  * @param {string} props.waText      pre-encoded WhatsApp message
- * @param {string} props.advocateId  advocate MongoDB _id (for enquiries)
+ * @param {string} props.advocateId  advocate MongoDB _id (for activity + booking)
  */
 export default function ProfileContactActions({ contact = {}, name, waText, advocateId }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const authed = role !== null;
+
+  // Book Consultation: signed-out → gate; advocate → not applicable; user → book.
+  const onBook = () => {
+    if (loading) return;
+    if (!authed) {
+      setGateOpen(true);
+      return;
+    }
+    setBookOpen(true);
+  };
 
   // Fire-and-forget: log a contact tap to the user's activity history.
   const track = (type) => {
@@ -48,16 +58,6 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
       return;
     }
     track(type);
-  };
-
-  // Book Consultation: signed-out → gate; signed-in → open the enquiry form.
-  const onBook = () => {
-    if (loading) return;
-    if (!authed) {
-      setGateOpen(true);
-      return;
-    }
-    setBookOpen(true);
   };
 
   return (
@@ -97,15 +97,17 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
             Send Email
           </Button>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onBook}
-          fullWidth
-          leftIcon={<CalendarCheck className="h-4 w-4" />}
-        >
-          Book Consultation
-        </Button>
+        {role !== 'advocate' && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBook}
+            fullWidth
+            leftIcon={<CalendarCheck className="h-4 w-4" />}
+          >
+            Book Consultation
+          </Button>
+        )}
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
@@ -114,7 +116,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
         onClose={() => setBookOpen(false)}
         advocateId={advocateId}
         advocateName={name}
-        user={user}
+        walletBalance={user?.walletBalance || 0}
       />
     </>
   );

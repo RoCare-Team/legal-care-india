@@ -14,6 +14,10 @@ import { pluralize } from '@/utils/formatters';
  * @param {object} props
  * @param {Array} props.advocates
  * @param {{query?:string,service?:string,city?:string}} [props.initial]
+ * @param {boolean} [props.showFilters=true]   hide the filter bar on focused pages
+ * @param {string} [props.emptyTitle]          heading for the empty state
+ * @param {string} [props.emptyMessage]        supporting text for the empty state
+ * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
 const EMPTY = { query: '', service: '', city: '', sort: 'relevance' };
 
@@ -33,7 +37,14 @@ function sortAdvocates(list, sort) {
   }
 }
 
-export default function AdvocateListing({ advocates, initial = {} }) {
+export default function AdvocateListing({
+  advocates,
+  initial = {},
+  showFilters = true,
+  emptyTitle,
+  emptyMessage,
+  emptyAction,
+}) {
   const [filters, setFilters] = useState({ ...EMPTY, ...initial });
 
   const onChange = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
@@ -60,19 +71,23 @@ export default function AdvocateListing({ advocates, initial = {} }) {
 
   return (
     <div className="space-y-6">
-      <ListingFilters
-        value={filters}
-        onChange={onChange}
-        onReset={onReset}
-        hasActiveFilters={hasActiveFilters}
-      />
+      {showFilters && (
+        <>
+          <ListingFilters
+            value={filters}
+            onChange={onChange}
+            onReset={onReset}
+            hasActiveFilters={hasActiveFilters}
+          />
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-ink/60">
-          <span className="font-semibold text-ink">{results.length}</span>{' '}
-          {pluralize(results.length, 'advocate').replace(`${results.length} `, '')} found
-        </p>
-      </div>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-ink/60">
+              <span className="font-semibold text-ink">{results.length}</span>{' '}
+              {pluralize(results.length, 'advocate').replace(`${results.length} `, '')} found
+            </p>
+          </div>
+        </>
+      )}
 
       {results.length > 0 ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -83,14 +98,24 @@ export default function AdvocateListing({ advocates, initial = {} }) {
       ) : (
         <div className="grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-muted/40 px-6 py-16 text-center">
           <SearchX className="h-10 w-10 text-ink/30" aria-hidden="true" />
-          <h3 className="mt-4 font-semibold text-ink">No advocates match your filters</h3>
+          <h3 className="mt-4 font-semibold text-ink">
+            {emptyTitle || (hasActiveFilters ? 'No advocates match your filters' : 'No advocates listed yet')}
+          </h3>
           <p className="mt-1 max-w-sm text-sm text-ink/55">
-            Try broadening your search — remove a filter or search a different city or legal
-            service.
+            {emptyMessage ||
+              (hasActiveFilters
+                ? 'Try broadening your search — remove a filter or search a different city or legal service.'
+                : 'No advocate has been added here yet. Check back soon or explore other legal services.')}
           </p>
-          <Button variant="outline" size="sm" className="mt-5" onClick={onReset}>
-            Clear all filters
-          </Button>
+          {emptyAction ? (
+            <div className="mt-5">{emptyAction}</div>
+          ) : (
+            hasActiveFilters && (
+              <Button variant="outline" size="sm" className="mt-5" onClick={onReset}>
+                Clear all filters
+              </Button>
+            )
+          )}
         </div>
       )}
     </div>

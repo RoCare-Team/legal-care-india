@@ -15,7 +15,7 @@ export default function CityCard({ city }) {
 
   return (
     <Link
-      href={`/cities/${slug}`}
+      href={`/${slug}`}
       className="group relative block h-36 overflow-hidden rounded-2xl border border-ink/8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
     >
       {/* City photo — optimized + cached by Next.js so the browser never hits

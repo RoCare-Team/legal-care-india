@@ -115,6 +115,27 @@ const AdvocateSchema = new Schema(
       successRate: { type: Number, default: 0 },
     },
 
+    // Presence — bumped by the advocate's call listener while they have the
+    // site open. Recent `lastSeenAt` ⇒ available to take live consultations.
+    lastSeenAt: { type: Date, default: null },
+
+    // Earnings wallet — credited when a paid consultation connects.
+    walletBalance: { type: Number, default: 0, min: 0 },
+    walletTransactions: {
+      type: [
+        new Schema(
+          {
+            type: { type: String, enum: ['credit', 'debit'], default: 'credit' },
+            amount: { type: Number, required: true, min: 0 },
+            note: { type: String, default: '' },
+            createdAt: { type: Date, default: Date.now },
+          },
+          { _id: true }
+        ),
+      ],
+      default: [],
+    },
+
     // Visibility
     status: { type: String, enum: ['pending', 'published'], default: 'published' },
     verified: { type: Boolean, default: false },

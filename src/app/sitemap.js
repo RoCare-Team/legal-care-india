@@ -49,7 +49,7 @@ export default async function sitemap() {
   // City routes carry their landmark image (image sitemap extension).
   const cities = await getAllCities();
   const cityRoutes = cities.map((c) => ({
-    url: new URL(`/cities/${c.slug}`, base).toString(),
+    url: new URL(`/${c.slug}`, base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.7,

@@ -219,7 +219,7 @@ export default function CitiesManager({ cities }) {
                 </p>
               </div>
               <Link
-                href={`/cities/${c.slug}`}
+                href={`/${c.slug}`}
                 target="_blank"
                 className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/40 hover:bg-ink/5 hover:text-primary"
                 aria-label={`Open ${c.name} page`}
