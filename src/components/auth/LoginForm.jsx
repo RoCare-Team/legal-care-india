@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 
@@ -78,9 +79,9 @@ export default function LoginForm() {
             <input type="checkbox" className="h-4 w-4 rounded border-ink/30 text-primary focus:ring-primary/40" />
             Remember me
           </label>
-          <a href="/forgot-password" className="font-medium text-primary hover:underline">
+          <Link href="/forgot-password" className="font-medium text-primary hover:underline">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <Button type="submit" fullWidth disabled={loading} leftIcon={<LogIn className="h-4 w-4" />}>
@@ -90,9 +91,9 @@ export default function LoginForm() {
 
       <p className="mt-6 text-center text-sm text-ink/60">
         New to Legal Care India?{' '}
-        <a href="/register" className="font-medium text-primary hover:underline">
+        <Link href="/register" className="font-medium text-primary hover:underline">
           Register as an Advocate
-        </a>
+        </Link>
       </p>
     </form>
   );

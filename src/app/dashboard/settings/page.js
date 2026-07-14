@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Mail, User, MapPin } from 'lucide-react';
 import DeleteAccount from '@/components/dashboard/DeleteAccount';
@@ -51,9 +52,9 @@ export default async function SettingsPage() {
         </div>
         <p className="mt-4 text-xs text-ink/45">
           To edit these, go to{' '}
-          <a href="/dashboard/profile" className="font-medium text-primary hover:underline">
+          <Link href="/dashboard/profile" className="font-medium text-primary hover:underline">
             Edit Profile
-          </a>
+          </Link>
           .
         </p>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { User, Mail, Phone, Lock, UserPlus } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 import { safeNextPath } from '@/utils/safeNext';
@@ -107,15 +108,15 @@ export default function UserSignupForm() {
 
       <p className="mt-6 text-center text-sm text-ink/60">
         Already have an account?{' '}
-        <a href="/user/login" className="font-medium text-primary hover:underline">
+        <Link href="/user/login" className="font-medium text-primary hover:underline">
           Log in
-        </a>
+        </Link>
       </p>
       <p className="mt-2 text-center text-sm text-ink/50">
         Are you an advocate?{' '}
-        <a href="/register" className="font-medium text-primary hover:underline">
+        <Link href="/register" className="font-medium text-primary hover:underline">
           Register as an advocate
-        </a>
+        </Link>
       </p>
     </form>
   );

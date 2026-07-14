@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Badge } from '@/components/ui';
 
 /**
@@ -63,9 +64,9 @@ export default function StepReview({ data, set, errors }) {
         />
         <span className="text-sm text-ink/70">
           I confirm the information provided is accurate and I agree to the{' '}
-          <a href="/terms" className="font-medium text-primary hover:underline">Terms of Service</a>{' '}
+          <Link href="/terms" className="font-medium text-primary hover:underline">Terms of Service</Link>{' '}
           and{' '}
-          <a href="/privacy" className="font-medium text-primary hover:underline">Privacy Policy</a>.
+          <Link href="/privacy" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
         </span>
       </label>
       {errors.terms && <p className="-mt-3 text-xs text-red-600">{errors.terms}</p>}

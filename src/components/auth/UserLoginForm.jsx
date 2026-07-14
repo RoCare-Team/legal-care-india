@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 import { safeNextPath } from '@/utils/safeNext';
@@ -75,9 +76,9 @@ export default function UserLoginForm() {
         {error && <p className="text-xs text-red-600">{error}</p>}
 
         <div className="flex items-center justify-end text-sm">
-          <a href="/forgot-password" className="font-medium text-primary hover:underline">
+          <Link href="/forgot-password" className="font-medium text-primary hover:underline">
             Forgot password?
-          </a>
+          </Link>
         </div>
 
         <Button type="submit" fullWidth disabled={loading} leftIcon={<LogIn className="h-4 w-4" />}>
@@ -87,15 +88,15 @@ export default function UserLoginForm() {
 
       <p className="mt-6 text-center text-sm text-ink/60">
         New to Legal Care India?{' '}
-        <a href="/user/signup" className="font-medium text-primary hover:underline">
+        <Link href="/user/signup" className="font-medium text-primary hover:underline">
           Create an account
-        </a>
+        </Link>
       </p>
       <p className="mt-2 text-center text-sm text-ink/50">
         Are you an advocate?{' '}
-        <a href="/login" className="font-medium text-primary hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:underline">
           Advocate login
-        </a>
+        </Link>
       </p>
     </form>
   );

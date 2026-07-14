@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
@@ -272,13 +273,13 @@ function AdvocatesView({ groups, bookingStatus = {} }) {
                 )}
               </div>
               {g.profilePath && (
-                <a
+                <Link
                   href={`/advocates/${g.profilePath}`}
                   className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/45 transition-colors hover:bg-ink/5 hover:text-primary"
                   aria-label={`View ${g.name}'s profile`}
                 >
                   <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                </a>
+                </Link>
               )}
             </div>
 
