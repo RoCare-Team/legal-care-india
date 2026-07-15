@@ -1,4 +1,5 @@
 'use client';
+import Link from "next/link";
 
 import { useState } from 'react';
 import { Mail, Send, Lock, KeyRound, ShieldCheck, CheckCircle2, ArrowLeft, Smartphone } from 'lucide-react';
@@ -256,12 +257,12 @@ export default function ForgotPasswordForm() {
         </Button>
       </div>
 
-      <a
-        href="/login"
-        className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to login
-      </a>
+      <Link
+  href="/login"
+  className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+>
+  <ArrowLeft className="h-4 w-4" /> Back to login
+</Link>
     </form>
   );
 }
