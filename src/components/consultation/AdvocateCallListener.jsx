@@ -144,7 +144,13 @@ export default function AdvocateCallListener() {
   // ── Live chat (after accepting) ─────────────────────────────────────────
   if (activeId && activeSession && (activeSession.status === 'active' || activeSession.status === 'ended')) {
     return (
-      <ConsultationModal open onClose={closeChat} title={`Consultation · ${activeSession.userName}`} icon={PhoneCall}>
+      <ConsultationModal
+        open
+        onClose={closeChat}
+        title={`Consultation · ${activeSession.userName}`}
+        icon={PhoneCall}
+        fullScreen
+      >
         <ChatPanel
           session={activeSession}
           viewerRole="advocate"

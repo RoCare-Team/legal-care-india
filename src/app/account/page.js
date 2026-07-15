@@ -3,8 +3,6 @@ import { createMetadata } from '@/lib/metadata';
 import AccountView from '@/components/account/AccountView';
 import { getSessionUserId } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
-import { getUserActivity } from '@/lib/activity';
-import { getEnquiriesForUser } from '@/lib/enquiries';
 import { getUserConsultations } from '@/lib/consultations';
 
 export const metadata = createMetadata({
@@ -20,24 +18,9 @@ export default async function AccountPage() {
   const user = await getUserById(id);
   if (!user) redirect('/user/login');
 
-  const [activity, enquiries, consultations] = await Promise.all([
-    getUserActivity(id),
-    getEnquiriesForUser(id),
-    getUserConsultations(id),
-  ]);
+  const allConsultations = await getUserConsultations(id);
+  // Rows the user cleared from their own list (the advocate still sees theirs).
+  const consultations = allConsultations.filter((c) => !c.hidden);
 
-  // Latest booking status per advocate (enquiries are newest-first).
-  const bookingStatus = {};
-  for (const e of enquiries) {
-    if (!(e.advocateId in bookingStatus)) bookingStatus[e.advocateId] = e.status;
-  }
-
-  return (
-    <AccountView
-      user={user}
-      activity={activity}
-      bookingStatus={bookingStatus}
-      consultations={consultations}
-    />
-  );
+  return <AccountView user={user} consultations={consultations} />;
 }

@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
-import { Eye, PhoneCall, Star, MessageSquare } from 'lucide-react';
+import { Wallet, MessagesSquare, Star, MessageSquare } from 'lucide-react';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import ProfileCompletion from '@/components/dashboard/ProfileCompletion';
-import RecentEnquiries from '@/components/dashboard/RecentEnquiries';
+import RecentConsultations from '@/components/dashboard/RecentConsultations';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
-import { getEnquiriesForAdvocate } from '@/lib/enquiries';
+import { getAdvocateConsultations } from '@/lib/consultations';
 
 /** Build the completion checklist from which fields the profile has filled. */
 function buildChecklist(a) {
@@ -29,21 +29,36 @@ export default async function DashboardOverviewPage() {
   const advocate = await getAdvocateById(id);
   if (!advocate) redirect('/login');
 
-  const enquiries = await getEnquiriesForAdvocate(id);
+  const all = await getAdvocateConsultations(id);
   const checklist = buildChecklist(advocate);
+
+  // Rows the advocate cleared drop out of the feed and the stats alike.
+  const consultations = all.filter((c) => !c.hidden);
+  const done = consultations.filter((c) => c.charged);
+  const earned = done.reduce((sum, c) => sum + c.price, 0);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
-        <DashboardStatCard icon={Eye} value="0" label="Profile Views" tone="primary" />
-        <DashboardStatCard icon={PhoneCall} value={enquiries.length} label="Enquiries" tone="secondary" />
+        <DashboardStatCard
+          icon={Wallet}
+          value={`₹${earned.toLocaleString('en-IN')}`}
+          label="Total Earned"
+          tone="success"
+        />
+        <DashboardStatCard
+          icon={MessagesSquare}
+          value={done.length}
+          label="Consultations"
+          tone="secondary"
+        />
         <DashboardStatCard icon={Star} value={advocate.rating || 0} label="Average Rating" tone="accent" />
-        <DashboardStatCard icon={MessageSquare} value={advocate.reviews || 0} label="Total Reviews" tone="success" />
+        <DashboardStatCard icon={MessageSquare} value={advocate.reviews || 0} label="Total Reviews" tone="primary" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ProfileCompletion checklist={checklist} />
-        <RecentEnquiries enquiries={enquiries} />
+        <RecentConsultations consultations={consultations} />
       </div>
     </div>
   );

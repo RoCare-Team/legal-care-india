@@ -44,6 +44,11 @@ const ConsultationSchema = new Schema(
     startedAt: { type: Date, default: null }, // when the advocate accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)
     endedAt: { type: Date, default: null },   // when it actually ended
+
+    // Either side can clear the row from their own list. The record itself
+    // stays, so hiding it on one side never affects the other.
+    hiddenForAdvocate: { type: Boolean, default: false },
+    hiddenForUser: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

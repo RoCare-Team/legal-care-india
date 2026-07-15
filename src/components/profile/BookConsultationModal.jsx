@@ -5,14 +5,19 @@ import Link from 'next/link';
 import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
 import ChatPanel from '@/components/consultation/ChatPanel';
-import { CONSULTATION_PLANS } from '@/constants/consultationPlans';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
+import { refreshAuth } from '@/utils/authEvents';
 
 /**
  * BookConsultationModal — the user side of the paid live-chat flow:
  * pick a plan → connecting (waiting for the advocate) → chat (charged) → ended.
+ *
+ * `plans` are the advocate's own rates (they set them in their dashboard), so
+ * every advocate can charge what they like.
  */
-export default function BookConsultationModal({ open, onClose, advocateId, advocateName, walletBalance = 0 }) {
+export default function BookConsultationModal({
+  open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
+}) {
   const [sessionId, setSessionId] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +43,12 @@ export default function BookConsultationModal({ open, onClose, advocateId, advoc
   }, [open, setSession]);
 
   const status = session?.status;
+
+  // The wallet is charged the moment the advocate accepts — refresh the navbar
+  // balance right away rather than waiting for a page reload.
+  useEffect(() => {
+    if (status === 'active') refreshAuth();
+  }, [status]);
 
   // When the consultation ends (time up or either side hangs up), close the
   // whole modal shortly after — the chat and its timer disappear.
@@ -73,7 +84,7 @@ export default function BookConsultationModal({ open, onClose, advocateId, advoc
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, planId: plan.id }),
+        body: JSON.stringify({ advocateId, minutes: plan.minutes }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -135,7 +146,13 @@ export default function BookConsultationModal({ open, onClose, advocateId, advoc
   // ── Chat (connected) — full-width modal ──────────────────────────────────
   if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
     return (
-      <ConsultationModal open={open} onClose={onClose} title={`Consultation · ${advocateName}`} icon={CalendarCheck}>
+      <ConsultationModal
+        open={open}
+        onClose={onClose}
+        title={`Consultation · ${advocateName}`}
+        icon={CalendarCheck}
+        fullScreen
+      >
         <ChatPanel
           session={session}
           viewerRole="user"
@@ -225,7 +242,7 @@ export default function BookConsultationModal({ open, onClose, advocateId, advoc
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {CONSULTATION_PLANS.map((plan) => {
+              {plans.map((plan) => {
                 const affordable = walletBalance >= plan.price;
                 return (
                   <button
@@ -239,8 +256,10 @@ export default function BookConsultationModal({ open, onClose, advocateId, advoc
                       <Clock className="h-4 w-4" />
                       <span className="font-display text-base font-bold text-ink">{plan.label}</span>
                     </span>
-                    <span className="mt-1 text-xs text-ink/50">{plan.tagline}</span>
-                    <span className="mt-3 font-display text-xl font-bold text-ink">₹{plan.price}</span>
+                    <span className="mt-1 text-xs text-ink/50">Live chat consultation</span>
+                    <span className="mt-3 font-display text-xl font-bold text-ink">
+                      ₹{Number(plan.price).toLocaleString('en-IN')}
+                    </span>
                     {!affordable && (
                       <span className="mt-1 text-[11px] font-medium text-amber-600">Add money to book</span>
                     )}

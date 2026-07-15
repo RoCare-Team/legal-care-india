@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
-import { getPlan } from '@/constants/consultationPlans';
+import { getAdvocatePlan } from '@/constants/consultationPlans';
 import {
   createConsultation, getAdvocateInbox, markAdvocateOnline, isAdvocateOnline,
 } from '@/lib/consultations';
@@ -42,17 +42,27 @@ export async function POST(request) {
   }
 
   const advocateId = String(body?.advocateId || '').trim();
-  const plan = getPlan(String(body?.planId || ''));
-  if (!advocateId || !plan) {
+  const minutes = Number(body?.minutes);
+  if (!advocateId || !Number.isFinite(minutes)) {
     return NextResponse.json({ error: 'Invalid booking details.' }, { status: 400 });
   }
 
   await connectDB();
   const [user, advocate] = await Promise.all([
     getUserById(session.id),
-    Advocate.findById(advocateId).select('name').lean(),
+    Advocate.findById(advocateId).select('name consultationPlans').lean(),
   ]);
   if (!advocate) return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+
+  // The plan (duration + price) always comes from the advocate's own list —
+  // never from the client.
+  const plan = getAdvocatePlan(advocate.consultationPlans, minutes);
+  if (!plan) {
+    return NextResponse.json(
+      { error: 'This advocate does not offer that consultation plan.' },
+      { status: 400 }
+    );
+  }
 
   // The advocate must be online to take a live consultation right now.
   if (!(await isAdvocateOnline(advocateId))) {

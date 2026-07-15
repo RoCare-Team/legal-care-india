@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
 import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
+import { normalizePlans } from '@/constants/consultationPlans';
 import { slugify } from '@/utils/slugify';
 
 /**
@@ -40,7 +41,7 @@ export async function PUT(request) {
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
-    phone, whatsapp, email, fee, social,
+    phone, whatsapp, email, fee, social, consultationPlans,
   } = body || {};
 
   const update = {};
@@ -77,6 +78,12 @@ export async function PUT(request) {
   if (Array.isArray(awards)) update.awards = awards;
   if (Array.isArray(timing)) update.timing = timing;
   if (fee !== undefined) update.consultationFee = Number(fee) || 0;
+
+  // Live-chat plans: the advocate's own duration + price rows (validated,
+  // deduped by duration and sorted shortest-first).
+  if (Array.isArray(consultationPlans)) {
+    update.consultationPlans = normalizePlans(consultationPlans);
+  }
 
   if (officeName !== undefined) update['office.name'] = officeName;
   if (officeAddress !== undefined) update['office.address'] = officeAddress;

@@ -1,29 +1,19 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
-  ArrowUpRight, Inbox, UserRound, LayoutDashboard, Users, Clock,
-  Wallet, Plus, ArrowDownLeft, Loader2,
+  UserRound, LayoutDashboard, Clock,
+  Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2,
 } from 'lucide-react';
 import { Avatar, Button } from '@/components/ui';
 import { logout } from '@/utils/logout';
+import { refreshAuth } from '@/utils/authEvents';
 import { formatDate } from '@/utils/formatters';
-import { USER_STATUS_META } from '@/constants/enquiryStatus';
-
-/** Per-activity-type presentation: icon, label and accent colour. */
-const ACTIVITY_META = {
-  booking: { icon: CalendarCheck, label: 'Booked consultation', short: 'Booked', tone: 'text-primary bg-primary/10' },
-  call: { icon: Phone, label: 'Called', short: 'Called', tone: 'text-emerald-600 bg-emerald-500/10' },
-  whatsapp: { icon: MessageCircle, label: 'WhatsApp', short: 'WhatsApp', tone: 'text-emerald-600 bg-emerald-500/10' },
-  email: { icon: Mail, label: 'Emailed', short: 'Email', tone: 'text-blue-600 bg-blue-500/10' },
-};
 
 const NAV = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { key: 'advocates', label: 'My Advocates', icon: Users },
   { key: 'consultations', label: 'Consultations', icon: CalendarCheck },
   { key: 'wallet', label: 'Wallet', icon: Wallet },
   { key: 'profile', label: 'Profile', icon: UserRound },
@@ -43,49 +33,26 @@ function formatMoney(value = 0) {
   return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
-/** Group a flat activity feed into one entry per advocate, with type counts. */
-function groupByAdvocate(activity) {
-  const map = new Map();
-  for (const a of activity) {
-    const key = a.advocateProfilePath || a.advocateName;
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        advocateId: a.advocateId,
-        name: a.advocateName,
-        city: a.advocateCity,
-        phone: a.advocatePhone,
-        profilePath: a.advocateProfilePath,
-        interactions: [],
-        counts: {},
-      });
-    }
-    const g = map.get(key);
-    g.interactions.push(a);
-    g.counts[a.type] = (g.counts[a.type] || 0) + 1;
-  }
-  // Activity arrives newest-first, so the first item per advocate is the latest.
-  return Array.from(map.values()).map((g) => ({ ...g, latest: g.interactions[0] }));
-}
-
 /**
  * AccountView — the logged-in client's account dashboard. A fixed left sidebar
- * (Overview / My Advocates / Profile) drives the main content on the right, so
- * it scales cleanly no matter how many advocates the user has contacted.
+ * (Overview / Consultations / Wallet / Profile) drives the main content on the
+ * right.
  *
  * @param {object} props
  * @param {{ name: string, email: string, phone?: string, city?: string, photo?: string }} props.user
- * @param {Array} [props.activity]  the user's advocate interactions, newest first
+ * @param {Array} [props.consultations]  the user's consultations, newest first
  */
-export default function AccountView({ user, activity = [], bookingStatus = {}, consultations = [] }) {
-  const groups = useMemo(() => groupByAdvocate(activity), [activity]);
+export default function AccountView({ user, consultations = [] }) {
+  // Held locally so clearing a row updates the list and the stats at once.
+  const [consultationList, setConsultationList] = useState(consultations);
   const searchParams = useSearchParams();
   const initialTab = NAV.some((n) => n.key === searchParams.get('tab'))
     ? searchParams.get('tab')
     : 'overview';
   const [view, setView] = useState(initialTab);
 
-  const bookings = consultations.filter((c) => c.charged).length;
+  const removeConsultation = (id) =>
+    setConsultationList((prev) => prev.filter((c) => c.id !== id));
 
   return (
     <div className="w-full border-b border-ink/8 bg-surface">
@@ -118,11 +85,11 @@ export default function AccountView({ user, activity = [], bookingStatus = {}, c
                     >
                       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                       {item.label}
-                      {item.key === 'advocates' && groups.length > 0 && (
+                      {item.key === 'consultations' && consultationList.length > 0 && (
                         <span className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                           active ? 'bg-primary/15 text-primary' : 'bg-ink/10 text-ink/50'
                         }`}>
-                          {groups.length}
+                          {consultationList.length}
                         </span>
                       )}
                     </button>
@@ -155,14 +122,13 @@ export default function AccountView({ user, activity = [], bookingStatus = {}, c
           {view === 'overview' && (
             <OverviewView
               user={user}
-              activity={activity}
-              advocateCount={groups.length}
-              bookings={bookings}
-              onSeeAdvocates={() => setView('advocates')}
+              consultations={consultationList}
+              onSeeConsultations={() => setView('consultations')}
             />
           )}
-          {view === 'advocates' && <AdvocatesView groups={groups} bookingStatus={bookingStatus} />}
-          {view === 'consultations' && <ConsultationsView consultations={consultations} />}
+          {view === 'consultations' && (
+            <ConsultationsView consultations={consultationList} onRemove={removeConsultation} />
+          )}
           {view === 'wallet' && <WalletView user={user} />}
           {view === 'profile' && <ProfileView user={user} />}
         </main>
@@ -173,50 +139,58 @@ export default function AccountView({ user, activity = [], bookingStatus = {}, c
 
 /* ── Overview ─────────────────────────────────────────────────────────── */
 
-function OverviewView({ user, activity, advocateCount, bookings, onSeeAdvocates }) {
+function OverviewView({ user, consultations = [], onSeeConsultations }) {
   const firstName = user.name.split(' ')[0];
-  const recent = activity.slice(0, 6);
+  const done = consultations.filter((c) => c.charged);
+  const spent = done.reduce((sum, c) => sum + c.price, 0);
+  const minutes = done.reduce((sum, c) => sum + c.talkedMinutes, 0);
+  const recent = consultations.slice(0, 6);
 
   return (
     <div>
       <h2 className="font-display text-2xl font-semibold text-ink">Hi, {firstName} 👋</h2>
-      <p className="mt-1 text-sm text-ink/55">Here&apos;s a summary of your activity.</p>
+      <p className="mt-1 text-sm text-ink/55">Here&apos;s a summary of your account.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard icon={Wallet} value={formatMoney(user.walletBalance || 0)} label="Wallet balance" tone="text-amber-600 bg-amber-500/10" />
-        <StatCard icon={Users} value={advocateCount} label="Advocates contacted" tone="text-primary bg-primary/10" />
-        <StatCard icon={CalendarCheck} value={bookings} label="Consultations booked" tone="text-emerald-600 bg-emerald-500/10" />
-        <StatCard icon={Clock} value={activity.length} label="Total interactions" tone="text-blue-600 bg-blue-500/10" />
+        <StatCard icon={CalendarCheck} value={done.length} label="Consultations" tone="text-emerald-600 bg-emerald-500/10" />
+        <StatCard icon={Clock} value={minutes} label="Minutes talked" tone="text-blue-600 bg-blue-500/10" />
+        <StatCard icon={ArrowUpRight} value={formatMoney(spent)} label="Total spent" tone="text-primary bg-primary/10" />
       </div>
 
       <div className="mt-8 flex items-center justify-between">
-        <h3 className="font-display text-lg font-semibold text-ink">Recent activity</h3>
-        {advocateCount > 0 && (
-          <button type="button" onClick={onSeeAdvocates} className="text-xs font-medium text-primary hover:underline">
-            View advocates
+        <h3 className="font-display text-lg font-semibold text-ink">Recent consultations</h3>
+        {consultations.length > 0 && (
+          <button type="button" onClick={onSeeConsultations} className="text-xs font-medium text-primary hover:underline">
+            View all
           </button>
         )}
       </div>
 
       {recent.length === 0 ? (
-        <EmptyActivity />
+        <EmptyConsultations />
       ) : (
         <ul className="mt-3 space-y-2.5">
-          {recent.map((a) => {
-            const meta = ACTIVITY_META[a.type] || ACTIVITY_META.call;
-            const Icon = meta.icon;
+          {recent.map((c) => {
+            const meta = CONSULT_STATUS_META[c.status] || CONSULT_STATUS_META.cancelled;
             return (
-              <li key={a.id} className="flex items-center gap-3 rounded-xl border border-ink/8 p-3.5">
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${meta.tone}`}>
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                </span>
+              <li key={c.id} className="flex items-center gap-3 rounded-xl border border-ink/8 p-3.5">
+                <Avatar name={c.advocateName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink">
-                    <span className="font-medium">{meta.label}</span>
-                    <span className="text-ink/50"> · {a.advocateName}</span>
+                  <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
+                    <span className="truncate font-medium">{c.advocateName}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
+                      {meta.label}
+                    </span>
                   </p>
-                  <p className="text-xs text-ink/45">{a.date}</p>
+                  <p className="text-xs text-ink/45">
+                    {c.charged ? `${c.talkedMinutes} min talked · ` : ''}
+                    {formatDate(c.createdAt)}
+                  </p>
                 </div>
+                <span className="shrink-0 text-sm font-semibold text-ink">
+                  {c.charged ? formatMoney(c.price) : '—'}
+                </span>
               </li>
             );
           })}
@@ -238,107 +212,33 @@ function StatCard({ icon: Icon, value, label, tone }) {
   );
 }
 
-/* ── My Advocates (scales to any number) ──────────────────────────────── */
-
-function AdvocatesView({ groups, bookingStatus = {} }) {
-  if (groups.length === 0) return <EmptyActivity />;
-
-  return (
-    <div>
-      <h2 className="font-display text-2xl font-semibold text-ink">My Advocates</h2>
-      <p className="mt-1 text-sm text-ink/55">
-        Advocates you&apos;ve booked, called or contacted.
-      </p>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {groups.map((g) => {
-          // If the user booked a consultation, surface the advocate's response.
-          const booked = Boolean(g.counts.booking);
-          const statusMeta = booked
-            ? USER_STATUS_META[bookingStatus[g.advocateId] || 'new']
-            : null;
-          // Non-booking interactions (booking has its own status row).
-          const otherTypes = Object.entries(g.counts).filter(([t]) => t !== 'booking');
-          return (
-          <div key={g.key} className="rounded-2xl border border-ink/8 p-4 shadow-card">
-            <div className="flex items-start gap-3">
-              <Avatar name={g.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-base font-semibold text-ink">{g.name}</p>
-                {g.city && (
-                  <p className="flex items-center gap-1 text-xs text-ink/55">
-                    <MapPin className="h-3 w-3" aria-hidden="true" />
-                    {g.city}
-                  </p>
-                )}
-              </div>
-              {g.profilePath && (
-                <Link
-                  href={`/advocates/${g.profilePath}`}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/45 transition-colors hover:bg-ink/5 hover:text-primary"
-                  aria-label={`View ${g.name}'s profile`}
-                >
-                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
-              )}
-            </div>
-
-            {/* Interaction summary badges — 'booking' has its own status row below */}
-            {otherTypes.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {otherTypes.map(([type, count]) => {
-                  const meta = ACTIVITY_META[type] || ACTIVITY_META.call;
-                  const Icon = meta.icon;
-                  return (
-                    <span
-                      key={type}
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${meta.tone}`}
-                    >
-                      <Icon className="h-3 w-3" aria-hidden="true" />
-                      {meta.short}
-                      {count > 1 ? ` ×${count}` : ''}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Booking response status (only when they booked a consultation) */}
-            {statusMeta && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-ink/[0.03] px-3 py-2">
-                <CalendarCheck className="h-3.5 w-3.5 shrink-0 text-ink/40" aria-hidden="true" />
-                <span className="text-xs text-ink/55">Appointment:</span>
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusMeta.tone}`}>
-                  {statusMeta.label}
-                </span>
-              </div>
-            )}
-
-            <div className="mt-3 flex items-center justify-between border-t border-ink/8 pt-3">
-              {g.phone ? (
-                <a
-                  href={`tel:${g.phone.replace(/\s/g, '')}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                >
-                  <Phone className="h-3.5 w-3.5" aria-hidden="true" />
-                  {g.phone}
-                </a>
-              ) : (
-                <span />
-              )}
-              <span className="text-[11px] text-ink/40">Last: {g.latest.date}</span>
-            </div>
-          </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /* ── Consultations ────────────────────────────────────────────────────── */
 
-function ConsultationsView({ consultations = [] }) {
+function ConsultationsView({ consultations = [], onRemove }) {
+  const [busyId, setBusyId] = useState(null);
+
+  // Clears the row from this user's list only — the advocate keeps their record.
+  const remove = async (c) => {
+    const ok = window.confirm(
+      `Remove your consultation with ${c.advocateName} from this list?\n\nThis only clears it from your account.`
+    );
+    if (!ok) return;
+    setBusyId(c.id);
+    try {
+      const res = await fetch(`/api/consultations/${c.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        window.alert(data.error || 'Could not remove it. Please try again.');
+        return;
+      }
+      onRemove?.(c.id);
+    } catch {
+      window.alert('Something went wrong. Please try again.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   if (consultations.length === 0) {
     return (
       <div>
@@ -385,9 +285,27 @@ function ConsultationsView({ consultations = [] }) {
                   </div>
                   <p className="mt-0.5 text-xs text-ink/45">{formatDate(c.createdAt)}</p>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-ink">
-                  {c.charged ? formatMoney(c.price) : '—'}
-                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <span className="text-sm font-semibold text-ink">
+                    {c.charged ? formatMoney(c.price) : '—'}
+                  </span>
+                  {c.status !== 'active' && (
+                    <button
+                      type="button"
+                      onClick={() => remove(c)}
+                      disabled={busyId === c.id}
+                      aria-label={`Remove consultation with ${c.advocateName}`}
+                      title="Remove from my list"
+                      className="grid h-8 w-8 place-items-center rounded-lg text-ink/35 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                    >
+                      {busyId === c.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink/8 pt-3 text-xs text-ink/60">
@@ -449,6 +367,8 @@ function WalletView({ user }) {
       setBalance(data.balance);
       setTransactions(data.transactions);
       setAmount('');
+      // Tell the navbar (and any other useAuth consumer) the balance changed.
+      refreshAuth();
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -602,16 +522,16 @@ function DetailRow({ icon: Icon, label, value }) {
   );
 }
 
-function EmptyActivity() {
+function EmptyConsultations() {
   return (
     <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-ink/15 py-12 text-center">
       <span className="grid h-12 w-12 place-items-center rounded-full bg-ink/5 text-ink/40">
-        <Inbox className="h-6 w-6" aria-hidden="true" />
+        <CalendarCheck className="h-6 w-6" aria-hidden="true" />
       </span>
       <div>
-        <p className="text-sm font-medium text-ink/70">No activity yet</p>
+        <p className="text-sm font-medium text-ink/70">No consultations yet</p>
         <p className="mt-0.5 text-xs text-ink/45">
-          When you book or contact an advocate, it will show up here.
+          Book a live chat from any advocate&apos;s profile and it will show up here.
         </p>
       </div>
       <Button href="/advocates" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>

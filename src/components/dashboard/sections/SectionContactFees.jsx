@@ -1,9 +1,12 @@
-import { Phone, MessageCircle, Mail, IndianRupee } from 'lucide-react';
+import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock } from 'lucide-react';
 import { FormField, Input } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
+import RepeatableList from '../RepeatableList';
+import { formatDuration } from '@/constants/consultationPlans';
 
 /**
- * SectionContactFees — direct contact channels and consultation fee.
+ * SectionContactFees — direct contact channels, the headline consultation fee,
+ * and the advocate's own live-chat plans (they set both duration and price).
  */
 export default function SectionContactFees({ data, set }) {
   return (
@@ -26,6 +29,48 @@ export default function SectionContactFees({ data, set }) {
         <FormField label="Consultation Fee (₹)" htmlFor="d-fee" hint="Enter 0 for a free first consultation.">
           <Input id="d-fee" type="number" min="0" value={data.fee} onChange={(e) => set('fee', e.target.value)} leftIcon={<IndianRupee className="h-4 w-4" />} className="max-w-xs" />
         </FormField>
+      </DashboardSection>
+
+      <DashboardSection
+        id="chat-rates"
+        title="Live Chat Consultation Plans"
+        description="Add your own plans — you choose the duration and the price. Clients see exactly these. Add none to not offer live chat."
+        icon={MessagesSquare}
+      >
+        <RepeatableList
+          items={data.consultationPlans || []}
+          onChange={(v) => set('consultationPlans', v)}
+          template={{ minutes: '', price: '' }}
+          addLabel="Add plan"
+          renderRow={(item, update) => (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Duration (minutes)"
+                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
+              >
+                <Input
+                  type="number"
+                  min="5"
+                  max="480"
+                  placeholder="15"
+                  value={item.minutes}
+                  onChange={(e) => update({ minutes: e.target.value })}
+                  leftIcon={<Clock className="h-4 w-4" />}
+                />
+              </FormField>
+              <FormField label="Price (₹)" hint="What you charge for this plan.">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="500"
+                  value={item.price}
+                  onChange={(e) => update({ price: e.target.value })}
+                  leftIcon={<IndianRupee className="h-4 w-4" />}
+                />
+              </FormField>
+            </div>
+          )}
+        />
       </DashboardSection>
     </>
   );

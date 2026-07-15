@@ -61,9 +61,10 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
   };
 
   return (
-    <div className="flex h-[28rem] flex-col">
+    // Fills the modal on phones (full-screen), fixed height on larger screens.
+    <div className="flex h-full min-h-0 flex-1 flex-col sm:h-[28rem] sm:flex-none">
       {/* Header: who + countdown + end */}
-      <div className="flex items-center justify-between gap-3 border-b border-ink/8 px-4 py-3">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink/8 px-4 py-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-ink">{otherName}</p>
           <p className="text-xs text-emerald-600">● Connected</p>
@@ -118,7 +119,7 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
 
       {/* Input / ended banner */}
       {active ? (
-        <form onSubmit={submit} className="flex items-center gap-2 border-t border-ink/8 p-3">
+        <form onSubmit={submit} className="flex shrink-0 items-center gap-2 border-t border-ink/8 p-3">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -134,7 +135,7 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
           </button>
         </form>
       ) : (
-        <div className="border-t border-ink/8 bg-muted/40 px-4 py-3.5 text-center">
+        <div className="shrink-0 border-t border-ink/8 bg-muted/40 px-4 py-3.5 text-center">
           <p className="text-sm font-medium text-ink/70">Consultation ended</p>
           <p className="text-xs text-ink/45">The time for this session is over.</p>
         </div>

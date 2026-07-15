@@ -17,8 +17,9 @@ import BookConsultationModal from './BookConsultationModal';
  * @param {string} props.name
  * @param {string} props.waText      pre-encoded WhatsApp message
  * @param {string} props.advocateId  advocate MongoDB _id (for activity + booking)
+ * @param {Array}  [props.plans]     the advocate's own live-chat rates
  */
-export default function ProfileContactActions({ contact = {}, name, waText, advocateId }) {
+export default function ProfileContactActions({ contact = {}, name, waText, advocateId, plans = [] }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
@@ -97,7 +98,8 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
             Send Email
           </Button>
         )}
-        {role !== 'advocate' && (
+        {/* Only offered when the advocate has set at least one chat rate. */}
+        {role !== 'advocate' && plans.length > 0 && (
           <Button
             type="button"
             variant="outline"
@@ -117,6 +119,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
+        plans={plans}
       />
     </>
   );

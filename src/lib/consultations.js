@@ -71,13 +71,17 @@ function talkedMinutes(s) {
 }
 
 /**
- * A user's consultation history (most recent first) for their account page.
+ * Shared shape for a consultation row in the account / dashboard history.
+ * `hidden` is resolved for the viewer — each side clears their own list.
+ *
+ * @param {object} r  lean Consultation doc
+ * @param {'user'|'advocate'} viewer
  */
-export async function getUserConsultations(userId) {
-  await connectDB();
-  const rows = await Consultation.find({ userId }).sort({ createdAt: -1 }).limit(50).lean();
-  return rows.map((r) => ({
+function toHistoryRow(r, viewer) {
+  return {
     id: String(r._id),
+    userId: String(r.userId),
+    userName: r.userName || 'Client',
     advocateId: String(r.advocateId),
     advocateName: r.advocateName || 'Advocate',
     minutes: r.minutes,
@@ -89,7 +93,59 @@ export async function getUserConsultations(userId) {
     messagesCount: (r.messages || []).length,
     startedAt: r.startedAt || null,
     createdAt: r.createdAt,
-  }));
+    // Cleared from this viewer's own list (the other side is unaffected).
+    hidden: Boolean(viewer === 'advocate' ? r.hiddenForAdvocate : r.hiddenForUser),
+  };
+}
+
+/**
+ * A user's consultation history (most recent first) for their account page.
+ */
+export async function getUserConsultations(userId) {
+  await connectDB();
+  const rows = await Consultation.find({ userId }).sort({ createdAt: -1 }).limit(100).lean();
+  return rows.map((r) => toHistoryRow(r, 'user'));
+}
+
+/**
+ * An advocate's consultation history (most recent first) for their dashboard —
+ * who they chatted with, for how long, and what they earned.
+ *
+ * Rows the advocate cleared are still returned (flagged `hidden`) so earnings
+ * totals stay accurate; the dashboard filters them out of the visible list.
+ */
+export async function getAdvocateConsultations(advocateId) {
+  await connectDB();
+  const rows = await Consultation.find({ advocateId }).sort({ createdAt: -1 }).limit(100).lean();
+  return rows.map((r) => toHistoryRow(r, 'advocate'));
+}
+
+/**
+ * Clear a consultation from one participant's own list. The document is kept,
+ * so the other side's history and the money ledger are untouched. Refuses while
+ * the chat is still live.
+ *
+ * @param {string} id
+ * @param {string} participantId  the viewer's own id
+ * @param {'user'|'advocate'} viewer
+ */
+export async function hideConsultationFor(id, participantId, viewer) {
+  await connectDB();
+  const query = viewer === 'advocate'
+    ? { _id: id, advocateId: participantId }
+    : { _id: id, userId: participantId };
+
+  const session = await Consultation.findOne(query);
+  if (!session) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
+  await settleIfExpired(session);
+  if (session.status === 'active') {
+    const e = new Error('Session is live'); e.code = 'BAD_STATE'; throw e;
+  }
+
+  if (viewer === 'advocate') session.hiddenForAdvocate = true;
+  else session.hiddenForUser = true;
+  await session.save();
+  return true;
 }
 
 /** Create a pending consultation request (no charge yet). */

@@ -32,6 +32,11 @@ function toSnapshot(a) {
     whatsapp: a.contact?.whatsapp || '',
     email: a.contact?.email || '',
     fee: String(a.consultationFee || ''),
+    // Live-chat plans the advocate defined (duration + price), as form strings.
+    consultationPlans: (a.consultationPlans || []).map((p) => ({
+      minutes: String(p.minutes ?? ''),
+      price: String(p.price ?? ''),
+    })),
     certificates: a.certificates || [],
     awards: a.awards || [],
     social: {

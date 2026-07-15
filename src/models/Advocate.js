@@ -77,6 +77,21 @@ const AdvocateSchema = new Schema(
     languages: { type: [String], default: [] },
     consultationFee: { type: Number, default: 0 },
 
+    // Live-chat consultation plans the advocate defines themselves — both the
+    // duration and the price. Empty ⇒ they don't offer live chat.
+    consultationPlans: {
+      type: [
+        new Schema(
+          {
+            minutes: { type: Number, required: true, min: 1 },
+            price: { type: Number, required: true, min: 1 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+
     office: {
       name: { type: String, default: '' },
       address: { type: String, default: '' },

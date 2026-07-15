@@ -160,6 +160,8 @@ export function buildAdvocateProfile(a) {
     ...a,
     legalCareId: a.legalCareId || '',
     profilePath: advocateProfilePath(a),
+    // Live-chat rates the advocate set themselves (empty ⇒ chat not offered).
+    consultationPlans: a.consultationPlans || [],
     rating: avgRating,
     reviews: reviewsCount,
     reviewsList,

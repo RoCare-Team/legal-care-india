@@ -6,6 +6,7 @@ import {
   rejectConsultation,
   cancelConsultation,
   endConsultation,
+  hideConsultationFor,
 } from '@/lib/consultations';
 
 /** Only the two participants may read/act on a session. */
@@ -76,5 +77,30 @@ export async function PATCH(request, { params }) {
     if (err.code === 'BAD_STATE') return NextResponse.json({ error: 'This request was already handled.' }, { status: 409 });
     console.error('consultation PATCH error', err);
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/consultations/[id]
+ * Clears the consultation from the caller's own list only — the other
+ * participant's history and the money ledger are kept.
+ */
+export async function DELETE(_request, { params }) {
+  const s = await getSession();
+  if (!s || (s.role !== 'advocate' && s.role !== 'user')) {
+    return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  try {
+    await hideConsultationFor(id, s.id, s.role);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err.code === 'NOT_FOUND') return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    if (err.code === 'BAD_STATE') {
+      return NextResponse.json({ error: 'You can\'t remove a consultation that is still live.' }, { status: 409 });
+    }
+    console.error('consultation DELETE error', err);
+    return NextResponse.json({ error: 'Could not remove it. Please try again.' }, { status: 500 });
   }
 }
