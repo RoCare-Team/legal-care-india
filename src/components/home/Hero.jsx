@@ -1,4 +1,4 @@
-import { BadgeCheck, ShieldCheck, Users } from 'lucide-react';
+import { BadgeCheck, ShieldCheck, Users, Scale, Gavel, Landmark } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
 import { CATEGORIES } from '@/data/categories';
@@ -16,6 +16,12 @@ export default function Hero() {
     <section className="relative overflow-hidden bg-gradient-to-br from-[#1E3A5F] via-[#1E3A5F] to-[#0F172A] text-white py-10 sm:py-14 lg:py-24 border-b border-[#0F172A]">
       {/* Background Subtle Watermark/Pattern Overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
+
+      {/* Legal-themed backdrop motifs — the hero's "image" layer, drawn in the
+          brand colors so it blends with the dark theme. */}
+      <Landmark className="pointer-events-none absolute -right-16 top-1/2 hidden h-[34rem] w-[34rem] -translate-y-1/2 text-[#D4AF37]/[0.05] lg:block" aria-hidden="true" />
+      <Scale className="pointer-events-none absolute -left-12 top-8 h-72 w-72 rotate-12 text-white/[0.035]" aria-hidden="true" />
+      <Gavel className="pointer-events-none absolute bottom-2 left-1/3 hidden h-52 w-52 -rotate-12 text-[#D4AF37]/[0.06] sm:block" aria-hidden="true" />
 
       {/* Soft Glow Ambient Lighting */}  
       <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-[#D4AF37]/10 blur-[150px] rounded-full pointer-events-none" />
@@ -92,16 +98,16 @@ export default function Hero() {
               {/* Decorative Subtle Pillars Accent Box */}
               <div className="absolute inset-0 -m-4 bg-white/5 border border-[#D4AF37]/10 rounded-3xl pointer-events-none" />
 
-              {/* Premium Stats Stack Box */}
-              <div className="relative bg-white rounded-2xl p-8 border border-white/10 shadow-2xl space-y-6">
+              {/* Premium Stats Stack Box — matches the site's dark theme */}
+              <div className="relative space-y-6 rounded-2xl border border-white/10 bg-[#0F1A2E]/80 p-8 shadow-2xl backdrop-blur-sm">
 
                 {/* Header Meta Info */}
-                <div className="flex items-center justify-between border-b border-ink/10 pb-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div>
-                    <h3 className="text-sm font-bold tracking-wide text-[#1E3A5F] uppercase">Legal Care India</h3>
-                    <p className="text-xs text-black mt-0.5">National Advocate Registry</p>
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-[#D4AF37]">Legal Care India</h3>
+                    <p className="mt-0.5 text-xs text-slate-300">National Advocate Registry</p>
                   </div>
-                  <span className="h-2 w-2 rounded-full bg-[#D4AF37] animate-pulse" />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-[#D4AF37]" />
                 </div>
 
                 {/* Vertical Trust Rows */}
@@ -109,21 +115,21 @@ export default function Hero() {
                   {TRUST.map(({ icon: Icon, label }) => (
                     <div
                       key={label}
-                      className="flex items-center gap-4 p-3.5 rounded-xl bg-slate-50 border border-[#1E3A5F]/30 hover:border-[#D4AF37]/60 transition-colors"
+                      className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-3.5 transition-colors hover:border-[#D4AF37]/50"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1E3A5F] text-white border border-[#D4AF37]/20 shadow-inner">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D4AF37]/20 bg-[#1E3A5F] text-[#D4AF37] shadow-inner">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </div>
-                      <span className="text-sm font-semibold tracking-wide text-black">{label}</span>
+                      <span className="text-sm font-semibold tracking-wide text-white">{label}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Mini Metric Highlight */}
                 <div className="pt-2">
-                  <div className="rounded-xl bg-[#1E3A5F] p-4">
-                    <p className="text-xs font-medium text-[#D4AF37] uppercase tracking-wider">Verification Standards</p>
-                    <p className="text-xl font-bold mt-1 text-white tracking-tight">100% Bar Council Verified</p>
+                  <div className="rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/10 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#D4AF37]">Verification Standards</p>
+                    <p className="mt-1 text-xl font-bold tracking-tight text-white">100% Bar Council Verified</p>
                   </div>
                 </div>
 

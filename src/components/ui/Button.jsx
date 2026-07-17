@@ -21,8 +21,8 @@ const BASE =
 const VARIANTS = {
   primary: 'bg-primary text-white shadow-sm hover:bg-primary-dark active:scale-[0.98]',
   secondary: 'bg-secondary text-white shadow-sm hover:bg-secondary-dark active:scale-[0.98]',
-  accent: 'bg-accent text-ink shadow-sm hover:brightness-95 active:scale-[0.98]',
-  outline: 'border border-ink/15 bg-white text-ink hover:border-primary hover:text-primary',
+  accent: 'bg-accent text-[#0B1220] shadow-sm hover:brightness-95 active:scale-[0.98]',
+  outline: 'border border-ink/15 bg-surface text-ink hover:border-primary hover:text-primary',
   ghost: 'text-ink hover:bg-ink/5',
 };
 

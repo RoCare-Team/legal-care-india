@@ -8,21 +8,27 @@
  * `<alpha-value>` syntax (e.g. text-primary/60) works everywhere.
  */
 :root {
-  /* Brand — Navy & Gold */
-  --color-primary: 30 58 95;          /* navy       #1E3A5F */
-  --color-primary-light: 52 85 127;   /* light navy #34557F */
-  --color-primary-dark: 20 40 66;     /* deep navy  #142842 */
+  /* Dark theme — Navy & Gold, tuned for a dark UI.
+     Colors are space-separated RGB channels so `<alpha-value>` (e.g.
+     text-ink/60) keeps working. `ink` is the FOREGROUND (light on dark);
+     `surface` is the card/panel; the page body sits darker than surface. */
 
-  --color-secondary: 15 23 42;        /* dark       #0F172A */
-  --color-secondary-light: 51 65 85;  /* slate 600  #334155 */
-  --color-secondary-dark: 8 12 22;    /* near black #080C16 */
+  /* Brand — lightened navy so it reads as an accent on dark + keeps white
+     button text legible. Gold stays as the premium accent. */
+  --color-primary: 96 152 224;        /* bright navy/blue #6098E0 */
+  --color-primary-light: 140 184 240; /* lighter          #8CB8F0 */
+  --color-primary-dark: 56 116 190;   /* deeper           #3874BE */
 
-  --color-accent: 212 175 55;         /* gold       #D4AF37 */
+  --color-secondary: 148 163 184;     /* slate 400 */
+  --color-secondary-light: 203 213 225;/* slate 300 */
+  --color-secondary-dark: 100 116 139; /* slate 500 */
 
-  /* Neutrals */
-  --color-surface: 255 255 255;       /* white      #FFFFFF */
-  --color-muted: 241 245 249;         /* slate 100 */
-  --color-ink: 15 23 42;              /* dark       #0F172A */
+  --color-accent: 224 189 74;         /* gold  #E0BD4A (a touch brighter) */
+
+  /* Neutrals — flipped for dark */
+  --color-surface: 25 33 51;          /* card    #192133 */
+  --color-muted: 18 25 40;            /* panel   #121928 */
+  --color-ink: 228 233 243;           /* text    #E4E9F3 (light foreground) */
 }
 
 @layer base {
@@ -36,8 +42,16 @@
   }
 
   body {
-    @apply bg-surface font-sans text-ink antialiased;
+    @apply font-sans text-ink antialiased;
     text-rendering: optimizeLegibility;
+    /* Dark page backdrop — deep navy with soft gold + navy glows. Fixed so it
+       stays put while scrolling; darker than the cards so panels lift off it. */
+    background-color: #0B1220;
+    background-image:
+      radial-gradient(1000px 520px at 100% -10%, rgb(var(--color-accent) / 0.10), transparent 60%),
+      radial-gradient(950px 560px at -8% 0%, rgb(var(--color-primary) / 0.12), transparent 58%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   :focus-visible {

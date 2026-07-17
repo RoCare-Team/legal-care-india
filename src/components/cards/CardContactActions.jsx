@@ -31,7 +31,7 @@ export default function CardContactActions({ contact = {}, name }) {
   };
 
   const base =
-    'flex items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-white py-2.5 text-sm font-medium transition-colors';
+    'flex items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-surface py-2.5 text-sm font-medium transition-colors';
 
   return (
     <>
@@ -39,7 +39,7 @@ export default function CardContactActions({ contact = {}, name }) {
         href={`tel:${contact?.phone || ''}`}
         onClick={gate}
         aria-label={`Call ${name}`}
-        className={`${base} text-blue-600 hover:border-blue-300 hover:bg-blue-50`}
+        className={`${base} text-blue-500 hover:border-blue-400 hover:bg-blue-500/10`}
       >
         <Phone className="h-4 w-4" />
         Call
@@ -50,7 +50,7 @@ export default function CardContactActions({ contact = {}, name }) {
         rel="noopener noreferrer"
         onClick={gate}
         aria-label={`WhatsApp ${name}`}
-        className={`${base} text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50`}
+        className={`${base} text-emerald-500 hover:border-emerald-400 hover:bg-emerald-500/10`}
       >
         <MessageCircle className="h-4 w-4" />
         Chat
@@ -59,7 +59,7 @@ export default function CardContactActions({ contact = {}, name }) {
         href={`mailto:${contact?.email || ''}`}
         onClick={gate}
         aria-label={`Email ${name}`}
-        className={`${base} text-red-500 hover:border-red-300 hover:bg-red-50`}
+        className={`${base} text-red-400 hover:border-red-400 hover:bg-red-500/10`}
       >
         <Mail className="h-4 w-4" />
         Email
