@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
   UserRound, LayoutDashboard, Clock,
-  Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2,
+  Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2, EyeOff,
 } from 'lucide-react';
 import { Avatar, Button } from '@/components/ui';
+import ViewConversationButton from '@/components/consultation/ViewConversationButton';
 import { logout } from '@/utils/logout';
 import { refreshAuth } from '@/utils/authEvents';
 import { formatDate } from '@/utils/formatters';
@@ -55,12 +56,20 @@ export default function AccountView({ user, consultations = [] }) {
     setConsultationList((prev) => prev.filter((c) => c.id !== id));
 
   return (
-    <div className="w-full border-b border-ink/8 bg-surface">
-      <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)]">
-        {/* ── Fixed sidebar ─────────────────────────────────────────────── */}
-        <aside className="flex flex-col border-b border-ink/8 bg-ink/[0.025] md:border-b-0 md:border-r">
-          {/* Profile header */}
-          <div className="flex items-center gap-3 border-b border-ink/8 p-5">
+    <div className="w-full overflow-x-hidden bg-surface">
+      {/* Same container as the header, so the sidebar lines up under the logo. */}
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid min-h-[calc(100vh-4rem)] grid-cols-1 md:grid-cols-[16rem_minmax(0,1fr)]">
+          {/* ── Fixed sidebar ─────────────────────────────────────────────── */}
+        <aside className="relative flex flex-col border-b border-ink/8 bg-ink/[0.025] md:border-b-0 md:bg-transparent">
+          {/* Desktop: the panel background bleeds out to the left viewport edge
+              while the content stays aligned with the header container/logo. */}
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 hidden bg-ink/[0.025] md:block md:border-r md:border-ink/8 md:left-[calc((min(100vw,80rem)_-_100vw)_/_2_-_1.5rem)] lg:left-[calc((min(100vw,80rem)_-_100vw)_/_2_-_2rem)]"
+            aria-hidden="true"
+          />
+          {/* Profile header — left padding removed so the avatar lines up with the logo. */}
+          <div className="relative flex items-center gap-3 border-b border-ink/8 py-5 pl-0 pr-5">
             <Avatar src={user.photo} name={user.name} size="sm" />
             <div className="min-w-0">
               <p className="truncate font-display text-sm font-semibold text-ink">{user.name}</p>
@@ -69,7 +78,7 @@ export default function AccountView({ user, consultations = [] }) {
           </div>
 
           {/* Fixed nav */}
-          <nav className="flex-1 p-3">
+          <nav className="relative flex-1 py-3 pr-3">
             <ul className="space-y-1">
               {NAV.map((item) => {
                 const Icon = item.icon;
@@ -100,7 +109,7 @@ export default function AccountView({ user, consultations = [] }) {
           </nav>
 
           {/* Footer actions */}
-          <div className="mt-auto space-y-2 border-t border-ink/8 p-4">
+          <div className="relative mt-auto space-y-2 border-t border-ink/8 py-4 pr-4">
             <Button href="/advocates" size="sm" fullWidth leftIcon={<Search className="h-4 w-4" />}>
               Find Advocates
             </Button>
@@ -132,6 +141,7 @@ export default function AccountView({ user, consultations = [] }) {
           {view === 'wallet' && <WalletView user={user} />}
           {view === 'profile' && <ProfileView user={user} />}
         </main>
+        </div>
       </div>
     </div>
   );
@@ -289,6 +299,9 @@ function ConsultationsView({ consultations = [], onRemove }) {
                   <span className="text-sm font-semibold text-ink">
                     {c.charged ? formatMoney(c.price) : '—'}
                   </span>
+                  {c.charged && (
+                    <ViewConversationButton id={c.id} otherName={c.advocateName} viewerRole="user" />
+                  )}
                   {c.status !== 'active' && (
                     <button
                       type="button"
@@ -495,6 +508,11 @@ function ProfileView({ user }) {
         <DetailRow icon={MapPin} label="City" value={user.city} />
       </dl>
 
+      <div className="mt-7 max-w-md">
+        <h3 className="text-sm font-semibold text-ink">Privacy</h3>
+        <AnonymousSetting initial={user.anonymous} />
+      </div>
+
       <div className="mt-7 flex flex-wrap gap-2">
         <Button href="/advocates" leftIcon={<Search className="h-4 w-4" />}>
           Find Advocates
@@ -509,6 +527,67 @@ function ProfileView({ user }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+/** The "hide my name from advocates" preference — saves instantly on toggle. */
+function AnonymousSetting({ initial = false }) {
+  const [anonymous, setAnonymous] = useState(Boolean(initial));
+  const [saving, setSaving] = useState(false);
+
+  const toggle = async () => {
+    if (saving) return;
+    const next = !anonymous;
+    setSaving(true);
+    setAnonymous(next); // optimistic
+    try {
+      const res = await fetch('/api/user/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anonymous: next }),
+      });
+      if (!res.ok) setAnonymous(!next); // revert on failure
+    } catch {
+      setAnonymous(!next);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={saving}
+      role="switch"
+      aria-checked={anonymous}
+      className="mt-2 flex w-full items-center justify-between gap-3 rounded-xl border border-ink/10 px-3.5 py-3 text-left transition-colors hover:border-primary/30 disabled:opacity-70"
+    >
+      <span className="flex items-center gap-2.5">
+        <EyeOff className={`h-4 w-4 shrink-0 ${anonymous ? 'text-primary' : 'text-ink/40'}`} />
+        <span>
+          <span className="block text-sm font-medium text-ink">Stay anonymous</span>
+          <span className="block text-xs text-ink/50">
+            {anonymous
+              ? 'Advocates see you as “Anonymous” — your name stays hidden.'
+              : 'Advocates can see your name when you consult them.'}
+          </span>
+        </span>
+      </span>
+      <span
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+          anonymous ? 'bg-primary' : 'bg-ink/20'
+        }`}
+      >
+        <span
+          className={`inline-flex h-4 w-4 items-center justify-center rounded-full bg-white shadow transition-transform ${
+            anonymous ? 'translate-x-6' : 'translate-x-1'
+          }`}
+        >
+          {saving && <Loader2 className="h-3 w-3 animate-spin text-ink/50" />}
+        </span>
+      </span>
+    </button>
   );
 }
 

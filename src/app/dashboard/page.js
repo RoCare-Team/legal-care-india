@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Wallet, MessagesSquare, Star, MessageSquare } from 'lucide-react';
 import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
+import AvailabilityToggle from '@/components/dashboard/AvailabilityToggle';
 import ProfileCompletion from '@/components/dashboard/ProfileCompletion';
 import RecentConsultations from '@/components/dashboard/RecentConsultations';
 import { getSessionAdvocateId } from '@/lib/auth';
@@ -39,6 +40,8 @@ export default async function DashboardOverviewPage() {
 
   return (
     <div className="space-y-6">
+      <AvailabilityToggle initialAvailable={advocate.available} />
+
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <DashboardStatCard
           icon={Wallet}

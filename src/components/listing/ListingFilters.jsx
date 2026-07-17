@@ -13,6 +13,20 @@ const SORT_OPTIONS = [
   { value: 'fee-high', label: 'Fee: High to Low' },
 ];
 
+/** A filter control with an optional label (shown only in the elevated bar). */
+function Field({ label, elevated, className, children }) {
+  return (
+    <div className={className}>
+      {elevated && (
+        <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+          {label}
+        </label>
+      )}
+      {children}
+    </div>
+  );
+}
+
 /**
  * ListingFilters — controlled filter bar for the advocate directory.
  *
@@ -22,11 +36,27 @@ const SORT_OPTIONS = [
  * @param {()=>void} props.onReset
  * @param {boolean} props.hasActiveFilters
  */
-export default function ListingFilters({ value, onChange, onReset, hasActiveFilters }) {
+export default function ListingFilters({ value, onChange, onReset, hasActiveFilters, elevated = false }) {
   return (
-    <div className="rounded-2xl border border-ink/8 bg-surface p-3 shadow-card sm:p-4">
+    <div
+      className={`rounded-2xl border border-ink/8 bg-surface p-4 sm:p-5 ${
+        elevated ? 'shadow-card-hover ring-1 ring-ink/5' : 'shadow-card'
+      }`}
+    >
+      {elevated && (
+        <div className="mb-4 flex items-center gap-2.5 border-b border-ink/8 pb-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="font-display text-sm font-semibold text-ink">Find your advocate</p>
+            <p className="text-xs text-ink/50">Search by name, or narrow down by legal service and city.</p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-        <div className="md:col-span-4">
+        <Field label="Search" elevated={elevated} className="md:col-span-4">
           <Input
             value={value.query}
             onChange={(e) => onChange({ query: e.target.value })}
@@ -34,8 +64,8 @@ export default function ListingFilters({ value, onChange, onReset, hasActiveFilt
             leftIcon={<Search className="h-4 w-4" />}
             aria-label="Search advocates"
           />
-        </div>
-        <div className="md:col-span-3">
+        </Field>
+        <Field label="Legal service" elevated={elevated} className="md:col-span-3">
           <Select
             value={value.service}
             onChange={(e) => onChange({ service: e.target.value })}
@@ -49,8 +79,8 @@ export default function ListingFilters({ value, onChange, onReset, hasActiveFilt
               </option>
             ))}
           </Select>
-        </div>
-        <div className="md:col-span-3">
+        </Field>
+        <Field label="City" elevated={elevated} className="md:col-span-3">
           <Select
             value={value.city}
             onChange={(e) => onChange({ city: e.target.value })}
@@ -63,15 +93,15 @@ export default function ListingFilters({ value, onChange, onReset, hasActiveFilt
               </option>
             ))}
           </Select>
-        </div>
-        <div className="md:col-span-2">
+        </Field>
+        <Field label="Sort by" elevated={elevated} className="md:col-span-2">
           <Select
             value={value.sort}
             onChange={(e) => onChange({ sort: e.target.value })}
             options={SORT_OPTIONS}
             aria-label="Sort advocates"
           />
-        </div>
+        </Field>
       </div>
 
       {hasActiveFilters && (

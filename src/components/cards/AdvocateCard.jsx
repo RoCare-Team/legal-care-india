@@ -12,6 +12,7 @@ import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
 import { advocateProfilePath } from "@/utils/advocateUrl";
 import CardContactActions from "./CardContactActions";
+import PresenceIndicator from "@/components/consultation/PresenceIndicator";
 
 /**
  * AdvocateCard — premium directory listing card for a single advocate.
@@ -34,6 +35,7 @@ export default function AdvocateCard({ advocate }) {
     languages = [],
     consultationFee,
     contact,
+    available,
   } = advocate;
 
   return (
@@ -54,6 +56,7 @@ export default function AdvocateCard({ advocate }) {
           aria-hidden="true"
         />
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.08]" />
+        <PresenceIndicator id={advocate._id} initialAvailable={available} variant="card" />
         <span className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
           ₹{consultationFee}
           <span className="font-normal text-white/70"> / consult</span>

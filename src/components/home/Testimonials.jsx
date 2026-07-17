@@ -12,7 +12,7 @@ export default async function Testimonials() {
   const testimonials = await getTestimonials();
 
   return (
-    <Section className="bg-muted/50">
+    <Section className="bg-muted/50 pt-8 sm:pt-10">
       <div className="flex flex-col items-center gap-5">
         <Heading
           centered

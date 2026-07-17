@@ -17,7 +17,7 @@ export default function Hero() {
       {/* Background Subtle Watermark/Pattern Overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
 
-      {/* Soft Glow Ambient Lighting */}
+      {/* Soft Glow Ambient Lighting */}  
       <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-[#D4AF37]/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-[350px] h-[350px] bg-[#34557F]/20 blur-[100px] rounded-full pointer-events-none" />
 

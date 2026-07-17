@@ -17,11 +17,14 @@ export async function markAdvocateOnline(advocateId) {
   await Advocate.updateOne({ _id: advocateId }, { $set: { lastSeenAt: new Date() } });
 }
 
-/** Is the advocate online (recent heartbeat)? */
+/**
+ * Is the advocate online right now? They must have manually switched
+ * themselves available AND have a recent heartbeat (site open).
+ */
 export async function isAdvocateOnline(advocateId) {
   await connectDB();
-  const adv = await Advocate.findById(advocateId).select('lastSeenAt').lean();
-  if (!adv?.lastSeenAt) return false;
+  const adv = await Advocate.findById(advocateId).select('lastSeenAt available').lean();
+  if (!adv?.available || !adv?.lastSeenAt) return false;
   return Date.now() - new Date(adv.lastSeenAt).getTime() < ONLINE_WINDOW_MS;
 }
 
@@ -50,6 +53,57 @@ export function serializeSession(doc) {
       at: m.at,
     })),
   };
+}
+
+/**
+ * The full, continuous transcript between one user and one advocate across
+ * EVERY consultation they've ever had, ordered oldest-first. This is what makes
+ * the chat resume where it left off: book again and the whole past conversation
+ * is still there, with the new session's messages appended.
+ */
+export async function getPairMessages(userId, advocateId) {
+  await connectDB();
+  const rows = await Consultation.find({ userId, advocateId }).select('messages').lean();
+  const all = [];
+  for (const r of rows) {
+    for (const m of r.messages || []) {
+      all.push({ id: String(m._id), from: m.from, text: m.text, at: m.at });
+    }
+  }
+  all.sort((a, b) => new Date(a.at) - new Date(b.at));
+  return all;
+}
+
+/**
+ * Read-only transcript for a history row: the full saved conversation between
+ * the two parties, gated to the logged-in participant. Free to read — no charge,
+ * no writes. `role` is the caller's role; `participantId` their own id.
+ */
+export async function getTranscriptFor(consultationId, participantId, role) {
+  await connectDB();
+  const row = await Consultation.findById(consultationId)
+    .select('userId advocateId userName advocateName')
+    .lean();
+  if (!row) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
+
+  const isUser = role === 'user' && String(row.userId) === String(participantId);
+  const isAdvocate = role === 'advocate' && String(row.advocateId) === String(participantId);
+  if (!isUser && !isAdvocate) { const e = new Error('Forbidden'); e.code = 'FORBIDDEN'; throw e; }
+
+  return {
+    messages: await getPairMessages(row.userId, row.advocateId),
+    otherName: role === 'user' ? (row.advocateName || 'Advocate') : (row.userName || 'Client'),
+  };
+}
+
+/**
+ * Replace a serialized session's `messages` with the full pair history, so the
+ * live chat always shows the entire conversation (not just this one session).
+ */
+async function withPairHistory(session) {
+  if (!session) return session;
+  const messages = await getPairMessages(session.userId, session.advocateId);
+  return { ...session, messages };
 }
 
 /** Flip an active-but-expired session to `ended` (lazy, on read). */
@@ -157,13 +211,13 @@ export async function createConsultation({ userId, userName, advocateId, advocat
   return serializeSession(doc.toObject());
 }
 
-/** Fetch one session (settling expiry first). */
+/** Fetch one session (settling expiry first) with the full pair transcript. */
 export async function getConsultation(id) {
   await connectDB();
   const doc = await Consultation.findById(id);
   if (!doc) return null;
   await settleIfExpired(doc);
-  return serializeSession(doc.toObject());
+  return withPairHistory(serializeSession(doc.toObject()));
 }
 
 /** Pending + active sessions for an advocate (the incoming-call feed). */
@@ -212,7 +266,7 @@ export async function acceptConsultation(id, advocateId) {
   session.startedAt = startedAt;
   session.endsAt = new Date(startedAt.getTime() + session.minutes * 60 * 1000);
   await session.save();
-  return serializeSession(session.toObject());
+  return withPairHistory(serializeSession(session.toObject()));
 }
 
 /** Advocate rejects a pending request (no charge). */
@@ -271,5 +325,5 @@ export async function addMessage(id, participantId, from, text) {
 
   session.messages.push({ from, text: text.trim(), at: new Date() });
   await session.save();
-  return serializeSession(session.toObject());
+  return withPairHistory(serializeSession(session.toObject()));
 }

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 
@@ -16,6 +17,7 @@ function serialize(doc) {
     phone: u.phone || '',
     photo: u.photo || '',
     city: u.city || '',
+    anonymous: Boolean(u.anonymous),
     walletBalance: u.walletBalance || 0,
     walletTransactions: (u.walletTransactions || [])
       .map((t) => ({
@@ -34,6 +36,20 @@ function serialize(doc) {
 /** Full user by id (without the password hash), or null. */
 export async function getUserById(id) {
   await connectDB();
+  const user = await User.findById(id).select('-passwordHash').lean();
+  return serialize(user);
+}
+
+/** Update the user's anonymity preference. Returns the serialized user. */
+export async function setUserAnonymous(id, value) {
+  await connectDB();
+  // Write through the native driver so the value persists even if the running
+  // Mongoose model was compiled before `anonymous` existed — no server restart
+  // needed for the preference to stick.
+  await User.collection.updateOne(
+    { _id: new mongoose.Types.ObjectId(String(id)) },
+    { $set: { anonymous: Boolean(value) } }
+  );
   const user = await User.findById(id).select('-passwordHash').lean();
   return serialize(user);
 }

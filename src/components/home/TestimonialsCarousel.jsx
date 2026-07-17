@@ -25,9 +25,9 @@ export default function TestimonialsCarousel({ testimonials }) {
   const showArrows = testimonials.length > 3;
 
   return (
-    <div className="mt-10">
+    <div className="mt-2">
       {showArrows && (
-        <div className="mb-4 hidden justify-end gap-2 lg:flex">
+        <div className="mb-2 hidden justify-end gap-2 lg:flex">
           <button
             type="button"
             onClick={() => scroll(-1)}

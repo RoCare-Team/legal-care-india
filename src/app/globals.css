@@ -124,6 +124,16 @@
   }
 }
 
+/* Mobile readability: bump up the smallest text tiers on phones so they stay
+   legible, without touching headings or layout spacing. Applied below the
+   `sm` breakpoint (≤640px); at sm+ the original Tailwind sizes take over. */
+@media (max-width: 639.98px) {
+  .text-xs { font-size: 0.875rem; line-height: 1.2rem; }        /* 12 → 14px */
+  .text-sm { font-size: 0.9375rem; line-height: 1.4rem; }       /* 14 → 15px */
+  .text-\[11px\] { font-size: 0.875rem; }                       /* 11 → 14px */
+  .text-\[13px\] { font-size: 0.9375rem; }                      /* 13 → 15px */
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

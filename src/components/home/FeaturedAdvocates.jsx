@@ -11,7 +11,7 @@ export default async function FeaturedAdvocates() {
   const advocates = (await getAllAdvocates()).slice(0, 12);
 
   return (
-    <Section className="bg-muted/50">
+    <Section className="bg-muted/50 pt-8 sm:pt-10 mt-10">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <Heading
           eyebrow="Featured"

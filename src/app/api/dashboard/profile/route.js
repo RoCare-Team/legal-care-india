@@ -114,6 +114,37 @@ export async function PUT(request) {
 }
 
 /**
+ * PATCH /api/dashboard/profile — quick partial updates from the dashboard,
+ * currently just the online/offline availability switch.
+ */
+export async function PATCH(request) {
+  const id = await getSessionAdvocateId();
+  if (!id) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+  }
+
+  if (typeof body?.available !== 'boolean') {
+    return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
+  }
+
+  try {
+    await connectDB();
+    await Advocate.findByIdAndUpdate(id, { $set: { available: body.available } });
+    // Presence shows on the public listing/profile — refresh the cached directory.
+    revalidateTag(ADVOCATES_TAG);
+    return NextResponse.json({ ok: true, available: body.available });
+  } catch (err) {
+    console.error('availability update error', err);
+    return NextResponse.json({ error: 'Could not update availability.' }, { status: 500 });
+  }
+}
+
+/**
  * DELETE /api/dashboard/profile — permanently deletes the logged-in advocate's
  * account, removes them from the public directory and clears the session.
  */

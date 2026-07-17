@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
 import ChatPanel from '@/components/consultation/ChatPanel';
+import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { refreshAuth } from '@/utils/authEvents';
 
@@ -23,6 +24,7 @@ export default function BookConsultationModal({
   const [error, setError] = useState('');
   const [insufficient, setInsufficient] = useState(false);
   const [offline, setOffline] = useState('');
+  const [minimized, setMinimized] = useState(false);
 
   const [session, setSession, refresh] = useSessionPoll(sessionId, {
     enabled: open && Boolean(sessionId),
@@ -39,6 +41,7 @@ export default function BookConsultationModal({
       setInsufficient(false);
       setOffline('');
       setCreating(false);
+      setMinimized(false);
     }
   }, [open, setSession]);
 
@@ -54,6 +57,7 @@ export default function BookConsultationModal({
   // whole modal shortly after — the chat and its timer disappear.
   useEffect(() => {
     if (status === 'ended') {
+      setMinimized(false); // surface the "ended" state instead of staying tucked away
       const t = setTimeout(onClose, 1200);
       return () => clearTimeout(t);
     }
@@ -145,10 +149,21 @@ export default function BookConsultationModal({
 
   // ── Chat (connected) — full-width modal ──────────────────────────────────
   if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
+    // The X only tucks the chat away (like backgrounding a call) — it never
+    // hangs up. Ending is the red button inside ChatPanel (onEnd).
+    if (open && minimized) {
+      return (
+        <MinimizedCallBar
+          name={advocateName}
+          endsAt={session.endsAt}
+          onRestore={() => setMinimized(false)}
+        />
+      );
+    }
     return (
       <ConsultationModal
         open={open}
-        onClose={onClose}
+        onClose={() => setMinimized(true)}
         title={`Consultation · ${advocateName}`}
         icon={CalendarCheck}
         fullScreen

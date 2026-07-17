@@ -41,6 +41,7 @@ export default function AdvocateListing({
   advocates,
   initial = {},
   showFilters = true,
+  floatFilters = false,
   emptyTitle,
   emptyMessage,
   emptyAction,
@@ -78,6 +79,7 @@ export default function AdvocateListing({
             onChange={onChange}
             onReset={onReset}
             hasActiveFilters={hasActiveFilters}
+            elevated={floatFilters}
           />
 
           <div className="flex items-center justify-between">

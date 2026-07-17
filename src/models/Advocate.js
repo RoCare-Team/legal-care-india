@@ -134,6 +134,11 @@ const AdvocateSchema = new Schema(
     // site open. Recent `lastSeenAt` ⇒ available to take live consultations.
     lastSeenAt: { type: Date, default: null },
 
+    // Manual availability switch the advocate flips in their dashboard. When
+    // off (the default) they show as "Offline" everywhere and can't be booked,
+    // regardless of whether they have the site open.
+    available: { type: Boolean, default: false },
+
     // Earnings wallet — credited when a paid consultation connects.
     walletBalance: { type: Number, default: 0, min: 0 },
     walletTransactions: {

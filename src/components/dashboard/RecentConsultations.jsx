@@ -3,6 +3,7 @@ import { MessagesSquare, Clock, CalendarCheck } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { formatDate } from '@/utils/formatters';
 import RemoveConsultationButton from './RemoveConsultationButton';
+import ViewConversationButton from '@/components/consultation/ViewConversationButton';
 
 const STATUS_META = {
   ended: { label: 'Completed', tone: 'bg-emerald-500/10 text-emerald-700' },
@@ -76,6 +77,9 @@ export default function RecentConsultations({ consultations = [] }) {
                     <span className={`text-sm font-semibold ${c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
                       {c.charged ? `+₹${Number(c.price).toLocaleString('en-IN')}` : '—'}
                     </span>
+                    {c.charged && (
+                      <ViewConversationButton id={c.id} otherName={c.userName} viewerRole="advocate" />
+                    )}
                     {c.status !== 'active' && (
                       <RemoveConsultationButton id={c.id} name={c.userName} />
                     )}

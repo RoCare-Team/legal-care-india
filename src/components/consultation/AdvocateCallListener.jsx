@@ -7,6 +7,7 @@ import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { playIncomingChime } from '@/utils/beep';
 import ConsultationModal from './ConsultationModal';
 import ChatPanel from './ChatPanel';
+import MinimizedCallBar from './MinimizedCallBar';
 
 /**
  * AdvocateCallListener — mounted globally; only active for a signed-in advocate.
@@ -17,6 +18,7 @@ export default function AdvocateCallListener() {
   const { role } = useAuth();
   const [incoming, setIncoming] = useState(null);
   const [activeId, setActiveId] = useState(null);
+  const [minimized, setMinimized] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [note, setNote] = useState('');
   const chimed = useRef(new Set());
@@ -70,6 +72,7 @@ export default function AdvocateCallListener() {
   // When the session ends (time up or either side hangs up), close the chat.
   useEffect(() => {
     if (activeSession?.status === 'ended') {
+      setMinimized(false); // surface the "ended" state instead of staying tucked away
       const t = setTimeout(() => setActiveId(null), 1200);
       return () => clearTimeout(t);
     }
@@ -90,6 +93,7 @@ export default function AdvocateCallListener() {
       const data = await res.json();
       if (res.ok) {
         setActiveId(id);
+        setMinimized(false);
         setIncoming(null);
       } else if (res.status === 402) {
         setNote('The client no longer has enough wallet balance.');
@@ -137,16 +141,23 @@ export default function AdvocateCallListener() {
     refresh();
   };
 
-  const closeChat = () => {
-    setActiveId(null);
-  };
-
   // ── Live chat (after accepting) ─────────────────────────────────────────
   if (activeId && activeSession && (activeSession.status === 'active' || activeSession.status === 'ended')) {
+    // The X only tucks the chat away (like backgrounding a call) — it never
+    // hangs up. Ending is the red button inside ChatPanel (onEnd).
+    if (minimized) {
+      return (
+        <MinimizedCallBar
+          name={activeSession.userName}
+          endsAt={activeSession.endsAt}
+          onRestore={() => setMinimized(false)}
+        />
+      );
+    }
     return (
       <ConsultationModal
         open
-        onClose={closeChat}
+        onClose={() => setMinimized(true)}
         title={`Consultation · ${activeSession.userName}`}
         icon={PhoneCall}
         fullScreen

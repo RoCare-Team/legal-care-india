@@ -160,6 +160,8 @@ export function buildAdvocateProfile(a) {
     ...a,
     legalCareId: a.legalCareId || '',
     profilePath: advocateProfilePath(a),
+    // Manual availability switch (defaults to offline for older records).
+    available: Boolean(a.available),
     // Live-chat rates the advocate set themselves (empty ⇒ chat not offered).
     consultationPlans: a.consultationPlans || [],
     rating: avgRating,

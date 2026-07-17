@@ -2,6 +2,7 @@ import { BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint } from 'lu
 import { Avatar, Badge } from '@/components/ui';
 import Rating from '@/components/shared/Rating';
 import { formatExperience } from '@/utils/formatters';
+import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
 /**
  * ProfileHeader — cover banner, avatar, identity and headline meta for an
@@ -13,7 +14,7 @@ import { formatExperience } from '@/utils/formatters';
 export default function ProfileHeader({ advocate }) {
   const {
     name, photo, coverImage, city, state, experience, rating, reviews, verified,
-    barCouncilNumber, tagline, languages = [], metrics, legalCareId,
+    barCouncilNumber, tagline, languages = [], metrics, legalCareId, available, _id,
   } = advocate;
 
   return (
@@ -44,6 +45,7 @@ export default function ProfileHeader({ advocate }) {
                   Verified
                 </Badge>
               )}
+              <PresenceIndicator id={_id} initialAvailable={available} variant="profile" />
             </div>
             {tagline && <p className="mt-1 text-sm text-ink/60">{tagline}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-3">

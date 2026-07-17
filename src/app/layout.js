@@ -11,6 +11,7 @@ import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
 import Analytics from '@/components/shared/Analytics';
 import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
+import PresenceProvider from '@/components/consultation/PresenceProvider';
 
 /** Root metadata for every route (extend per-page with createMetadata). */
 export const metadata = baseMetadata;
@@ -90,15 +91,17 @@ export default function RootLayout({ children }) {
         >
           Skip to content
         </a>
-        <HideOnAdmin>
-          <Header />
-        </HideOnAdmin>
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <HideOnAdmin>
-          <Footer />
-        </HideOnAdmin>
+        <PresenceProvider>
+          <HideOnAdmin>
+            <Header />
+          </HideOnAdmin>
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <HideOnAdmin>
+            <Footer />
+          </HideOnAdmin>
+        </PresenceProvider>
         <ScrollToTop />
         <AdvocateCallListener />
         <Analytics />

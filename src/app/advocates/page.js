@@ -62,8 +62,10 @@ export default async function AdvocatesPage({ searchParams }) {
         subtitle="Browse trusted advocates by legal service, city and experience — then call, WhatsApp or email them directly."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Find Advocates' }]}
       />
-      <Container className="py-10 sm:py-12">
-        <AdvocateListing advocates={advocates} initial={initial} />
+      {/* Pull the filter/search bar up so it floats over the hero — the first
+          thing a visitor reaches, clearly above the fold. */}
+      <Container className="relative z-20 -mt-12 pb-10 sm:-mt-16 sm:pb-12">
+        <AdvocateListing advocates={advocates} initial={initial} floatFilters />
       </Container>
     </>
   );

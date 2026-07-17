@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { MessagesSquare, Clock, CalendarCheck, MessageCircle, Wallet } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import RemoveConsultationButton from '@/components/dashboard/RemoveConsultationButton';
+import ViewConversationButton from '@/components/consultation/ViewConversationButton';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateConsultations } from '@/lib/consultations';
 import { formatDate } from '@/utils/formatters';
@@ -41,6 +42,9 @@ function ConsultationCard({ item: c }) {
           <span className={`text-sm font-semibold ${c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
             {c.charged ? `+${money(c.price)}` : '—'}
           </span>
+          {c.charged && (
+            <ViewConversationButton id={c.id} otherName={c.userName} viewerRole="advocate" />
+          )}
           {c.status !== 'active' && <RemoveConsultationButton id={c.id} name={c.userName} />}
         </div>
       </div>

@@ -81,7 +81,8 @@ export async function POST(request) {
 
   const created = await createConsultation({
     userId: session.id,
-    userName: user.name,
+    // The advocate sees "Anonymous" if the user turned that on in their account.
+    userName: user.anonymous ? 'Anonymous' : user.name,
     advocateId,
     advocateName: advocate.name,
     minutes: plan.minutes,

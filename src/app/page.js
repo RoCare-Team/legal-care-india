@@ -1,5 +1,6 @@
 import { createMetadata } from '@/lib/metadata';
 import Hero from '@/components/home/Hero';
+import QuickActions from '@/components/home/QuickActions';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
@@ -20,6 +21,7 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <QuickActions />
       <FeaturedAdvocates />
       <Categories />
       <Stats />

@@ -28,6 +28,9 @@ const UserSchema = new Schema(
     phone: { type: String, default: '' },
     photo: { type: String, default: '' },
     city: { type: String, default: '' },
+    // Privacy preference: when on, the user's name is hidden from advocates
+    // (they see "Anonymous"). Set once in the account, applied to every booking.
+    anonymous: { type: Boolean, default: false },
     // Wallet: prepaid balance (in ₹) the user tops up themselves, plus a ledger.
     walletBalance: { type: Number, default: 0, min: 0 },
     walletTransactions: { type: [WalletTxnSchema], default: [] },

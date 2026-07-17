@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Send, Clock, PhoneOff } from 'lucide-react';
+import { Send, Clock, Phone } from 'lucide-react';
 
 /** MM:SS from milliseconds. */
 function fmt(ms) {
@@ -25,11 +25,35 @@ function fmt(ms) {
  */
 export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherName }) {
   const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
   const [remaining, setRemaining] = useState(session.remainingMs ?? 0);
+  // Optimistic messages: rendered instantly on send, dropped once the server
+  // echoes them back — so the chat feels immediate instead of waiting on a poll.
+  const [pending, setPending] = useState([]);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const scrollRef = useRef(null);
 
   const active = session.status === 'active' && remaining > 0;
+
+  // Reconcile: remove each optimistic bubble once a matching server message
+  // (same side + text) has arrived, consuming one server match per pending.
+  useEffect(() => {
+    setPending((prev) => {
+      if (!prev.length) return prev;
+      const pool = (session.messages || [])
+        .filter((m) => m.from === viewerRole)
+        .map((m) => m.text);
+      const remainingPending = [];
+      for (const pm of prev) {
+        const idx = pool.indexOf(pm.text);
+        if (idx >= 0) pool.splice(idx, 1); // confirmed by the server → drop it
+        else remainingPending.push(pm);
+      }
+      return remainingPending.length === prev.length ? prev : remainingPending;
+    });
+  }, [session.messages, viewerRole]);
+
+  // What actually renders: confirmed server messages + not-yet-confirmed ones.
+  const allMessages = [...(session.messages || []), ...pending];
 
   // Local 1s countdown while the session is active. Once it ends (time up or a
   // hang-up), freeze the timer instead of letting it keep ticking.
@@ -42,27 +66,56 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
     return () => clearInterval(t);
   }, [session.endsAt, session.status]);
 
-  // Auto-scroll to the newest message.
+  // Auto-scroll to the newest message (including optimistic ones).
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [session.messages?.length]);
+  }, [allMessages.length]);
 
   const submit = async (e) => {
     e.preventDefault();
     const value = text.trim();
-    if (!value || sending || !active) return;
-    setSending(true);
+    if (!value || !active) return;
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // Show it immediately and clear the input — don't wait for the network.
+    setPending((p) => [...p, { id: tempId, from: viewerRole, text: value }]);
+    setText('');
     try {
       await onSend(value);
-      setText('');
-    } finally {
-      setSending(false);
+    } catch {
+      // Send failed — pull the optimistic bubble back out.
+      setPending((p) => p.filter((m) => m.id !== tempId));
     }
   };
 
   return (
     // Fills the modal on phones (full-screen), fixed height on larger screens.
-    <div className="flex h-full min-h-0 flex-1 flex-col sm:h-[28rem] sm:flex-none">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col sm:h-[28rem] sm:flex-none">
+      {/* Confirm before ending the consultation. */}
+      {confirmEnd && (
+        <div className="absolute inset-0 z-20 grid place-items-center bg-ink/40 p-4">
+          <div className="w-full max-w-xs rounded-2xl bg-surface p-5 text-center shadow-card-hover">
+            <p className="font-display text-base font-semibold text-ink">End consultation?</p>
+            <p className="mt-1 text-sm text-ink/55">This will end the live chat for both of you.</p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmEnd(false)}
+                className="flex-1 rounded-xl border border-ink/15 py-2.5 text-sm font-semibold text-ink/70 transition-colors hover:bg-ink/5"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() => { setConfirmEnd(false); onEnd(); }}
+                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+              >
+                Yes, end
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header: who + countdown + end */}
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-ink/8 px-4 py-3">
         <div className="min-w-0">
@@ -81,11 +134,12 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
           {active && (
             <button
               type="button"
-              onClick={onEnd}
-              className="grid h-8 w-8 place-items-center rounded-lg text-red-600 transition-colors hover:bg-red-500/10"
+              onClick={() => setConfirmEnd(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700"
               title="End consultation"
             >
-              <PhoneOff className="h-4 w-4" />
+              <Phone className="h-4 w-4" />
+              End
             </button>
           )}
         </div>
@@ -93,13 +147,14 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto bg-muted/30 p-4">
-        {(session.messages || []).length === 0 ? (
+        {allMessages.length === 0 ? (
           <p className="mt-6 text-center text-sm text-ink/45">
             You&apos;re connected — say hello to start the conversation.
           </p>
         ) : (
-          session.messages.map((m) => {
+          allMessages.map((m) => {
             const mine = m.from === viewerRole;
+            const optimistic = typeof m.id === 'string' && m.id.startsWith('tmp-');
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div
@@ -107,7 +162,7 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
                     mine
                       ? 'rounded-br-sm bg-primary text-white'
                       : 'rounded-bl-sm bg-surface text-ink shadow-sm ring-1 ring-ink/5'
-                  }`}
+                  } ${optimistic ? 'opacity-70' : ''}`}
                 >
                   {m.text}
                 </div>
@@ -128,7 +183,7 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
           />
           <button
             type="submit"
-            disabled={sending || !text.trim()}
+            disabled={!text.trim()}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
