@@ -37,7 +37,7 @@ export async function PUT(request) {
 
   const {
     fullName, photo, coverImage, gallery, tagline, city, state, about,
-    services, subServices, languages, barCouncil, experience,
+    services, subServices, languages, courts, practiceCities, barCouncil, experience,
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
@@ -66,6 +66,9 @@ export async function PUT(request) {
   if (Array.isArray(services)) update.specializations = services;
   if (Array.isArray(subServices)) update.subSpecializations = subServices;
   if (Array.isArray(languages)) update.languages = languages;
+  const cleanList = (arr) => [...new Set(arr.map((s) => String(s || '').trim()).filter(Boolean))];
+  if (Array.isArray(courts)) update.courts = cleanList(courts);
+  if (Array.isArray(practiceCities)) update.practiceCities = cleanList(practiceCities);
   if (barCouncil !== undefined) update.barCouncilNumber = barCouncil;
   if (experience !== undefined) update.experience = Number(experience) || 0;
   if (cases !== undefined) update['metrics.cases'] = Number(cases) || 0;

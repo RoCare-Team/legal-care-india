@@ -1,17 +1,18 @@
-import { IndianRupee, Clock } from 'lucide-react';
+import { Clock, MessagesSquare } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { advocatePlans } from '@/constants/consultationPlans';
 import ProfileContactActions from './ProfileContactActions';
 
 /**
- * ProfileContactCard — sticky sidebar with consultation fee, direct contact
- * actions (call / WhatsApp / email) and office timing.
+ * ProfileContactCard — sticky sidebar with the direct contact actions
+ * (call / WhatsApp / email), the live-chat Book Consultation action, and
+ * office timing.
  *
  * @param {object} props
  * @param {object} props.advocate  full profile
  */
 export default function ProfileContactCard({ advocate }) {
-  const { contact = {}, consultationFee, name } = advocate;
+  const { contact = {}, name } = advocate;
   const advocateId = advocate._id || advocate.id || '';
   // The advocate's own live-chat rates (only the durations they priced).
   const plans = advocatePlans(advocate.consultationPlans);
@@ -22,13 +23,27 @@ export default function ProfileContactCard({ advocate }) {
   return (
     <aside id="contact" className="scroll-mt-24 space-y-4 lg:sticky lg:top-24">
       <div className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-ink/55">Consultation Fee</span>
-          <span className="flex items-center font-display text-xl font-semibold text-ink">
-            <IndianRupee className="h-4 w-4" aria-hidden="true" />
-            {consultationFee}
-          </span>
-        </div>
+        {/* Live-chat plans the advocate set — everyone sees the rates; the
+            advocate can confirm what they added, users see the options. */}
+        {plans.length > 0 && (
+          <div className="mb-4 rounded-xl border border-ink/8 bg-muted/40 p-3.5">
+            <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+              <MessagesSquare className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              Live Chat Consultation
+            </p>
+            <ul className="space-y-2">
+              {plans.map((p) => (
+                <li key={p.id} className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-ink/70">
+                    <Clock className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />
+                    {p.label}
+                  </span>
+                  <span className="font-display font-bold text-primary">₹{p.price}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <ProfileContactActions
           contact={contact}

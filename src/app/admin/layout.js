@@ -23,14 +23,14 @@ export default async function AdminLayout({ children }) {
 
   if (!admin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-screen items-center justify-center bg-muted">
         <AdminLogin />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-muted">
       <AdminSidebar adminEmail={admin.email} />
 
       <div className="flex min-w-0 flex-1 flex-col">

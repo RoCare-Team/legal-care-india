@@ -19,7 +19,7 @@ import { pluralize } from '@/utils/formatters';
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
-const EMPTY = { query: '', service: '', city: '', sort: 'relevance' };
+const EMPTY = { query: '', service: '', court: '', city: '', sort: 'relevance' };
 
 function sortAdvocates(list, sort) {
   const copy = [...list];
@@ -52,20 +52,30 @@ export default function AdvocateListing({
   const onReset = () => setFilters(EMPTY);
 
   const hasActiveFilters =
-    Boolean(filters.query || filters.service || filters.city) || filters.sort !== 'relevance';
+    Boolean(filters.query || filters.service || filters.court || filters.city) || filters.sort !== 'relevance';
 
   const results = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
+    const cityFilter = filters.city.trim().toLowerCase();
     const filtered = advocates.filter((a) => {
+      // Free-text query matches name, tagline, legal services OR the courts the
+      // advocate practises in (e.g. "supreme court").
       const matchesQuery =
         !q ||
         a.name.toLowerCase().includes(q) ||
         a.tagline?.toLowerCase().includes(q) ||
-        a.specializations?.some((s) => s.toLowerCase().includes(q));
+        a.specializations?.some((s) => s.toLowerCase().includes(q)) ||
+        a.courts?.some((c) => c.toLowerCase().includes(q));
       const matchesService =
         !filters.service || a.specializations?.includes(filters.service);
-      const matchesCity = !filters.city || a.city === filters.city;
-      return matchesQuery && matchesService && matchesCity;
+      const matchesCourt =
+        !filters.court || a.courts?.includes(filters.court);
+      // City matches the advocate's base city OR any city they also work in.
+      const matchesCity =
+        !cityFilter ||
+        a.city?.toLowerCase() === cityFilter ||
+        a.practiceCities?.some((c) => c.toLowerCase() === cityFilter);
+      return matchesQuery && matchesService && matchesCourt && matchesCity;
     });
     return sortAdvocates(filtered, filters.sort);
   }, [advocates, filters]);

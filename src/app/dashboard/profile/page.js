@@ -18,6 +18,8 @@ function toSnapshot(a) {
     services: a.specializations || [],
     subServices: a.subSpecializations || [],
     languages: a.languages || [],
+    courts: a.courts || [],
+    practiceCities: a.practiceCities || [],
     barCouncil: a.barCouncilNumber || '',
     experience: String(a.experience || ''),
     cases: String(a.metrics?.cases || ''),

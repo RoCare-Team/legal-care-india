@@ -18,7 +18,6 @@ export default function StepReview({ data, set, errors }) {
     ['Experience', data.experience ? `${data.experience} years` : ''],
     ['Location', [data.city, data.state].filter(Boolean).join(', ')],
     ['Office', data.officeName],
-    ['Consultation Fee', data.fee ? `₹${data.fee}` : ''],
   ];
 
   return (
@@ -51,6 +50,41 @@ export default function StepReview({ data, set, errors }) {
             {data.subServices.map((s) => (
               <Badge key={s} variant="neutral" size="sm">{s}</Badge>
             ))}
+          </div>
+        </div>
+      )}
+
+      {(data.courts || []).length > 0 && (
+        <div>
+          <p className="mb-2 text-xs text-ink/45">Courts</p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.courts.map((c) => (
+              <Badge key={c} variant="primary" size="sm">{c}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(data.practiceCities || []).length > 0 && (
+        <div>
+          <p className="mb-2 text-xs text-ink/45">Cities You Work In</p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.practiceCities.map((c) => (
+              <Badge key={c} variant="secondary" size="sm">{c}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(data.consultationPlans || []).filter((p) => p.minutes && p.price).length > 0 && (
+        <div>
+          <p className="mb-2 text-xs text-ink/45">Live Chat Plans</p>
+          <div className="flex flex-wrap gap-1.5">
+            {data.consultationPlans
+              .filter((p) => p.minutes && p.price)
+              .map((p, i) => (
+                <Badge key={i} variant="neutral" size="sm">{p.minutes} min · ₹{p.price}</Badge>
+              ))}
           </div>
         </div>
       )}

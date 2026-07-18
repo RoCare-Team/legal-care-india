@@ -1,9 +1,13 @@
-import { AlignLeft, Scale, Languages as LangIcon } from 'lucide-react';
+import { AlignLeft, Scale, Languages as LangIcon, Gavel, MapPin } from 'lucide-react';
 import { FormField, Textarea } from '@/components/ui';
 import ChipMultiSelect from '@/components/shared/ChipMultiSelect';
 import { LEGAL_SERVICE_NAMES, getSubServices } from '@/data/categories';
 import { LANGUAGES } from '@/data/languages';
+import { COURTS } from '@/data/courts';
+import { CITIES } from '@/data/cities';
 import DashboardSection from '../DashboardSection';
+
+const CITY_NAMES = CITIES.map((c) => c.name);
 
 /**
  * SectionAboutServices — about text, legal services and languages.
@@ -60,6 +64,14 @@ export default function SectionAboutServices({ data, set }) {
             })}
           </div>
         )}
+      </DashboardSection>
+
+      <DashboardSection id="courts" title="Courts" description="The courts you practise in — clients can filter advocates by court." icon={Gavel}>
+        <ChipMultiSelect options={COURTS} value={data.courts || []} onChange={(v) => set('courts', v)} />
+      </DashboardSection>
+
+      <DashboardSection id="cities" title="Cities You Work In" description="Every city you take cases in (besides your base city). Clients searching those cities will find you." icon={MapPin}>
+        <ChipMultiSelect options={CITY_NAMES} value={data.practiceCities || []} onChange={(v) => set('practiceCities', v)} max={8} />
       </DashboardSection>
 
       <DashboardSection id="languages" title="Languages" description="Languages you can consult in." icon={LangIcon}>

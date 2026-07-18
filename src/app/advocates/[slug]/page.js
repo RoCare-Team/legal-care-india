@@ -123,6 +123,10 @@ export default async function AdvocateProfilePage({ params }) {
   const advocate = await resolveAdvocate(param);
   if (!advocate) notFound();
 
+  // Profiles awaiting admin approval are not public yet — treat as not found
+  // until an admin publishes them.
+  if (advocate.status !== 'published') notFound();
+
   // Enforce a single canonical URL — legacy or renamed-slug URLs 308-redirect
   // to `<slug>-lci-<id>`, so there are never duplicate profile URLs.
   if (param !== advocate.profilePath) {

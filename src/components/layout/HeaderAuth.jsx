@@ -13,6 +13,9 @@ function formatMoney(value = 0) {
   return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
 
+/** Extra classes that make a "ghost" button legible on the dark navy header. */
+const GHOST_ON_DARK = 'text-white hover:bg-white/10 hover:text-white';
+
 /** Wallet pill for signed-in users — shows balance, links to the wallet tab. */
 function WalletPill({ balance = 0 }) {
   return (
@@ -33,18 +36,22 @@ function WalletPill({ balance = 0 }) {
  * User and Advocate options, keeping the navbar tidy. Logged in: role-aware
  * account link + log out.
  */
-export default function HeaderAuth() {
+export default function HeaderAuth({ onDark = false }) {
   const { role, user, loading } = useAuth();
+
+  // On the dark header: ghost buttons get light text, the solid CTA turns gold.
+  const ghostClass = onDark ? GHOST_ON_DARK : undefined;
+  const ctaVariant = onDark ? 'accent' : 'primary';
 
   if (loading) return <div className="h-9 w-40" aria-hidden="true" />;
 
   if (role === 'advocate') {
     return (
       <div className="flex items-center gap-2">
-        <Button href="/dashboard" variant="ghost" size="sm" leftIcon={<LayoutDashboard className="h-4 w-4" />}>
+        <Button href="/dashboard" variant="ghost" size="sm" className={ghostClass} leftIcon={<LayoutDashboard className="h-4 w-4" />}>
           Dashboard
         </Button>
-        <LogoutButton />
+        <LogoutButton variant={ctaVariant} />
       </div>
     );
   }
@@ -53,10 +60,10 @@ export default function HeaderAuth() {
     return (
       <div className="flex items-center gap-2">
         <WalletPill balance={user?.walletBalance || 0} />
-        <Button href="/account" variant="ghost" size="sm" leftIcon={<UserRound className="h-4 w-4" />}>
+        <Button href="/account" variant="ghost" size="sm" className={ghostClass} leftIcon={<UserRound className="h-4 w-4" />}>
           My Account
         </Button>
-        <LogoutButton />
+        <LogoutButton variant={ctaVariant} />
       </div>
     );
   }
@@ -66,6 +73,7 @@ export default function HeaderAuth() {
       <AuthDropdown
         label="Log in"
         variant="ghost"
+        className={ghostClass}
         items={[
           { icon: UserRound, label: 'As a User', sub: 'Client account', href: '/user/login' },
           { icon: Scale, label: 'As an Advocate', sub: 'Manage your profile', href: '/login' },
@@ -73,7 +81,7 @@ export default function HeaderAuth() {
       />
       <AuthDropdown
         label="Sign up"
-        variant="primary"
+        variant={ctaVariant}
         items={[
           { icon: UserRound, label: 'Sign up as User', sub: 'Free client account', href: '/user/signup' },
           { icon: Scale, label: 'Register as Advocate', sub: 'List your practice', href: '/register' },
@@ -83,15 +91,15 @@ export default function HeaderAuth() {
   );
 }
 
-function LogoutButton() {
+function LogoutButton({ variant = 'primary' }) {
   return (
-    <Button type="button" onClick={() => logout('/')} size="sm" leftIcon={<LogOut className="h-4 w-4" />}>
+    <Button type="button" onClick={() => logout('/')} variant={variant} size="sm" leftIcon={<LogOut className="h-4 w-4" />}>
       Log out
     </Button>
   );
 }
 
-function AuthDropdown({ label, variant, items }) {
+function AuthDropdown({ label, variant, className, items }) {
   const menu = useDisclosure(false);
   const ref = useRef(null);
   const { close } = menu;
@@ -118,6 +126,7 @@ function AuthDropdown({ label, variant, items }) {
         type="button"
         variant={variant}
         size="sm"
+        className={className}
         onClick={menu.toggle}
         rightIcon={
           <ChevronDown

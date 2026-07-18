@@ -22,7 +22,9 @@ export function createMetadata({
   image,
   noindex = false,
 } = {}) {
-  const pageTitle = title ? `${title} | ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
+  // Brand first so the site name is always visible in the browser tab (tabs
+  // truncate from the end), e.g. "Legal Care India — <page>".
+  const pageTitle = title ? `${SITE.name} — ${title}` : `${SITE.name} — ${SITE.tagline}`;
   const canonical = new URL(path, SITE.url).toString();
 
   // When no explicit image is passed, the dynamic app/opengraph-image.js is
@@ -32,7 +34,9 @@ export function createMetadata({
     : undefined;
 
   return {
-    title: pageTitle,
+    // Browser tab always shows the fixed brand name; the descriptive per-page
+    // title is still used for social sharing (Open Graph / Twitter) below.
+    title: SITE.name,
     description,
     keywords: [...SITE.keywords, ...keywords],
     alternates: {

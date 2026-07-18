@@ -2,10 +2,82 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Phone, Mail, MapPin, BadgeCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
+
+/** Approve / unpublish + delete controls for a single advocate row. */
+function StatusAction({ advocate }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const run = async (action) => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/admin/advocates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: advocate.id, action }),
+      });
+      if (res.ok) router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`Delete ${advocate.name}? This permanently removes their account and listing from the website.`)) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/advocates?id=${advocate.id}`, { method: 'DELETE' });
+      if (res.ok) router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (busy) {
+    return <Loader2 className="h-4 w-4 animate-spin text-ink/40" aria-hidden="true" />;
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {advocate.status === 'pending' ? (
+        <button
+          type="button"
+          onClick={() => run('approve')}
+          className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20"
+        >
+          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+          Approve
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => run('unpublish')}
+          title="Take offline"
+          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink/45 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+        >
+          <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+          Unpublish
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={remove}
+        title="Delete advocate"
+        aria-label={`Delete ${advocate.name}`}
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/35 transition-colors hover:bg-red-500/10 hover:text-red-600"
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
 
 function StatusBadge({ status }) {
   const map = {
@@ -70,8 +142,7 @@ export default function AdvocatesTable({ advocates }) {
           <AdminAvatar name={a.name} />
           <div className="min-w-0">
             <Link
-              href={`/advocates/${a.slug}-${a.legalCareId.toLowerCase()}`}
-              target="_blank"
+              href={`/admin/advocates/${a.id}`}
               className="flex items-center gap-1 font-semibold text-ink hover:text-primary"
             >
               {a.name}
@@ -141,7 +212,27 @@ export default function AdvocatesTable({ advocates }) {
         a.consultationFee ? <span className="font-semibold text-ink">₹{a.consultationFee}</span> : <span className="text-ink/30">—</span>,
     },
     { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
+    { key: 'action', label: 'Approval', render: (a) => <StatusAction advocate={a} /> },
     { key: 'createdAt', label: 'Joined', render: (a) => <span className="whitespace-nowrap text-ink/60">{formatDate(a.createdAt)}</span> },
+    {
+      key: 'view',
+      label: '',
+      render: (a) => (
+        <div className="flex items-center gap-2.5 whitespace-nowrap">
+          <Link href={`/admin/advocates/${a.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary/70 hover:text-primary">
+            View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+          <Link
+            href={`/advocates/${a.slug}-${a.legalCareId.toLowerCase()}`}
+            target="_blank"
+            title="Open public profile"
+            className="text-ink/35 hover:text-primary"
+          >
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      ),
+    },
   ];
 
   return (

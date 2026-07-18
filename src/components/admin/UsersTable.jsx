@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Phone, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { Phone, Mail, ChevronRight } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import { SearchBox } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
@@ -31,10 +32,10 @@ export default function UsersTable({ users }) {
       key: 'name',
       label: 'User',
       render: (u) => (
-        <div className="flex items-center gap-3">
+        <Link href={`/admin/users/${u.id}`} className="group flex items-center gap-3">
           <AdminAvatar name={u.name} tone="bg-blue-500/10 text-blue-600" />
-          <span className="font-semibold text-ink">{u.name}</span>
-        </div>
+          <span className="font-semibold text-ink group-hover:text-primary">{u.name}</span>
+        </Link>
       ),
     },
     {
@@ -61,6 +62,15 @@ export default function UsersTable({ users }) {
         ),
     },
     { key: 'createdAt', label: 'Joined', render: (u) => <span className="whitespace-nowrap text-ink/60">{formatDate(u.createdAt)}</span> },
+    {
+      key: 'view',
+      label: '',
+      render: (u) => (
+        <Link href={`/admin/users/${u.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary/70 hover:text-primary">
+          View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      ),
+    },
   ];
 
   return (

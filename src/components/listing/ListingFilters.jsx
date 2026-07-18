@@ -4,6 +4,7 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Input, Select, Button } from '@/components/ui';
 import { LEGAL_SERVICE_NAMES } from '@/data/categories';
 import { CITIES } from '@/data/cities';
+import { COURTS } from '@/data/courts';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Most Relevant' },
@@ -56,7 +57,7 @@ export default function ListingFilters({ value, onChange, onReset, hasActiveFilt
       )}
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
-        <Field label="Search" elevated={elevated} className="md:col-span-4">
+        <Field label="Search" elevated={elevated} className="md:col-span-3">
           <Input
             value={value.query}
             onChange={(e) => onChange({ query: e.target.value })}
@@ -80,13 +81,32 @@ export default function ListingFilters({ value, onChange, onReset, hasActiveFilt
             ))}
           </Select>
         </Field>
-        <Field label="City" elevated={elevated} className="md:col-span-3">
+        <Field label="Court" elevated={elevated} className="md:col-span-2">
+          <Select
+            value={value.court}
+            onChange={(e) => onChange({ court: e.target.value })}
+            aria-label="Filter by court"
+          >
+            <option value="">All Courts</option>
+            {COURTS.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="City" elevated={elevated} className="md:col-span-2">
           <Select
             value={value.city}
             onChange={(e) => onChange({ city: e.target.value })}
             aria-label="Filter by city"
           >
             <option value="">All Cities</option>
+            {/* A searched city that isn't in our master list (e.g. typed by hand)
+                still needs an option so the dropdown shows it selected. */}
+            {value.city && !CITIES.some((c) => c.name === value.city) && (
+              <option value={value.city}>{value.city}</option>
+            )}
             {CITIES.map((c) => (
               <option key={c.slug} value={c.name}>
                 {c.name}

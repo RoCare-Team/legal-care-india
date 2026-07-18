@@ -11,7 +11,7 @@ import { MAIN_NAV } from '@/constants/navigation';
  * @param {object} props
  * @param {string} [props.className]
  */
-export default function Navbar({ className }) {
+export default function Navbar({ className, onDark = false }) {
   const pathname = usePathname();
 
   return (
@@ -26,7 +26,13 @@ export default function Navbar({ className }) {
             href={href}
             className={cn(
               'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              active ? 'text-primary' : 'text-ink/70 hover:text-ink hover:bg-ink/5'
+              onDark
+                ? active
+                  ? 'text-accent'
+                  : 'text-white/75 hover:text-white hover:bg-white/10'
+                : active
+                  ? 'text-primary'
+                  : 'text-ink/70 hover:text-ink hover:bg-ink/5'
             )}
           >
             {label}

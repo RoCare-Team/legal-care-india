@@ -72,7 +72,7 @@ const structuredData = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-IN" className={fontVariables}>
+    <html lang="en-IN" className={fontVariables} suppressHydrationWarning>
       <head>
         {/* Speed up third-party + remote-image connections */}
         <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="" />
@@ -84,7 +84,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-white"

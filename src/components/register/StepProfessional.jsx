@@ -3,6 +3,9 @@ import ChipMultiSelect from '@/components/shared/ChipMultiSelect';
 import { LEGAL_SERVICE_NAMES, getSubServices } from '@/data/categories';
 import { LANGUAGES, STATES } from '@/data/languages';
 import { CITIES } from '@/data/cities';
+import { COURTS } from '@/data/courts';
+
+const CITY_NAMES = CITIES.map((c) => c.name);
 
 /**
  * StepProfessional — bar registration, experience, services & languages.
@@ -79,6 +82,34 @@ export default function StepProfessional({ data, set, errors }) {
           options={STATES}
           placeholder="Select state"
           invalid={Boolean(errors.state)}
+        />
+      </FormField>
+
+      <FormField
+        label="Courts You Practise In"
+        required
+        error={errors.courts}
+        hint="Where do you appear? Select all that apply."
+        className="sm:col-span-2"
+      >
+        <ChipMultiSelect
+          options={COURTS}
+          value={data.courts || []}
+          onChange={(next) => set('courts', next)}
+        />
+      </FormField>
+
+      <FormField
+        label="Cities You Work In"
+        error={errors.practiceCities}
+        hint="All the cities you take cases in (besides your base city)."
+        className="sm:col-span-2"
+      >
+        <ChipMultiSelect
+          options={CITY_NAMES}
+          value={data.practiceCities || []}
+          onChange={(next) => set('practiceCities', next)}
+          max={8}
         />
       </FormField>
 

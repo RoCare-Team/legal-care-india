@@ -63,11 +63,23 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
 
   return (
     <>
-      <div className="mt-4 space-y-2">
+      <div className="space-y-2">
+        {/* Primary CTA — book a paid live chat, shown when the advocate offers it. */}
+        {role !== 'advocate' && plans.length > 0 && (
+          <Button
+            type="button"
+            onClick={onBook}
+            fullWidth
+            leftIcon={<CalendarCheck className="h-4 w-4" />}
+          >
+            Book Consultation
+          </Button>
+        )}
         {contact.phone && (
           <Button
             href={`tel:${contact.phone.replace(/\s/g, '')}`}
             onClick={gate('call')}
+            variant={plans.length > 0 ? 'outline' : 'primary'}
             fullWidth
             leftIcon={<Phone className="h-4 w-4" />}
           >
@@ -96,18 +108,6 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
             leftIcon={<Mail className="h-4 w-4" />}
           >
             Send Email
-          </Button>
-        )}
-        {/* Only offered when the advocate has set at least one chat rate. */}
-        {role !== 'advocate' && plans.length > 0 && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onBook}
-            fullWidth
-            leftIcon={<CalendarCheck className="h-4 w-4" />}
-          >
-            Book Consultation
           </Button>
         )}
       </div>

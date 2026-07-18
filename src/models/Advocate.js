@@ -75,6 +75,13 @@ const AdvocateSchema = new Schema(
     specializations: { type: [String], default: [] },
     subSpecializations: { type: [String], default: [] },
     languages: { type: [String], default: [] },
+
+    // Courts the advocate practises in (e.g. High Court, District Court).
+    courts: { type: [String], default: [] },
+    // Every city the advocate serves. `city` above is their primary/base city;
+    // this is the full list shown on the profile ("Practises in ...").
+    practiceCities: { type: [String], default: [] },
+
     consultationFee: { type: Number, default: 0 },
 
     // Live-chat consultation plans the advocate defines themselves — both the

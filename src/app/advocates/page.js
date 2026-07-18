@@ -19,6 +19,15 @@ export const metadata = createMetadata({
 // the advocate data itself is tag-cached — no MongoDB round-trip each visit.
 export const revalidate = 3600;
 
+/** Turn a slug back into a display name, e.g. "new-delhi" → "New Delhi". */
+function deslugify(slug) {
+  return String(slug)
+    .split('-')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 /** Resolve the query-string slugs coming from search into filter labels. */
 function resolveInitial(params = {}) {
   const initial = {};
@@ -28,8 +37,12 @@ function resolveInitial(params = {}) {
     if (svc) initial.service = svc.name;
   }
   if (params.city) {
-    const city = CITIES.find((c) => c.slug === String(params.city));
-    if (city) initial.city = city.name;
+    // Known cities resolve to their canonical name; anything else (e.g. a city
+    // typed by hand that isn't in our list) still filters by its de-slugged name
+    // so it can match an advocate's practice cities.
+    const slug = String(params.city);
+    const city = CITIES.find((c) => c.slug === slug);
+    initial.city = city ? city.name : deslugify(slug);
   }
   return initial;
 }

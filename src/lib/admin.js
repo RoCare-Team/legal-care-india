@@ -5,6 +5,7 @@ import Advocate from '@/models/Advocate';
 import User from '@/models/User';
 import Enquiry from '@/models/Enquiry';
 import Testimonial from '@/models/Testimonial';
+import Consultation from '@/models/Consultation';
 
 /**
  * Admin access + read-only data for the /admin panel.
@@ -86,21 +87,164 @@ export async function adminGetUsers() {
   }));
 }
 
-/** Every consultation enquiry/booking, newest first. */
-export async function adminGetEnquiries() {
-  await connectDB();
-  const rows = await Enquiry.find({}).sort({ createdAt: -1 }).lean();
-  return rows.map((r) => ({
+/** Map a lean Consultation doc into a compact history row for detail pages. */
+function toConsultationRow(r) {
+  return {
     id: String(r._id),
-    advocateName: r.advocateName || '',
-    name: r.name || '',
-    email: r.email || '',
-    phone: r.phone || '',
-    message: r.message || '',
-    preferredDate: r.preferredDate || '',
-    status: r.status || 'new',
+    userName: r.userName || 'Client',
+    advocateName: r.advocateName || 'Advocate',
+    minutes: r.minutes || 0,
+    price: r.price || 0,
+    status: r.status || 'pending',
+    charged: ['active', 'ended'].includes(r.status),
+    messagesCount: (r.messages || []).length,
     createdAt: iso(r.createdAt),
-  }));
+  };
+}
+
+/** Map a wallet ledger sub-doc into a plain row. */
+function toWalletRow(t) {
+  return {
+    id: String(t._id),
+    type: t.type || 'credit',
+    amount: t.amount || 0,
+    note: t.note || '',
+    createdAt: iso(t.createdAt),
+  };
+}
+
+/**
+ * Full detail for a single user (client) — profile, wallet ledger and their
+ * complete consultation history. Returns null if the id is unknown.
+ */
+export async function adminGetUserById(id) {
+  await connectDB();
+  let user;
+  try {
+    user = await User.findById(id).lean();
+  } catch {
+    return null; // malformed ObjectId
+  }
+  if (!user) return null;
+
+  const consultations = await Consultation.find({ userId: id })
+    .sort({ createdAt: -1 })
+    .select('userName advocateName minutes price status messages createdAt')
+    .lean();
+
+  const rows = consultations.map(toConsultationRow);
+  return {
+    id: String(user._id),
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    city: user.city || '',
+    photo: user.photo || '',
+    anonymous: Boolean(user.anonymous),
+    walletBalance: user.walletBalance || 0,
+    walletTransactions: (user.walletTransactions || []).map(toWalletRow).reverse(),
+    createdAt: iso(user.createdAt),
+    consultations: rows,
+    stats: {
+      total: rows.length,
+      connected: rows.filter((r) => r.charged).length,
+      spent: rows.filter((r) => r.charged).reduce((s, r) => s + r.price, 0),
+    },
+  };
+}
+
+/**
+ * Full detail for a single advocate — the entire profile, earnings wallet,
+ * consultation history and the enquiries they've received. Null if unknown.
+ */
+export async function adminGetAdvocateById(id) {
+  await connectDB();
+  let adv;
+  try {
+    adv = await Advocate.findById(id).lean();
+  } catch {
+    return null;
+  }
+  if (!adv) return null;
+
+  const [consultations, enquiries] = await Promise.all([
+    Consultation.find({ advocateId: id })
+      .sort({ createdAt: -1 })
+      .select('userName advocateName minutes price status messages createdAt')
+      .lean(),
+    Enquiry.find({ advocateId: id }).sort({ createdAt: -1 }).lean(),
+  ]);
+
+  const rows = consultations.map(toConsultationRow);
+  return {
+    id: String(adv._id),
+    name: adv.name || '',
+    email: adv.email || '',
+    phone: adv.phone || '',
+    legalCareId: adv.legalCareId || '',
+    slug: adv.slug || '',
+    photo: adv.photo || '',
+    city: adv.city || '',
+    state: adv.state || '',
+    status: adv.status || 'published',
+    verified: Boolean(adv.verified),
+    available: Boolean(adv.available),
+    experience: adv.experience || 0,
+    barCouncilNumber: adv.barCouncilNumber || '',
+    tagline: adv.tagline || '',
+    about: adv.about || '',
+    specializations: adv.specializations || [],
+    subSpecializations: adv.subSpecializations || [],
+    languages: adv.languages || [],
+    consultationFee: adv.consultationFee || 0,
+    consultationPlans: (adv.consultationPlans || []).map((p) => ({ minutes: p.minutes, price: p.price })),
+    office: {
+      name: adv.office?.name || '',
+      address: adv.office?.address || '',
+      area: adv.office?.area || '',
+      pincode: adv.office?.pincode || '',
+    },
+    contact: {
+      phone: adv.contact?.phone || '',
+      whatsapp: adv.contact?.whatsapp || '',
+      email: adv.contact?.email || '',
+    },
+    social: {
+      linkedin: adv.social?.linkedin || '',
+      website: adv.social?.website || '',
+      facebook: adv.social?.facebook || '',
+      twitter: adv.social?.twitter || '',
+    },
+    education: (adv.education || []).map((e) => ({ degree: e.degree || '', institute: e.institute || '', year: e.year || '' })),
+    certificates: (adv.certificates || []).map((c) => ({ title: c.title || '', issuer: c.issuer || c.org || '', year: c.year || '' })),
+    awards: (adv.awards || []).map((c) => ({ title: c.title || '', issuer: c.issuer || c.org || '', year: c.year || '' })),
+    rating: adv.rating || 0,
+    reviews: adv.reviews || 0,
+    metrics: {
+      cases: adv.metrics?.cases || 0,
+      clients: adv.metrics?.clients || 0,
+      successRate: adv.metrics?.successRate || 0,
+    },
+    walletBalance: adv.walletBalance || 0,
+    walletTransactions: (adv.walletTransactions || []).map(toWalletRow).reverse(),
+    createdAt: iso(adv.createdAt),
+    consultations: rows,
+    enquiries: enquiries.map((e) => ({
+      id: String(e._id),
+      name: e.name || '',
+      phone: e.phone || '',
+      email: e.email || '',
+      message: e.message || '',
+      status: e.status || 'new',
+      createdAt: iso(e.createdAt),
+    })),
+    stats: {
+      totalConsultations: rows.length,
+      connected: rows.filter((r) => r.charged).length,
+      earned: rows.filter((r) => r.charged).reduce((s, r) => s + r.price, 0),
+      enquiries: enquiries.length,
+    },
+  };
 }
 
 /** Every platform testimonial, newest first. */
@@ -118,18 +262,152 @@ export async function adminGetTestimonials() {
   }));
 }
 
+/**
+ * Every paid live-chat consultation, newest first. This is the actual paid
+ * activity on the platform — who booked whom, for how long, what it cost, and
+ * where the session ended up.
+ */
+export async function adminGetConsultations() {
+  await connectDB();
+  const rows = await Consultation.find({})
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .select('userName advocateName minutes price status startedAt endedAt messages createdAt')
+    .lean();
+  return rows.map((r) => ({
+    id: String(r._id),
+    userName: r.userName || 'Client',
+    advocateName: r.advocateName || 'Advocate',
+    minutes: r.minutes || 0,
+    price: r.price || 0,
+    status: r.status || 'pending',
+    // Only a connected session (accepted by the advocate) actually cost money.
+    charged: ['active', 'ended'].includes(r.status),
+    messagesCount: (r.messages || []).length,
+    startedAt: iso(r.startedAt),
+    createdAt: iso(r.createdAt),
+  }));
+}
+
+/** Local YYYY-MM-DD key for bucketing by calendar day. */
+function dayKey(d) {
+  const x = new Date(d);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+}
+
+/** Percentage change from `prev` to `curr`, rounded (0 when there's no base). */
+function growthPct(curr, prev) {
+  if (!prev) return curr > 0 ? 100 : 0;
+  return Math.round(((curr - prev) / prev) * 100);
+}
+
+/**
+ * Trend data for the overview dashboard — a daily series over the last N days
+ * plus period-over-period growth (last half vs the half before it). Powers the
+ * activity chart and the growth badges. Resilient to DB hiccups.
+ *
+ * @param {number} days  window length (default 14)
+ */
+export async function adminGetOverviewMetrics(days = 14) {
+  const empty = {
+    series: [],
+    totals: { consultations: 0, revenue: 0, users: 0 },
+    growth: { consultations: 0, revenue: 0, users: 0 },
+  };
+
+  try {
+    await connectDB();
+
+    // Start of the window: midnight, `days-1` days ago (so we get `days` buckets).
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (days - 1));
+
+    const [consultations, users] = await Promise.all([
+      Consultation.find({ createdAt: { $gte: start } }).select('price status createdAt').lean(),
+      User.find({ createdAt: { $gte: start } }).select('createdAt').lean(),
+    ]);
+
+    // Build empty daily buckets first so gaps show as zero, not missing.
+    const buckets = new Map();
+    const order = [];
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const key = dayKey(d);
+      order.push(key);
+      buckets.set(key, { date: key, consultations: 0, revenue: 0, users: 0 });
+    }
+
+    for (const c of consultations) {
+      const b = buckets.get(dayKey(c.createdAt));
+      if (!b) continue;
+      b.consultations += 1;
+      if (['active', 'ended'].includes(c.status)) b.revenue += c.price || 0;
+    }
+    for (const u of users) {
+      const b = buckets.get(dayKey(u.createdAt));
+      if (b) b.users += 1;
+    }
+
+    const series = order.map((k) => buckets.get(k));
+    const totals = series.reduce(
+      (acc, d) => ({
+        consultations: acc.consultations + d.consultations,
+        revenue: acc.revenue + d.revenue,
+        users: acc.users + d.users,
+      }),
+      { consultations: 0, revenue: 0, users: 0 }
+    );
+
+    // Growth: sum of the recent half vs the prior half of the window.
+    const half = Math.floor(days / 2);
+    const prior = series.slice(0, days - half);
+    const recent = series.slice(days - half);
+    const sum = (arr, key) => arr.reduce((s, d) => s + d[key], 0);
+    const growth = {
+      consultations: growthPct(sum(recent, 'consultations'), sum(prior, 'consultations')),
+      revenue: growthPct(sum(recent, 'revenue'), sum(prior, 'revenue')),
+      users: growthPct(sum(recent, 'users'), sum(prior, 'users')),
+    };
+
+    return { series, totals, growth };
+  } catch {
+    return empty;
+  }
+}
+
 /** Dashboard counts for the overview page (resilient to DB hiccups). */
 export async function adminGetCounts() {
   try {
     await connectDB();
-    const [advocates, users, enquiries, testimonials] = await Promise.all([
+
+    // Midnight today (local) — anything created at/after this is "today".
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const since = { createdAt: { $gte: startOfToday } };
+
+    const [
+      advocates, users, testimonials, consultations,
+      advocatesToday, usersToday, consultationsToday,
+    ] = await Promise.all([
       Advocate.countDocuments({}),
       User.countDocuments({}),
-      Enquiry.countDocuments({}),
       Testimonial.countDocuments({}),
+      Consultation.countDocuments({}),
+      Advocate.countDocuments(since),
+      User.countDocuments(since),
+      Consultation.countDocuments(since),
     ]);
-    return { advocates, users, enquiries, testimonials };
+
+    return {
+      advocates, users, testimonials, consultations,
+      today: { advocates: advocatesToday, users: usersToday, consultations: consultationsToday },
+    };
   } catch {
-    return { advocates: 0, users: 0, enquiries: 0, testimonials: 0 };
+    return {
+      advocates: 0, users: 0, testimonials: 0, consultations: 0,
+      today: { advocates: 0, users: 0, consultations: 0 },
+    };
   }
 }

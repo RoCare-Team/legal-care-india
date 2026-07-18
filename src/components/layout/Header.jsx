@@ -24,24 +24,24 @@ export default function Header() {
       className={cn(
         'sticky top-0 z-40 w-full border-b transition-colors duration-200',
         scrolled
-          ? 'border-ink/8 bg-surface/90 backdrop-blur-md shadow-sm'
-          : 'border-transparent bg-surface'
+          ? 'border-white/10 bg-primary/95 backdrop-blur-md shadow-sm'
+          : 'border-transparent bg-primary'
       )}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Logo />
+        <Logo onDark />
 
-        <Navbar className="hidden lg:flex" />
+        <Navbar className="hidden lg:flex" onDark />
 
         <div className="hidden items-center gap-2 lg:flex">
-          <HeaderAuth />
+          <HeaderAuth onDark />
         </div>
 
         <button
           type="button"
           onClick={menu.open}
           aria-label="Open menu"
-          className="grid h-10 w-10 place-items-center rounded-lg text-ink/70 hover:bg-ink/5 lg:hidden"
+          className="grid h-10 w-10 place-items-center rounded-lg text-white/80 hover:bg-white/10 lg:hidden"
         >
           <Menu className="h-6 w-6" />
         </button>

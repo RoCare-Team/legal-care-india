@@ -19,13 +19,19 @@ export function validateStep(step, data) {
     if (!data.experience || Number(data.experience) < 0) e.experience = 'Enter your years of experience.';
     if (!data.city) e.city = 'Select your city.';
     if (!data.state) e.state = 'Select your state.';
+    if ((data.courts || []).length === 0) e.courts = 'Select at least one court you practise in.';
     if (data.services.length === 0) e.services = 'Select at least one legal service.';
     if (data.languages.length === 0) e.languages = 'Select at least one language.';
   }
   if (step === 2) {
     if (!data.officeName.trim()) e.officeName = 'Office name is required.';
     if (!data.officeAddress.trim()) e.officeAddress = 'Office address is required.';
-    if (!data.fee || Number(data.fee) < 0) e.fee = 'Enter a consultation fee.';
+    // Consultation plans are optional, but any row that's started must be valid.
+    const plans = data.consultationPlans || [];
+    const badPlan = plans.some(
+      (p) => (p.minutes || p.price) && (!(Number(p.minutes) > 0) || !(Number(p.price) > 0))
+    );
+    if (badPlan) e.consultationPlans = 'Each plan needs both a duration and a price.';
     if (data.about.trim().length < 40) e.about = 'About should be at least 40 characters.';
   }
   if (step === 3) {
@@ -36,7 +42,8 @@ export function validateStep(step, data) {
 
 export const INITIAL_REGISTER_DATA = {
   fullName: '', email: '', phone: '', password: '', confirm: '',
-  barCouncil: '', experience: '', city: '', state: '', services: [], subServices: [], languages: [],
-  officeName: '', officeAddress: '', fee: '', tagline: '', about: '',
+  barCouncil: '', experience: '', city: '', state: '',
+  courts: [], practiceCities: [], services: [], subServices: [], languages: [],
+  officeName: '', officeAddress: '', fee: '', consultationPlans: [], tagline: '', about: '',
   terms: false,
 };

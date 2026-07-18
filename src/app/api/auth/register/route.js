@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag, revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
@@ -7,6 +7,13 @@ import { hashPassword, signToken, setAuthCookie } from '@/lib/auth';
 import { generateLegalCareId } from '@/lib/legalCareId';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { slugify } from '@/utils/slugify';
+import { normalizePlans } from '@/constants/consultationPlans';
+
+/** Trim + dedupe a raw string array, dropping empties. */
+function cleanList(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map((s) => String(s || '').trim()).filter(Boolean))];
+}
 
 /** Generate a Legal Care India ID that isn't already taken (retries on clash). */
 async function uniqueLegalCareId() {
@@ -35,8 +42,9 @@ export async function POST(request) {
   const {
     fullName, email, phone, password,
     barCouncil, experience, city, state,
+    courts = [], practiceCities = [],
     services = [], subServices = [], languages = [],
-    officeName, officeAddress, fee, tagline, about,
+    officeName, officeAddress, fee, consultationPlans = [], tagline, about,
   } = body || {};
 
   // Server-side validation (mirrors the wizard so the API can't be bypassed).
@@ -86,18 +94,20 @@ export async function POST(request) {
       specializations: Array.isArray(services) ? services : [],
       subSpecializations: Array.isArray(subServices) ? subServices : [],
       languages: Array.isArray(languages) ? languages : [],
+      courts: cleanList(courts),
+      // Base city is always part of the cities the advocate serves.
+      practiceCities: cleanList([city, ...(Array.isArray(practiceCities) ? practiceCities : [])]),
       consultationFee: Number(fee) || 0,
+      consultationPlans: normalizePlans(consultationPlans),
       office: { name: officeName || '', address: officeAddress || '' },
       contact: { phone: phone.trim(), whatsapp: digits, email: normalizedEmail },
-      status: 'published',
+      // New registrations wait for admin approval before going public.
+      status: 'pending',
     });
 
-    // New public advocate — drop the cached directory AND purge the pages that
-    // list advocates, so the new profile shows up on the next visit without a
-    // manual browser refresh.
+    // Refresh the cached directory (the profile stays hidden until approved, but
+    // keeping the tag fresh avoids serving a stale list once it is approved).
     revalidateTag(ADVOCATES_TAG);
-    revalidatePath('/');
-    revalidatePath('/advocates');
 
     const token = signToken({ id: String(advocate._id), role: 'advocate' });
     const res = NextResponse.json(
