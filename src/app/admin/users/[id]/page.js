@@ -10,12 +10,40 @@ import {
   ConsultationList,
   WalletList,
 } from '@/components/admin/DetailKit';
+import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
 
-export default async function AdminUserDetailPage({ params }) {
+// The wallet card sits beside contact details, so it shows fewer rows than the
+// full-width consultation history.
+const WALLET_PER_PAGE = 4;
+const HISTORY_PER_PAGE = 8;
+
+/** Clamp a `?x=` value to a real page number. */
+function pageFrom(value, totalPages) {
+  const n = Number.parseInt(value, 10);
+  return Math.min(Math.max(Number.isNaN(n) ? 1 : n, 1), totalPages);
+}
+
+export default async function AdminUserDetailPage({ params, searchParams }) {
   const { id } = await params;
   const user = await adminGetUserById(id);
   if (!user) notFound();
+
+  // The two lists paginate on their own query keys — `?w=` for the wallet and
+  // `?c=` for consultations — so paging one never resets the other.
+  const sp = (await searchParams) || {};
+  const ledger = user.walletTransactions;
+  const history = user.consultations;
+
+  const walletPages = Math.max(1, Math.ceil(ledger.length / WALLET_PER_PAGE));
+  const walletPage = pageFrom(sp.w, walletPages);
+  const walletRows = ledger.slice((walletPage - 1) * WALLET_PER_PAGE, walletPage * WALLET_PER_PAGE);
+
+  const historyPages = Math.max(1, Math.ceil(history.length / HISTORY_PER_PAGE));
+  const historyPage = pageFrom(sp.c, historyPages);
+  const historyRows = history.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE);
+
+  const basePath = `/admin/users/${user.id}`;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -80,11 +108,37 @@ export default async function AdminUserDetailPage({ params }) {
             </span>
           }
         >
-          <WalletList items={user.walletTransactions} />
+          <div className="max-h-[26rem] overflow-y-auto pr-1">
+            <WalletList items={walletRows} />
+          </div>
+          <Pagination
+            page={walletPage}
+            totalPages={walletPages}
+            basePath={basePath}
+            total={ledger.length}
+            perPage={WALLET_PER_PAGE}
+            param="w"
+            extra={historyPage > 1 ? { c: String(historyPage) } : undefined}
+            label="Wallet ledger pagination"
+            compact
+          />
         </InfoCard>
 
         <InfoCard title="Consultation history" className="lg:col-span-2">
-          <ConsultationList items={user.consultations} perspective="user" empty="This user hasn't booked any consultations." />
+          <div className="max-h-[26rem] overflow-y-auto pr-1">
+            <ConsultationList items={historyRows} perspective="user" empty="This user hasn't booked any consultations." />
+          </div>
+          <Pagination
+            page={historyPage}
+            totalPages={historyPages}
+            basePath={basePath}
+            total={history.length}
+            perPage={HISTORY_PER_PAGE}
+            param="c"
+            extra={walletPage > 1 ? { w: String(walletPage) } : undefined}
+            label="Consultation history pagination"
+            compact
+          />
         </InfoCard>
       </div>
     </div>

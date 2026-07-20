@@ -10,8 +10,11 @@ import DashboardSection from '../DashboardSection';
 
 /**
  * SectionBasic — photo/cover, name, tagline and location.
+ *
+ * `cities` merges the built-in list with admin-added cities; it falls back to
+ * the built-ins when the prop isn't supplied.
  */
-export default function SectionBasic({ data, set }) {
+export default function SectionBasic({ data, set, cities = CITIES }) {
   const [error, setError] = useState('');
 
   const handlePhoto = async (file) => {
@@ -85,7 +88,7 @@ export default function SectionBasic({ data, set }) {
         </FormField>
         <FormField label="City" htmlFor="d-city">
           <Select id="d-city" value={data.city} onChange={(e) => set('city', e.target.value)}>
-            {CITIES.map((c) => (
+            {cities.map((c) => (
               <option key={c.slug} value={c.name}>{c.name}</option>
             ))}
           </Select>

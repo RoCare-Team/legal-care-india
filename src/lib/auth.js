@@ -82,8 +82,10 @@ export function hashOtp(otp) {
 
 /**
  * Read the decoded session from the request cookie, or null.
- * Returns `{ id, role }`. Tokens issued before roles existed have no `role`,
- * so a missing role is treated as 'advocate' for backward compatibility.
+ * Returns `{ id, role, impersonated }`. Tokens issued before roles existed have
+ * no `role`, so a missing role is treated as 'advocate' for backward
+ * compatibility. `impersonated` marks a session an admin opened on someone's
+ * behalf, so the UI can show an exit banner.
  */
 export async function getSession() {
   const store = await cookies();
@@ -91,7 +93,11 @@ export async function getSession() {
   if (!token) return null;
   const payload = verifyToken(token);
   if (!payload?.id) return null;
-  return { id: payload.id, role: payload.role || 'advocate' };
+  return {
+    id: payload.id,
+    role: payload.role || 'advocate',
+    impersonated: Boolean(payload.imp),
+  };
 }
 
 /** Current advocate id, or null if not signed in as an advocate. */

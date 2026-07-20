@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin } from 'lucide-react';
+import { Search, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { slugify } from '@/utils/slugify';
 
@@ -17,13 +17,20 @@ export default function SearchBar({ className }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [city, setCity] = useState('');
+  // The listing page is server-rendered, so the click and the new page can be a
+  // beat apart. Navigating inside a transition keeps `pending` true for exactly
+  // that gap, which is what drives the button's spinner.
+  const [pending, startTransition] = useTransition();
 
   const onSubmit = (e) => {
     e.preventDefault();
+    if (pending) return;
     const params = new URLSearchParams();
     if (query.trim()) params.set('q', query.trim());
     if (city.trim()) params.set('city', slugify(city));
-    router.push(`/advocates${params.toString() ? `?${params}` : ''}`);
+    startTransition(() => {
+      router.push(`/advocates${params.toString() ? `?${params}` : ''}`);
+    });
   };
 
   return (
@@ -60,10 +67,20 @@ export default function SearchBar({ className }) {
       <Button
         type="submit"
         size="lg"
-        leftIcon={<Search className="h-4 w-4" />}
-        className="h-11 py-2 sm:h-13 sm:py-3.5"
+        disabled={pending}
+        aria-busy={pending}
+        leftIcon={
+          pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Search className="h-4 w-4" aria-hidden="true" />
+          )
+        }
+        // Fixed width so swapping "Search" for "Searching…" doesn't resize the
+        // button and shift the fields beside it.
+        className="h-11 py-2 sm:h-13 sm:w-40 sm:py-3.5"
       >
-        Search
+        {pending ? 'Searching…' : 'Search'}
       </Button>
     </form>
   );

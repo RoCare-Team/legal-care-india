@@ -1,7 +1,11 @@
+import Link from 'next/link';
 import { Scale, MessageSquare, IndianRupee } from 'lucide-react';
 import { adminGetConsultations } from '@/lib/admin';
 import DataTable, { AdminPageHeader, AdminAvatar } from '@/components/admin/DataTable';
+import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
+
+const PER_PAGE = 20;
 
 /** Colour + label for each consultation status. */
 const STATUS_META = {
@@ -12,13 +16,19 @@ const STATUS_META = {
   cancelled: { label: 'Cancelled', tone: 'bg-ink/10 text-ink/50' },
 };
 
-export default async function AdminConsultationsPage() {
+export default async function AdminConsultationsPage({ searchParams }) {
   const consultations = await adminGetConsultations();
 
-  // Total earned across every connected (charged) session.
+  // Total earned across every connected (charged) session — always the full set,
+  // never just the visible page.
   const revenue = consultations
     .filter((c) => c.charged)
     .reduce((sum, c) => sum + c.price, 0);
+
+  const totalPages = Math.max(1, Math.ceil(consultations.length / PER_PAGE));
+  const requested = Number.parseInt((await searchParams)?.page, 10);
+  const page = Math.min(Math.max(Number.isNaN(requested) ? 1 : requested, 1), totalPages);
+  const rows = consultations.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const columns = [
     {
@@ -59,12 +69,16 @@ export default async function AdminConsultationsPage() {
     },
     {
       key: 'messagesCount',
-      label: 'Msgs',
+      label: 'Chat',
       render: (c) => (
-        <span className="inline-flex items-center gap-1 text-ink/60">
-          <MessageSquare className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />
+        <Link
+          href={`/admin/consultations/${c.id}`}
+          aria-label={`Open chat between ${c.userName} and ${c.advocateName}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 px-2.5 py-1 font-semibold text-ink/60 transition-colors hover:border-primary/30 hover:bg-primary/[0.06] hover:text-primary"
+        >
+          <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
           {c.messagesCount}
-        </span>
+        </Link>
       ),
     },
     {
@@ -106,7 +120,15 @@ export default async function AdminConsultationsPage() {
         </div>
       </div>
 
-      <DataTable columns={columns} rows={consultations} empty="No consultations yet." />
+      <DataTable columns={columns} rows={rows} empty="No consultations yet." maxHeight="34rem" />
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        basePath="/admin/consultations"
+        total={consultations.length}
+        perPage={PER_PAGE}
+      />
     </div>
   );
 }

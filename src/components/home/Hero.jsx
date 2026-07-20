@@ -30,9 +30,9 @@ export default function Hero() {
 
           {/* Heading — LCP element, renders instantly */}
           <h1 className="font-display text-[2rem] font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15] drop-shadow-lg">
-            Find Verified Advocates <br className="hidden sm:block" />
+            Get Anonymous Legal Assistance <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E7C766] to-[#D4AF37]">
-              Across India
+              From Verified Advocates
             </span>
           </h1>
 
@@ -41,8 +41,7 @@ export default function Hero() {
             className="animate-fade-up mt-4 max-w-xl text-sm sm:text-lg text-slate-200 leading-relaxed font-normal drop-shadow"
             style={{ animationDelay: '0.1s' }}
           >
-            Search, compare, and connect with trusted advocates by legal service, city,
-            language, and experience — all in one place.
+            Consult experienced advocates for family, property, criminal, workplace, and other legal matters—while keeping your identity completely anonymous. Secure, confidential, and privacy-focused.
           </p>
 
           {/* Search Bar */}

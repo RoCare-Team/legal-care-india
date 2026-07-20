@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import EditProfileForm from '@/components/dashboard/EditProfileForm';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
+import { getAllCities } from '@/lib/cities';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /** Flatten a full advocate profile into the editable form snapshot. */
@@ -57,6 +58,9 @@ export default async function EditProfilePage() {
   if (!advocate) redirect('/login');
 
   const initial = toSnapshot(advocate);
+  // Built-in cities PLUS the ones an admin added, so a newly added city is
+  // immediately pickable here instead of only on the public site.
+  const cities = await getAllCities();
 
   return (
     <div>
@@ -66,7 +70,11 @@ export default async function EditProfilePage() {
           Keep your profile complete and up to date — changes reflect on your public profile.
         </p>
       </div>
-      <EditProfileForm initial={initial} previewHref={`/advocates/${advocateProfilePath(advocate)}`} />
+      <EditProfileForm
+        initial={initial}
+        cities={cities}
+        previewHref={`/advocates/${advocateProfilePath(advocate)}`}
+      />
     </div>
   );
 }

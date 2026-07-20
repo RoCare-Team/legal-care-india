@@ -3,6 +3,7 @@ import { createMetadata } from '@/lib/metadata';
 import { Container } from '@/components/ui';
 import RegisterWizard from '@/components/register/RegisterWizard';
 import RegisterAside from '@/components/register/RegisterAside';
+import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
   title: 'Register as an Advocate',
@@ -11,7 +12,11 @@ export const metadata = createMetadata({
   path: '/register',
 });
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  // Built-in cities plus any an admin added, so a new city is selectable the
+  // moment it's created.
+  const cities = await getAllCities();
+
   return (
     <Container className="py-10 sm:py-14">
       <div className="mx-auto mb-8 max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
@@ -28,7 +33,7 @@ export default function RegisterPage() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <RegisterWizard />
+          <RegisterWizard cities={cities} />
         </div>
         <div className="lg:col-span-1">
           <RegisterAside />

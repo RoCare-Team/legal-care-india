@@ -24,7 +24,7 @@ const STEP_TITLES = [
  * On final submit it creates a real account via /api/auth/register, then shows
  * the success screen (the advocate is already logged in at that point).
  */
-export default function RegisterWizard() {
+export default function RegisterWizard({ cities }) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState(INITIAL_REGISTER_DATA);
   const [errors, setErrors] = useState({});
@@ -104,7 +104,7 @@ export default function RegisterWizard() {
                 goNext();
               }}
             >
-              <StepComponent data={data} set={set} errors={errors} />
+              <StepComponent data={data} set={set} errors={errors} cities={cities} />
 
               {serverError && (
                 <p className="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">

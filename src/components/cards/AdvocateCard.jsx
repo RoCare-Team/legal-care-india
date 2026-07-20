@@ -34,9 +34,17 @@ export default function AdvocateCard({ advocate }) {
     specializations = [],
     languages = [],
     consultationFee,
+    consultationPlans = [],
     contact,
-    available,
+    online,
   } = advocate;
+
+  // Headline rate = the advocate's cheapest live-chat plan, shown as
+  // "₹500 / 15 min". Advocates who haven't set any plan fall back to their flat
+  // consultation fee.
+  const cheapestPlan = consultationPlans.length
+    ? consultationPlans.reduce((lo, p) => (p.price < lo.price ? p : lo))
+    : null;
 
   return (
     <Card
@@ -56,10 +64,12 @@ export default function AdvocateCard({ advocate }) {
           aria-hidden="true"
         />
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.08]" />
-        <PresenceIndicator id={advocate._id} initialAvailable={available} variant="card" />
+        <PresenceIndicator id={advocate._id} initialAvailable={online} variant="card" />
         <span className="absolute right-3 top-3 rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-          ₹{consultationFee}
-          <span className="font-normal text-white/70"> / consult</span>
+          ₹{cheapestPlan ? cheapestPlan.price : consultationFee}
+          <span className="font-normal text-white/70">
+            {cheapestPlan ? ` / ${cheapestPlan.minutes} min` : ' / consult'}
+          </span>
         </span>
       </div>
 

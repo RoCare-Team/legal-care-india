@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Phone, Mail, ChevronRight } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
+import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
 
@@ -62,6 +63,7 @@ export default function UsersTable({ users }) {
         ),
     },
     { key: 'createdAt', label: 'Joined', render: (u) => <span className="whitespace-nowrap text-ink/60">{formatDate(u.createdAt)}</span> },
+    { key: 'access', label: 'Access', render: (u) => <ImpersonateButton id={u.id} name={u.name} role="user" /> },
     {
       key: 'view',
       label: '',

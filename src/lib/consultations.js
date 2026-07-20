@@ -9,7 +9,7 @@ import Advocate from '@/models/Advocate';
 
 // An advocate counts as "online" if their listener checked in within this
 // window (the listener polls every 3s).
-const ONLINE_WINDOW_MS = 12000;
+export const ONLINE_WINDOW_MS = 12000;
 
 /** Heartbeat: mark the advocate as currently present. */
 export async function markAdvocateOnline(advocateId) {

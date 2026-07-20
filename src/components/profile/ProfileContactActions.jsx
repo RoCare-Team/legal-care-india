@@ -72,7 +72,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
             fullWidth
             leftIcon={<CalendarCheck className="h-4 w-4" />}
           >
-            Book Consultation
+            Book Chat Consultation
           </Button>
         )}
         {contact.phone && (

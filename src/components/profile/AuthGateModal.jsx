@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import { X, UserPlus, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -18,21 +19,37 @@ import { Button } from '@/components/ui';
 export default function AuthGateModal({ open, onClose, advocateName }) {
   const pathname = usePathname();
   const next = pathname ? `?next=${encodeURIComponent(pathname)}` : '';
+  // The modal is portalled to <body>, which only exists on the client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
+
+    // Lock scrolling, but replace the scrollbar's width with padding — hiding
+    // it outright reflows the whole page and makes the content jump/flicker.
+    const { body } = document;
+    const gap = window.innerWidth - document.documentElement.clientWidth;
+    const prevOverflow = body.style.overflow;
+    const prevPadding = body.style.paddingRight;
+    body.style.overflow = 'hidden';
+    if (gap > 0) body.style.paddingRight = `${gap}px`;
+
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      body.style.overflow = prevOverflow;
+      body.style.paddingRight = prevPadding;
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Portalled to <body>: any transformed ancestor (e.g. the advocate card's
+  // hover lift) would otherwise become the containing block for `fixed`, so the
+  // modal would render inside the card instead of centred on the viewport.
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       role="dialog"
@@ -40,12 +57,12 @@ export default function AuthGateModal({ open, onClose, advocateName }) {
       aria-labelledby="auth-gate-title"
     >
       <div
-        className="absolute inset-0 bg-ink/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/60"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-sm rounded-2xl border border-ink/10 bg-surface p-6 shadow-card-hover">
+      <div className="relative w-full max-w-md rounded-2xl border border-ink/10 bg-surface p-7 shadow-card-hover sm:p-8">
         <button
           type="button"
           onClick={onClose}
@@ -77,6 +94,7 @@ export default function AuthGateModal({ open, onClose, advocateName }) {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

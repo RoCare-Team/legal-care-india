@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
 import AccountView from '@/components/account/AccountView';
-import { getSessionUserId } from '@/lib/auth';
+import { getSession, getSessionUserId } from '@/lib/auth';
+import ExitImpersonation from '@/components/admin/ExitImpersonation';
 import { getUserById } from '@/lib/users';
 import { getUserConsultations } from '@/lib/consultations';
 
@@ -22,5 +23,18 @@ export default async function AccountPage() {
   // Rows the user cleared from their own list (the advocate still sees theirs).
   const consultations = allConsultations.filter((c) => !c.hidden);
 
-  return <AccountView user={user} consultations={consultations} />;
+  const session = await getSession();
+
+  return (
+    <>
+      {session?.impersonated && (
+        <div className="border-b border-ink/8 bg-surface">
+          <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6">
+            <ExitImpersonation role="user" className="-ml-3" />
+          </div>
+        </div>
+      )}
+      <AccountView user={user} consultations={consultations} />
+    </>
+  );
 }

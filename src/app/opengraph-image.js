@@ -41,7 +41,8 @@ export default function OgImage() {
         </div>
 
         <div style={{ display: 'flex', fontSize: 74, fontWeight: 800, lineHeight: 1.1, marginTop: 56 }}>
-          Find Verified Advocates Across India
+          Get Anonymous Legal Assistance
+          From Verified Advocates
         </div>
 
         <div style={{ display: 'flex', fontSize: 32, color: '#D4AF37', marginTop: 28, maxWidth: 900 }}>

@@ -23,6 +23,53 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+/**
+ * Smooth cubic path through every point, using Fritsch–Carlson monotone
+ * tangents. A plain Catmull-Rom curve overshoots around spikes, which on a
+ * counts series draws the line below zero between two quiet days — monotone
+ * interpolation stays inside the data, so it never invents a dip.
+ */
+function smoothPath(pts) {
+  const n = pts.length;
+  if (n === 0) return '';
+  if (n === 1) return `M${pts[0].cx},${pts[0].cy}`;
+  if (n === 2) return `M${pts[0].cx},${pts[0].cy} L${pts[1].cx},${pts[1].cy}`;
+
+  // Secant slope of each segment.
+  const dx = [];
+  const slope = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    dx[i] = pts[i + 1].cx - pts[i].cx;
+    slope[i] = dx[i] === 0 ? 0 : (pts[i + 1].cy - pts[i].cy) / dx[i];
+  }
+
+  // Tangent at each point: average of neighbouring slopes, forced to 0 at every
+  // local extreme, then clamped to three times the smaller neighbour so the
+  // curve cannot overshoot.
+  const m = [slope[0]];
+  for (let i = 1; i < n - 1; i += 1) {
+    if (slope[i - 1] * slope[i] <= 0) {
+      m[i] = 0;
+    } else {
+      const avg = (slope[i - 1] + slope[i]) / 2;
+      const limit = 3 * Math.min(Math.abs(slope[i - 1]), Math.abs(slope[i]));
+      m[i] = Math.sign(avg) * Math.min(Math.abs(avg), limit);
+    }
+  }
+  m[n - 1] = slope[n - 2];
+
+  let d = `M${pts[0].cx},${pts[0].cy}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const t = dx[i] / 3;
+    const c1x = pts[i].cx + t;
+    const c1y = pts[i].cy + m[i] * t;
+    const c2x = pts[i + 1].cx - t;
+    const c2y = pts[i + 1].cy - m[i + 1] * t;
+    d += ` C${c1x},${c1y} ${c2x},${c2y} ${pts[i + 1].cx},${pts[i + 1].cy}`;
+  }
+  return d;
+}
+
 export default function MetricTrendCard({ label, color, money = false, points = [], total = 0, growth = 0 }) {
   const [hover, setHover] = useState(null);
   const [drawn, setDrawn] = useState(false);
@@ -37,9 +84,12 @@ export default function MetricTrendCard({ label, color, money = false, points = 
     const x = (i) => PAD.left + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
     const y = (v) => PAD.top + innerH - (v / max) * innerH;
     const pts = points.map((p, i) => ({ i, cx: x(i), cy: y(p.value), ...p }));
-    const line = pts.map((p) => `${p.cx},${p.cy}`).join(' ');
     const baseline = PAD.top + innerH;
-    const area = `${PAD.left},${baseline} ${line} ${PAD.left + innerW},${baseline}`;
+    const line = smoothPath(pts);
+    // Same curve, closed down to the baseline at both ends for the fill.
+    const area = pts.length
+      ? `${line} L${pts[pts.length - 1].cx},${baseline} L${pts[0].cx},${baseline} Z`
+      : '';
     return { pts, line, area, baseline };
   }, [points]);
 
@@ -115,14 +165,14 @@ export default function MetricTrendCard({ label, color, money = false, points = 
           </defs>
 
           <line x1={PAD.left} y1={geo.baseline} x2={W - PAD.right} y2={geo.baseline} stroke="currentColor" className="text-ink/10" strokeWidth="1" />
-          <polygon
-            points={geo.area}
+          <path
+            d={geo.area}
             fill={`url(#${gradId})`}
             style={{ opacity: drawn ? 1 : 0, transition: 'opacity 1.6s ease-out 0.6s' }}
           />
-          <polyline
+          <path
             ref={lineRef}
-            points={geo.line}
+            d={geo.line}
             fill="none"
             stroke={color}
             strokeWidth="2"

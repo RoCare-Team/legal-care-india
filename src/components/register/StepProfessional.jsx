@@ -5,8 +5,6 @@ import { LANGUAGES, STATES } from '@/data/languages';
 import { CITIES } from '@/data/cities';
 import { COURTS } from '@/data/courts';
 
-const CITY_NAMES = CITIES.map((c) => c.name);
-
 /**
  * StepProfessional — bar registration, experience, services & languages.
  *
@@ -14,8 +12,10 @@ const CITY_NAMES = CITIES.map((c) => c.name);
  * @param {object} props.data
  * @param {(field:string,value:any)=>void} props.set
  * @param {Record<string,string>} props.errors
+ * @param {Array<{slug:string,name:string}>} [props.cities]  built-in + admin-added
  */
-export default function StepProfessional({ data, set, errors }) {
+export default function StepProfessional({ data, set, errors, cities = CITIES }) {
+  const cityNames = cities.map((c) => c.name);
   const subServices = data.subServices || [];
 
   // Pick main services; drop any sub-types whose parent service was removed.
@@ -68,7 +68,7 @@ export default function StepProfessional({ data, set, errors }) {
           invalid={Boolean(errors.city)}
         >
           <option value="">Select city</option>
-          {CITIES.map((c) => (
+          {cities.map((c) => (
             <option key={c.slug} value={c.name}>{c.name}</option>
           ))}
         </Select>
@@ -106,7 +106,7 @@ export default function StepProfessional({ data, set, errors }) {
         className="sm:col-span-2"
       >
         <ChipMultiSelect
-          options={CITY_NAMES}
+          options={cityNames}
           value={data.practiceCities || []}
           onChange={(next) => set('practiceCities', next)}
           max={8}

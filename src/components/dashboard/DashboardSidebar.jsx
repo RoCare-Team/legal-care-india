@@ -8,8 +8,13 @@ import { DASHBOARD_NAV } from '@/constants/dashboard';
 /**
  * DashboardSidebar — grouped vertical navigation for the advocate dashboard.
  * Sticky on desktop; renders as a horizontally scrollable strip on mobile.
+ *
+ * @param {object} props
+ * @param {import('react').ReactNode} [props.footer] Extra control pinned below
+ *   the nav. It has to live inside this sticky element, or the pinned nav
+ *   scrolls over it.
  */
-export default function DashboardSidebar() {
+export default function DashboardSidebar({ footer }) {
   const pathname = usePathname();
 
   return (
@@ -48,6 +53,7 @@ export default function DashboardSidebar() {
           </div>
         ))}
       </div>
+      {footer}
     </nav>
   );
 }

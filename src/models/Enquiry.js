@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 /**
  * Enquiry — a consultation request a signed-in user sends to a specific
- * advocate via the "Book Consultation" form on the advocate's profile.
+ * advocate via the "" form on the advocate's profile.
  * It shows up in that advocate's dashboard under Enquiries.
  *
  * `advocateId` is the advocate's MongoDB _id (as a string) so the dashboard

@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation';
 import { Container } from '@/components/ui';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardTopbar from '@/components/dashboard/DashboardTopbar';
-import { getSessionAdvocateId } from '@/lib/auth';
+import { getSession, getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
+import ExitImpersonation from '@/components/admin/ExitImpersonation';
 
 export const metadata = {
   title: 'Advocate Dashboard | Legal Care India',
@@ -21,13 +22,17 @@ export default async function DashboardLayout({ children }) {
   const advocate = await getAdvocateById(id);
   if (!advocate) redirect('/login');
 
+  const session = await getSession();
+
   return (
     <Container className="py-8 sm:py-10">
       <DashboardTopbar advocate={advocate} />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <aside className="min-w-0 lg:col-span-1">
-          <DashboardSidebar />
+          <DashboardSidebar
+            footer={session?.impersonated ? <ExitImpersonation role="advocate" /> : null}
+          />
         </aside>
         <div className="min-w-0">{children}</div>
       </div>

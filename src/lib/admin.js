@@ -289,6 +289,49 @@ export async function adminGetConsultations() {
   }));
 }
 
+/**
+ * One consultation in full, including the entire chat transcript, for the
+ * admin drill-down. Returns null if the id is unknown or malformed.
+ *
+ * Note this deliberately ignores `hiddenForUser` / `hiddenForAdvocate` — those
+ * only clear the row from a participant's own list, not from the record.
+ */
+export async function adminGetConsultationById(id) {
+  await connectDB();
+
+  let r = null;
+  try {
+    r = await Consultation.findById(id).lean();
+  } catch {
+    return null; // malformed ObjectId
+  }
+  if (!r) return null;
+
+  return {
+    id: String(r._id),
+    userId: r.userId ? String(r.userId) : '',
+    userName: r.userName || 'Client',
+    advocateId: r.advocateId ? String(r.advocateId) : '',
+    advocateName: r.advocateName || 'Advocate',
+    minutes: r.minutes || 0,
+    price: r.price || 0,
+    status: r.status || 'pending',
+    charged: ['active', 'ended'].includes(r.status),
+    messages: (r.messages || []).map((m) => ({
+      id: String(m._id),
+      from: m.from === 'advocate' ? 'advocate' : 'user',
+      text: m.text || '',
+      at: iso(m.at),
+    })),
+    hiddenForUser: Boolean(r.hiddenForUser),
+    hiddenForAdvocate: Boolean(r.hiddenForAdvocate),
+    startedAt: iso(r.startedAt),
+    endsAt: iso(r.endsAt),
+    endedAt: iso(r.endedAt),
+    createdAt: iso(r.createdAt),
+  };
+}
+
 /** Local YYYY-MM-DD key for bucketing by calendar day. */
 function dayKey(d) {
   const x = new Date(d);

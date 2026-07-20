@@ -18,9 +18,10 @@ import SectionGallerySocial from './sections/SectionGallerySocial';
  *
  * @param {object} props
  * @param {object} props.initial  flat editable snapshot
+ * @param {Array<{slug:string,name:string}>} [props.cities]  built-in + admin-added
  * @param {string} props.previewHref
  */
-export default function EditProfileForm({ initial, previewHref }) {
+export default function EditProfileForm({ initial, cities, previewHref }) {
   const [data, setData] = useState(initial);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -56,8 +57,8 @@ export default function EditProfileForm({ initial, previewHref }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <SectionBasic data={data} set={set} />
-      <SectionAboutServices data={data} set={set} />
+      <SectionBasic data={data} set={set} cities={cities} />
+      <SectionAboutServices data={data} set={set} cities={cities} />
       <SectionExperienceEducation data={data} set={set} />
       <SectionOfficeTiming data={data} set={set} />
       <SectionContactFees data={data} set={set} />

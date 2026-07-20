@@ -19,7 +19,7 @@ import { pluralize } from '@/utils/formatters';
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
-const EMPTY = { query: '', service: '', court: '', city: '', sort: 'relevance' };
+const EMPTY = { query: '', service: '', subService: '', court: '', city: '', sort: 'relevance' };
 
 function sortAdvocates(list, sort) {
   const copy = [...list];
@@ -42,6 +42,7 @@ export default function AdvocateListing({
   initial = {},
   showFilters = true,
   floatFilters = false,
+  cities,
   emptyTitle,
   emptyMessage,
   emptyAction,
@@ -52,7 +53,9 @@ export default function AdvocateListing({
   const onReset = () => setFilters(EMPTY);
 
   const hasActiveFilters =
-    Boolean(filters.query || filters.service || filters.court || filters.city) || filters.sort !== 'relevance';
+    Boolean(
+      filters.query || filters.service || filters.subService || filters.court || filters.city
+    ) || filters.sort !== 'relevance';
 
   const results = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
@@ -68,6 +71,8 @@ export default function AdvocateListing({
         a.courts?.some((c) => c.toLowerCase().includes(q));
       const matchesService =
         !filters.service || a.specializations?.includes(filters.service);
+      const matchesSubService =
+        !filters.subService || a.subSpecializations?.includes(filters.subService);
       const matchesCourt =
         !filters.court || a.courts?.includes(filters.court);
       // City matches the advocate's base city OR any city they also work in.
@@ -75,7 +80,7 @@ export default function AdvocateListing({
         !cityFilter ||
         a.city?.toLowerCase() === cityFilter ||
         a.practiceCities?.some((c) => c.toLowerCase() === cityFilter);
-      return matchesQuery && matchesService && matchesCourt && matchesCity;
+      return matchesQuery && matchesService && matchesSubService && matchesCourt && matchesCity;
     });
     return sortAdvocates(filtered, filters.sort);
   }, [advocates, filters]);
@@ -90,6 +95,7 @@ export default function AdvocateListing({
             onReset={onReset}
             hasActiveFilters={hasActiveFilters}
             elevated={floatFilters}
+            cities={cities}
           />
 
           <div className="flex items-center justify-between">

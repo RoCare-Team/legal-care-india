@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
+import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
 
-/** Approve / unpublish + delete controls for a single advocate row. */
+/** Approve / unpublish control for a single advocate row. */
 function StatusAction({ advocate }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -27,6 +28,37 @@ function StatusAction({ advocate }) {
     }
   };
 
+  if (busy) {
+    return <Loader2 className="h-4 w-4 animate-spin text-ink/40" aria-hidden="true" />;
+  }
+
+  return advocate.status === 'pending' ? (
+    <button
+      type="button"
+      onClick={() => run('approve')}
+      className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20"
+    >
+      <Check className="h-3.5 w-3.5" aria-hidden="true" />
+      Approve
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => run('unpublish')}
+      title="Take offline"
+      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink/45 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+    >
+      <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+      Unpublish
+    </button>
+  );
+}
+
+/** Destructive delete, kept apart from the approval controls in its own column. */
+function DeleteAction({ advocate }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
   const remove = async () => {
     if (!window.confirm(`Delete ${advocate.name}? This permanently removes their account and listing from the website.`)) {
       return;
@@ -41,41 +73,19 @@ function StatusAction({ advocate }) {
   };
 
   if (busy) {
-    return <Loader2 className="h-4 w-4 animate-spin text-ink/40" aria-hidden="true" />;
+    return <Loader2 className="h-4 w-4 animate-spin text-rose-500" aria-hidden="true" />;
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      {advocate.status === 'pending' ? (
-        <button
-          type="button"
-          onClick={() => run('approve')}
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20"
-        >
-          <Check className="h-3.5 w-3.5" aria-hidden="true" />
-          Approve
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => run('unpublish')}
-          title="Take offline"
-          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink/45 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
-        >
-          <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-          Unpublish
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={remove}
-        title="Delete advocate"
-        aria-label={`Delete ${advocate.name}`}
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/35 transition-colors hover:bg-red-500/10 hover:text-red-600"
-      >
-        <Trash2 className="h-4 w-4" aria-hidden="true" />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={remove}
+      title="Delete advocate"
+      aria-label={`Delete ${advocate.name}`}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+    >
+      <Trash2 className="h-4 w-4" aria-hidden="true" />
+    </button>
   );
 }
 
@@ -214,6 +224,7 @@ export default function AdvocatesTable({ advocates }) {
     { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
     { key: 'action', label: 'Approval', render: (a) => <StatusAction advocate={a} /> },
     { key: 'createdAt', label: 'Joined', render: (a) => <span className="whitespace-nowrap text-ink/60">{formatDate(a.createdAt)}</span> },
+    { key: 'access', label: 'Access', render: (a) => <ImpersonateButton id={a.id} name={a.name} role="advocate" /> },
     {
       key: 'view',
       label: '',
@@ -230,6 +241,16 @@ export default function AdvocatesTable({ advocates }) {
           >
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
+        </div>
+      ),
+    },
+    {
+      key: 'delete',
+      label: '',
+      className: 'text-right',
+      render: (a) => (
+        <div className="flex justify-end">
+          <DeleteAction advocate={a} />
         </div>
       ),
     },

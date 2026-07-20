@@ -7,12 +7,15 @@ import { COURTS } from '@/data/courts';
 import { CITIES } from '@/data/cities';
 import DashboardSection from '../DashboardSection';
 
-const CITY_NAMES = CITIES.map((c) => c.name);
-
 /**
  * SectionAboutServices — about text, legal services and languages.
+ *
+ * `cities` comes from the server page and already merges the built-in list with
+ * admin-added cities; it falls back to the built-ins so the section still works
+ * anywhere the prop isn't threaded through.
  */
-export default function SectionAboutServices({ data, set }) {
+export default function SectionAboutServices({ data, set, cities = CITIES }) {
+  const cityNames = cities.map((c) => c.name);
   const subServices = data.subServices || [];
 
   const onServicesChange = (nextServices) => {
@@ -71,7 +74,7 @@ export default function SectionAboutServices({ data, set }) {
       </DashboardSection>
 
       <DashboardSection id="cities" title="Cities You Work In" description="Every city you take cases in (besides your base city). Clients searching those cities will find you." icon={MapPin}>
-        <ChipMultiSelect options={CITY_NAMES} value={data.practiceCities || []} onChange={(v) => set('practiceCities', v)} max={8} />
+        <ChipMultiSelect options={cityNames} value={data.practiceCities || []} onChange={(v) => set('practiceCities', v)} max={8} />
       </DashboardSection>
 
       <DashboardSection id="languages" title="Languages" description="Languages you can consult in." icon={LangIcon}>

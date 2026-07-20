@@ -40,8 +40,11 @@ export function AdminAvatar({ name = '', tone = 'bg-primary/10 text-primary' }) 
  * @param {Array} props.rows
  * @param {(row:any)=>string} [props.rowKey]
  * @param {string} [props.empty]
+ * @param {string} [props.maxHeight] CSS height that turns the body into its own
+ *   vertical scroll area with a pinned header, e.g. '32rem'. Omit for a table
+ *   that grows with the page.
  */
-export default function DataTable({ columns, rows, rowKey, empty = 'Nothing here yet.' }) {
+export default function DataTable({ columns, rows, rowKey, empty = 'Nothing here yet.', maxHeight }) {
   if (!rows || rows.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-ink/15 bg-surface py-20 text-center">
@@ -55,14 +58,19 @@ export default function DataTable({ columns, rows, rowKey, empty = 'Nothing here
 
   return (
     <div className="overflow-hidden rounded-2xl border border-ink/8 bg-surface shadow-card">
-      <div className="overflow-x-auto">
+      <div
+        className={`overflow-x-auto ${maxHeight ? 'overflow-y-auto' : ''}`}
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         <table className="w-full min-w-[720px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-ink/10 bg-gradient-to-b from-ink/[0.03] to-ink/[0.01] text-left">
+          <thead className={maxHeight ? 'sticky top-0 z-10' : undefined}>
+            <tr className="text-left">
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className="whitespace-nowrap px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink/40"
+                  // Inset shadow rather than border-b: a real border on a sticky
+                  // cell scrolls away under border-collapse.
+                  className="whitespace-nowrap bg-surface bg-gradient-to-b from-ink/[0.03] to-ink/[0.01] px-5 py-3.5 text-[11px] font-bold uppercase tracking-wider text-ink/40 shadow-[inset_0_-1px_0_0_rgb(var(--color-ink)/0.1)]"
                 >
                   {c.label}
                 </th>

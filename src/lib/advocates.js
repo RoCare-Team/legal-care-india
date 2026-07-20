@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
+import { ONLINE_WINDOW_MS } from '@/lib/consultations';
 import { slugify } from '@/utils/slugify';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
@@ -162,6 +163,15 @@ export function buildAdvocateProfile(a) {
     profilePath: advocateProfilePath(a),
     // Manual availability switch (defaults to offline for older records).
     available: Boolean(a.available),
+    // Actually reachable right now = switch on AND a recent listener heartbeat.
+    // This is only the first-paint value (these reads are ISR-cached, so the
+    // heartbeat is usually stale here); /api/presence polls the live truth a
+    // moment later. Erring toward "offline" means we never wrongly advertise
+    // an advocate as reachable.
+    online:
+      Boolean(a.available) &&
+      Boolean(a.lastSeenAt) &&
+      Date.now() - new Date(a.lastSeenAt).getTime() < ONLINE_WINDOW_MS,
     // Live-chat rates the advocate set themselves (empty ⇒ chat not offered).
     consultationPlans: a.consultationPlans || [],
     rating: avgRating,
