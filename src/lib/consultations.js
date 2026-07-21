@@ -7,18 +7,18 @@ import Advocate from '@/models/Advocate';
  * Consultation data-access + the wallet transfer that happens on connect.
  */
 
-// An advocate counts as "online" if their listener checked in within this
+// A lawyer counts as "online" if their listener checked in within this
 // window (the listener polls every 3s).
 export const ONLINE_WINDOW_MS = 12000;
 
-/** Heartbeat: mark the advocate as currently present. */
+/** Heartbeat: mark the lawyer as currently present. */
 export async function markAdvocateOnline(advocateId) {
   await connectDB();
   await Advocate.updateOne({ _id: advocateId }, { $set: { lastSeenAt: new Date() } });
 }
 
 /**
- * Is the advocate online right now? They must have manually switched
+ * Is the lawyer online right now? They must have manually switched
  * themselves available AND have a recent heartbeat (site open).
  */
 export async function isAdvocateOnline(advocateId) {
@@ -56,7 +56,7 @@ export function serializeSession(doc) {
 }
 
 /**
- * The full, continuous transcript between one user and one advocate across
+ * The full, continuous transcript between one user and one lawyer across
  * EVERY consultation they've ever had, ordered oldest-first. This is what makes
  * the chat resume where it left off: book again and the whole past conversation
  * is still there, with the new session's messages appended.
@@ -92,7 +92,7 @@ export async function getTranscriptFor(consultationId, participantId, role) {
 
   return {
     messages: await getPairMessages(row.userId, row.advocateId),
-    otherName: role === 'user' ? (row.advocateName || 'Advocate') : (row.userName || 'Client'),
+    otherName: role === 'user' ? (row.advocateName || 'Lawyer') : (row.userName || 'Client'),
   };
 }
 
@@ -137,7 +137,7 @@ function toHistoryRow(r, viewer) {
     userId: String(r.userId),
     userName: r.userName || 'Client',
     advocateId: String(r.advocateId),
-    advocateName: r.advocateName || 'Advocate',
+    advocateName: r.advocateName || 'Lawyer',
     minutes: r.minutes,
     price: r.price,
     status: r.status,
@@ -162,10 +162,10 @@ export async function getUserConsultations(userId) {
 }
 
 /**
- * An advocate's consultation history (most recent first) for their dashboard —
+ * A lawyer's consultation history (most recent first) for their dashboard —
  * who they chatted with, for how long, and what they earned.
  *
- * Rows the advocate cleared are still returned (flagged `hidden`) so earnings
+ * Rows the lawyer cleared are still returned (flagged `hidden`) so earnings
  * totals stay accurate; the dashboard filters them out of the visible list.
  */
 export async function getAdvocateConsultations(advocateId) {
@@ -220,7 +220,7 @@ export async function getConsultation(id) {
   return withPairHistory(serializeSession(doc.toObject()));
 }
 
-/** Pending + active sessions for an advocate (the incoming-call feed). */
+/** Pending + active sessions for a lawyer (the incoming-call feed). */
 export async function getAdvocateInbox(advocateId) {
   await connectDB();
   const rows = await Consultation.find({
@@ -234,7 +234,7 @@ export async function getAdvocateInbox(advocateId) {
 }
 
 /**
- * Advocate accepts: charge the user's wallet, credit the advocate, open the
+ * Lawyer accepts: charge the user's wallet, credit the lawyer, open the
  * chat with a hard end time. Returns { session } or throws a coded error.
  */
 export async function acceptConsultation(id, advocateId) {
@@ -255,7 +255,7 @@ export async function acceptConsultation(id, advocateId) {
 
   if (!debited) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
 
-  // Credit the advocate's earnings wallet.
+  // Credit the lawyer's earnings wallet.
   await Advocate.findByIdAndUpdate(advocateId, {
     $inc: { walletBalance: session.price },
     $push: { walletTransactions: { type: 'credit', amount: session.price, note: `Consultation with ${session.userName}` } },
@@ -269,7 +269,7 @@ export async function acceptConsultation(id, advocateId) {
   return withPairHistory(serializeSession(session.toObject()));
 }
 
-/** Advocate rejects a pending request (no charge). */
+/** Lawyer rejects a pending request (no charge). */
 export async function rejectConsultation(id, advocateId) {
   await connectDB();
   const session = await Consultation.findOne({ _id: id, advocateId });

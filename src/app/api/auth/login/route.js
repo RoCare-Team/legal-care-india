@@ -5,7 +5,7 @@ import { comparePassword, signToken, setAuthCookie } from '@/lib/auth';
 
 /**
  * POST /api/auth/login
- * Verifies advocate credentials and issues the session cookie.
+ * Verifies lawyer credentials and issues the session cookie.
  */
 export async function POST(request) {
   let body;

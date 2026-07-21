@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { cn } from '@/utils/cn';
 
 /**
- * Avatar — advocate photo with a graceful initials fallback.
+ * Avatar — lawyer photo with a graceful initials fallback.
  * Used on profile headers, cards, dashboard and reviews.
  *
  * @param {object} props

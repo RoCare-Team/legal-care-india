@@ -6,11 +6,11 @@ import { ADVOCATES_TAG } from '@/lib/advocates';
 
 /**
  * POST /api/advocates/[slug]/reviews  { author, rating, text }
- * Adds a public client review to an advocate and recomputes their aggregate
+ * Adds a public client review to a lawyer and recomputes their aggregate
  * rating. Anyone can submit; basic validation guards against junk input.
  */
 export async function POST(request, { params }) {
-  // The route segment carries the advocate's Legal Care India ID.
+  // The route segment carries the lawyer's Legal Care India ID.
   const { slug: legalCareId } = await params;
 
   let body;
@@ -40,7 +40,7 @@ export async function POST(request, { params }) {
       legalCareId: String(legalCareId).toUpperCase(),
     });
     if (!advocate) {
-      return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
     }
 
     advocate.reviewsList.push({

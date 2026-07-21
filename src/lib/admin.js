@@ -11,11 +11,11 @@ import Consultation from '@/models/Consultation';
  * Admin access + read-only data for the /admin panel.
  *
  * The admin logs in with dedicated credentials (ADMIN_EMAIL + ADMIN_PASSWORD
- * from the environment) — no user/advocate account needed. On success a signed
+ * from the environment) — no user/lawyer account needed. On success a signed
  * httpOnly cookie is set and every /admin route checks it.
  */
 
-/** Separate cookie so admin auth is independent of user/advocate sessions. */
+/** Separate cookie so admin auth is independent of user/lawyer sessions. */
 export const ADMIN_COOKIE = 'lci_admin';
 
 /** Validate a login attempt against the ADMIN_EMAIL/ADMIN_PASSWORD env vars. */
@@ -45,7 +45,7 @@ function iso(v) {
   return v ? new Date(v).toISOString() : null;
 }
 
-/** Every advocate (all statuses), newest first. */
+/** Every lawyer (all statuses), newest first. */
 export async function adminGetAdvocates() {
   await connectDB();
   const rows = await Advocate.find({})
@@ -92,7 +92,7 @@ function toConsultationRow(r) {
   return {
     id: String(r._id),
     userName: r.userName || 'Client',
-    advocateName: r.advocateName || 'Advocate',
+    advocateName: r.advocateName || 'Lawyer',
     minutes: r.minutes || 0,
     price: r.price || 0,
     status: r.status || 'pending',
@@ -154,7 +154,7 @@ export async function adminGetUserById(id) {
 }
 
 /**
- * Full detail for a single advocate — the entire profile, earnings wallet,
+ * Full detail for a single lawyer — the entire profile, earnings wallet,
  * consultation history and the enquiries they've received. Null if unknown.
  */
 export async function adminGetAdvocateById(id) {
@@ -277,11 +277,11 @@ export async function adminGetConsultations() {
   return rows.map((r) => ({
     id: String(r._id),
     userName: r.userName || 'Client',
-    advocateName: r.advocateName || 'Advocate',
+    advocateName: r.advocateName || 'Lawyer',
     minutes: r.minutes || 0,
     price: r.price || 0,
     status: r.status || 'pending',
-    // Only a connected session (accepted by the advocate) actually cost money.
+    // Only a connected session (accepted by the lawyer) actually cost money.
     charged: ['active', 'ended'].includes(r.status),
     messagesCount: (r.messages || []).length,
     startedAt: iso(r.startedAt),
@@ -312,7 +312,7 @@ export async function adminGetConsultationById(id) {
     userId: r.userId ? String(r.userId) : '',
     userName: r.userName || 'Client',
     advocateId: r.advocateId ? String(r.advocateId) : '',
-    advocateName: r.advocateName || 'Advocate',
+    advocateName: r.advocateName || 'Lawyer',
     minutes: r.minutes || 0,
     price: r.price || 0,
     status: r.status || 'pending',

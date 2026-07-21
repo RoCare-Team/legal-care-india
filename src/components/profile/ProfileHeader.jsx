@@ -5,8 +5,8 @@ import { formatExperience } from '@/utils/formatters';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
 /**
- * ProfileHeader — cover banner, avatar, identity and headline meta for an
- * advocate's public profile.
+ * ProfileHeader — cover banner, avatar, identity and headline meta for a
+ * lawyer's public profile.
  *
  * @param {object} props
  * @param {object} props.advocate  full profile from getAdvocateBySlug
@@ -18,7 +18,7 @@ export default function ProfileHeader({ advocate }) {
     courts = [], practiceCities = [],
   } = advocate;
 
-  // Cities the advocate serves, minus the base city (shown separately).
+  // Cities the lawyer serves, minus the base city (shown separately).
   const otherCities = practiceCities.filter((c) => c && c !== city);
 
   return (

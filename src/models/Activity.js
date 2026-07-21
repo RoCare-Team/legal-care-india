@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 /**
- * Activity — a log of a user's interactions with advocates: booking a
+ * Activity — a log of a user's interactions with lawyers: booking a
  * consultation, or tapping Call / WhatsApp / Email on a profile. Powers the
  * "Your activity" history on the user's account page.
  */

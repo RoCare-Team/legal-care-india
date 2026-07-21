@@ -3,12 +3,12 @@
 import { useIsOnline } from './PresenceProvider';
 
 /**
- * PresenceIndicator — live online/offline badge for an advocate. Reflects the
- * shared presence poll, so it flips the moment the advocate toggles their
+ * PresenceIndicator — live online/offline badge for a lawyer. Reflects the
+ * shared presence poll, so it flips the moment the lawyer toggles their
  * availability — no page refresh needed.
  *
  * @param {object} props
- * @param {string} props.id                 advocate _id
+ * @param {string} props.id                 lawyer _id
  * @param {boolean} [props.initialAvailable] server-rendered status (avoids flicker)
  * @param {'card'|'profile'} [props.variant]
  */

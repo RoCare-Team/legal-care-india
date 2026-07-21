@@ -6,7 +6,7 @@ import { Mail, Lock, LogIn } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 
 /**
- * LoginForm — advocate sign-in card (UI only; routes to the dashboard).
+ * LoginForm — lawyer sign-in card (UI only; routes to the dashboard).
  */
 export default function LoginForm() {
   const [data, setData] = useState({ email: '', password: '' });
@@ -47,7 +47,7 @@ export default function LoginForm() {
       onSubmit={onSubmit}
       className="rounded-2xl border border-ink/8 bg-surface p-6 shadow-card sm:p-8"
     >
-      <h1 className="font-display text-2xl font-semibold text-ink">Advocate Login</h1>
+      <h1 className="font-display text-2xl font-semibold text-ink">Lawyer Login</h1>
       <p className="mt-1 text-sm text-ink/55">Welcome back — sign in to manage your profile.</p>
 
       <div className="mt-6 space-y-4">
@@ -92,7 +92,7 @@ export default function LoginForm() {
       <p className="mt-6 text-center text-sm text-ink/60">
         New to Legal Care India?{' '}
         <Link href="/register" className="font-medium text-primary hover:underline">
-          Register as an Advocate
+          Register as a Lawyer
         </Link>
       </p>
     </form>

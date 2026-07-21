@@ -2,7 +2,7 @@ import { UserRound } from 'lucide-react';
 import ProfileSection from './ProfileSection';
 
 /**
- * ProfileAbout — the advocate's biography / about section.
+ * ProfileAbout — the lawyer's biography / about section.
  *
  * @param {object} props
  * @param {object} props.advocate

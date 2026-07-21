@@ -15,8 +15,8 @@ import { getAllAdvocates } from '@/lib/advocates';
 import { getServiceBySlug, getSubServiceLinks, CATEGORIES } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
-// Prerender one page per legal service; advocate data is tag-cached so new
-// registrations appear immediately (see lib/advocates).
+// Prerender one page per legal service; lawyer data is tag-cached so new
+// registrations appear immediately (see lib/lawyers).
 export const revalidate = 3600;
 
 export function generateStaticParams() {
@@ -29,23 +29,23 @@ export async function generateMetadata({ params }) {
   if (!service) return createMetadata({ title: 'Service Not Found', path: '/legal-services' });
 
   return createMetadata({
-    title: `${service.name} Advocates`,
-    description: `Find verified ${service.name} advocates in India. ${service.description} Compare experience and contact them directly.`,
+    title: `${service.name} Lawyers`,
+    description: `Find verified ${service.name} lawyers in India. ${service.description} Compare experience and contact them directly.`,
     path: `/legal-services/${service.slug}`,
-    keywords: [`${service.name} advocate`, `${service.name} lawyer`],
+    keywords: [`${service.name} lawyer`, `${service.name} lawyer`],
   });
 }
 
 const WHY_POINTS = [
   {
     icon: ShieldCheck,
-    title: 'Verified advocates',
-    text: 'Every profile is registered and reviewed — you connect only with genuine, practising advocates.',
+    title: 'Verified lawyers',
+    text: 'Every profile is registered and reviewed — you connect only with genuine, practising lawyers.',
   },
   {
     icon: MessageSquare,
     title: 'Contact directly',
-    text: 'Call, WhatsApp or email the advocate yourself. No middlemen, no commission on your case.',
+    text: 'Call, WhatsApp or email the lawyer yourself. No middlemen, no commission on your case.',
   },
   {
     icon: BadgeIndianRupee,
@@ -59,20 +59,20 @@ function buildFaqs(service, subNames) {
   const examples = subNames.slice(0, 5).join(', ');
   return [
     {
-      q: `How do I find a good ${service.name} advocate?`,
-      a: `Browse verified ${service.name} advocates on Legal Care India, compare their experience, ratings and consultation fees, and contact the right one directly. Every profile is registered and verified.`,
+      q: `How do I find a good ${service.name} lawyer?`,
+      a: `Browse verified ${service.name} lawyers on Legal Care India, compare their experience, ratings and consultation fees, and contact the right one directly. Every profile is registered and verified.`,
     },
     {
-      q: `What matters does a ${service.name} advocate handle?`,
-      a: `${service.name} advocates handle matters such as ${examples}${subNames.length > 5 ? ' and more' : ''} — ${service.description.toLowerCase()}`,
+      q: `What matters does a ${service.name} lawyer handle?`,
+      a: `${service.name} lawyers handle matters such as ${examples}${subNames.length > 5 ? ' and more' : ''} — ${service.description.toLowerCase()}`,
     },
     {
       q: `How much does a ${service.name} consultation cost?`,
-      a: `Fees vary by the advocate and the complexity of your matter. Each advocate lists their consultation fee on their profile, so you can pick one that suits your budget before reaching out.`,
+      a: `Fees vary by the lawyer and the complexity of your matter. Each lawyer lists their consultation fee on their profile, so you can pick one that suits your budget before reaching out.`,
     },
     {
-      q: 'Is contacting an advocate on Legal Care India free?',
-      a: 'Yes. Browsing profiles and contacting advocates is completely free. You only pay the advocate directly for their consultation or case work.',
+      q: 'Is contacting a lawyer on Legal Care India free?',
+      a: 'Yes. Browsing profiles and contacting lawyers is completely free. You only pay the lawyer directly for their consultation or case work.',
     },
   ];
 }
@@ -86,7 +86,7 @@ export default async function LegalServicePage({ params }) {
   const subServices = getSubServiceLinks(service.name);
   const faqs = buildFaqs(service, subServices.map((s) => s.name));
 
-  // Real advocates practising this service (broad category stored in
+  // Real lawyers practising this service (broad category stored in
   // `specializations` at registration). Count is honest — no marketing figure.
   const allAdvocates = await getAllAdvocates();
   const inService = allAdvocates.filter((a) => a.specializations?.includes(service.name));
@@ -109,8 +109,8 @@ export default async function LegalServicePage({ params }) {
         ]}
       />
       <PageHeader
-        eyebrow={count > 0 ? `${pluralize(count, 'advocate')} available` : 'Legal Service'}
-        title={`${service.name} Advocates`}
+        eyebrow={count > 0 ? `${pluralize(count, 'lawyer')} available` : 'Legal Service'}
+        title={`${service.name} Lawyers`}
         subtitle={service.description}
         breadcrumbs={[
           { label: 'Home', href: '/' },
@@ -151,7 +151,7 @@ export default async function LegalServicePage({ params }) {
                     <Users className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <dt className="text-xs text-ink/50">Advocates available</dt>
+                    <dt className="text-xs text-ink/50">Lawyers available</dt>
                     <dd className="font-semibold text-ink">{count}</dd>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export default async function LegalServicePage({ params }) {
                 </h2>
               </div>
               <p className="mt-1.5 text-sm text-ink/55">
-                Tap a matter to see advocates who specialise in exactly that.
+                Tap a matter to see lawyers who specialise in exactly that.
               </p>
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {subServices.map((item) => (
@@ -219,7 +219,7 @@ export default async function LegalServicePage({ params }) {
         <SectionReveal>
           <div className="mt-14 rounded-3xl border border-ink/8 bg-muted/40 p-6 sm:p-8">
             <h2 className="font-display text-xl font-semibold text-ink">
-              Why find your {service.name} advocate here
+              Why find your {service.name} lawyer here
             </h2>
             <div className="mt-6 grid gap-5 md:grid-cols-3">
               {WHY_POINTS.map(({ icon: PointIcon, title, text }) => (
@@ -237,10 +237,10 @@ export default async function LegalServicePage({ params }) {
           </div>
         </SectionReveal>
 
-        {/* ── Advocates in this category ────────────────────────────── */}
+        {/* ── Lawyers in this category ────────────────────────────── */}
         <div className="mt-14">
           <h2 className="mb-5 font-display text-xl font-semibold text-ink">
-            {service.name} Advocates
+            {service.name} Lawyers
           </h2>
           <AdvocateListing advocates={allAdvocates} initial={{ service: service.name }} />
         </div>

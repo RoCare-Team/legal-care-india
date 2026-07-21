@@ -6,11 +6,11 @@ import { Star, Send, CheckCircle2 } from 'lucide-react';
 import { Button, FormField, Input, Textarea } from '@/components/ui';
 
 /**
- * ReviewForm — lets any visitor post a client review for an advocate.
+ * ReviewForm — lets any visitor post a client review for a lawyer.
  * On success it refreshes the server data so the new review appears.
  *
  * @param {object} props
- * @param {string} props.legalCareId  advocate's Legal Care India ID (API target)
+ * @param {string} props.legalCareId  lawyer's Legal Care India ID (API target)
  */
 export default function ReviewForm({ legalCareId }) {
   const router = useRouter();
@@ -113,7 +113,7 @@ export default function ReviewForm({ legalCareId }) {
             id="review-text"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Share your experience working with this advocate…"
+            placeholder="Share your experience working with this lawyer…"
             rows={4}
             maxLength={1000}
           />

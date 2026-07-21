@@ -13,7 +13,7 @@ import SectionGallerySocial from './sections/SectionGallerySocial';
 
 /**
  * EditProfileForm — client container holding the full editable profile state,
- * seeded from the advocate snapshot passed by the server page.
+ * seeded from the lawyer snapshot passed by the server page.
  * UI only: "Save" flips a saved indicator (no backend).
  *
  * @param {object} props

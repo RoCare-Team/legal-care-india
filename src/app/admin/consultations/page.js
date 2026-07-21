@@ -43,7 +43,7 @@ export default async function AdminConsultationsPage({ searchParams }) {
     },
     {
       key: 'advocateName',
-      label: 'Advocate',
+      label: 'Lawyer',
       render: (c) => (
         <span className="flex items-center gap-1.5 font-medium text-ink/80">
           <Scale className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />

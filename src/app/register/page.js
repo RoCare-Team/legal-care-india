@@ -6,9 +6,9 @@ import RegisterAside from '@/components/register/RegisterAside';
 import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
-  title: 'Register as an Advocate',
+  title: 'Register as a Lawyer',
   description:
-    'Create your free verified advocate profile on Legal Care India and start receiving direct client enquiries by call, WhatsApp and email.',
+    'Create your free verified lawyer profile on Legal Care India and start receiving direct client enquiries by call, WhatsApp and email.',
   path: '/register',
 });
 
@@ -21,7 +21,7 @@ export default async function RegisterPage() {
     <Container className="py-10 sm:py-14">
       <div className="mx-auto mb-8 max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
         <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
-          Register as an Advocate
+          Register as a Lawyer
         </h1>
         <p className="mt-2 text-ink/60">
           Already registered?{' '}

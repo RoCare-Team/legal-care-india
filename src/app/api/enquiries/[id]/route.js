@@ -6,8 +6,8 @@ import { ENQUIRY_STATUSES } from '@/constants/enquiryStatus';
 
 /**
  * PATCH /api/enquiries/[id]  { status }
- * The advocate updates the status of an enquiry addressed to them. Only the
- * advocate who owns the enquiry may change it.
+ * The lawyer updates the status of an enquiry addressed to them. Only the
+ * lawyer who owns the enquiry may change it.
  */
 export async function PATCH(request, { params }) {
   const advocateId = await getSessionAdvocateId();
@@ -35,7 +35,7 @@ export async function PATCH(request, { params }) {
     if (!enquiry) {
       return NextResponse.json({ error: 'Enquiry not found.' }, { status: 404 });
     }
-    // Ownership check — an advocate can only touch their own enquiries.
+    // Ownership check — a lawyer can only touch their own enquiries.
     if (String(enquiry.advocateId) !== String(advocateId)) {
       return NextResponse.json({ error: 'Not authorised.' }, { status: 403 });
     }

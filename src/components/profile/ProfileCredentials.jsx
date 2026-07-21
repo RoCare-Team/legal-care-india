@@ -10,7 +10,7 @@ import ProfileSection from './ProfileSection';
 export default function ProfileCredentials({ advocate }) {
   const certificates = (advocate.certificates || []).filter((c) => c && c.title);
   const awards = (advocate.awards || []).filter((a) => a && a.title);
-  // Nothing to show until the advocate adds certificates or awards.
+  // Nothing to show until the lawyer adds certificates or awards.
   if (certificates.length === 0 && awards.length === 0) return null;
 
   return (

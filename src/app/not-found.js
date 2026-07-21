@@ -17,14 +17,14 @@ export default function NotFound() {
         </Heading>
         <p className="mt-3 text-ink/60">
           The page you are looking for doesn&apos;t exist or may have been moved. Let&apos;s
-          get you back to finding the right advocate.
+          get you back to finding the right lawyer.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button href="/" leftIcon={<Home className="h-4 w-4" />}>
             Back to Home
           </Button>
-          <Button href="/advocates" variant="outline" leftIcon={<Search className="h-4 w-4" />}>
-            Find Advocates
+          <Button href="/lawyers" variant="outline" leftIcon={<Search className="h-4 w-4" />}>
+            Find Lawyers
           </Button>
         </div>
       </div>

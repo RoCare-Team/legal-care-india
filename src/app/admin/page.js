@@ -5,7 +5,7 @@ import MetricTrendCard from '@/components/admin/MetricTrendCard';
 
 /** "Today" highlight cards — new activity since midnight. */
 const TODAY_CARDS = [
-  { key: 'advocates', label: 'New advocates', href: '/admin/advocates', icon: Scale, tone: 'bg-primary/10 text-primary' },
+  { key: 'advocates', label: 'New lawyers', href: '/admin/advocates', icon: Scale, tone: 'bg-primary/10 text-primary' },
   { key: 'users', label: 'New users', href: '/admin/users', icon: Users, tone: 'bg-blue-500/10 text-blue-600' },
   { key: 'consultations', label: 'New consultations', href: '/admin/consultations', icon: MessagesSquare, tone: 'bg-violet-500/10 text-violet-600' },
 ];
@@ -13,8 +13,8 @@ const TODAY_CARDS = [
 const CARDS = [
   {
     key: 'advocates',
-    label: 'Advocates',
-    hint: 'Registered advocates',
+    label: 'Lawyers',
+    hint: 'Registered lawyers',
     href: '/admin/advocates',
     icon: Scale,
     ring: 'ring-primary/15',

@@ -1,5 +1,5 @@
 /**
- * Per-step validation for the advocate registration wizard.
+ * Per-step validation for the lawyer registration wizard.
  * Pure functions — returns a map of field → error message (empty if valid).
  */
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);

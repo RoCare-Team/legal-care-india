@@ -20,8 +20,8 @@ import {
 } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
-// One page per legal service → sub-service. Advocate data is tag-cached so new
-// registrations appear immediately (see lib/advocates).
+// One page per legal service → sub-service. Lawyer data is tag-cached so new
+// registrations appear immediately (see lib/lawyers).
 export const revalidate = 3600;
 
 export function generateStaticParams() {
@@ -37,15 +37,15 @@ export async function generateMetadata({ params }) {
   }
 
   return createMetadata({
-    title: `${subService} Advocates`,
-    description: `Find verified advocates for ${subService} matters (${service.name}) in India. Compare experience and contact them directly.`,
+    title: `${subService} Lawyers`,
+    description: `Find verified lawyers for ${subService} matters (${service.name}) in India. Compare experience and contact them directly.`,
     path: `/legal-services/${service.slug}/${sub}`,
-    keywords: [`${subService} advocate`, `${subService} lawyer`, `${service.name} advocate`],
+    keywords: [`${subService} lawyer`, `${subService} lawyer`, `${service.name} lawyer`],
   });
 }
 
 const TRUST = [
-  { icon: ShieldCheck, label: 'Verified advocates' },
+  { icon: ShieldCheck, label: 'Verified lawyers' },
   { icon: MessageSquare, label: 'Contact directly' },
   { icon: BadgeIndianRupee, label: 'Transparent fees' },
 ];
@@ -58,7 +58,7 @@ export default async function SubServicePage({ params }) {
 
   const Icon = service.icon;
 
-  // Only advocates who explicitly listed this specific matter. An advocate who
+  // Only lawyers who explicitly listed this specific matter. A lawyer who
   // did not add it must NOT appear here — no category-wide fallback.
   const allAdvocates = await getAllAdvocates();
   const advocates = allAdvocates.filter((a) => a.subSpecializations?.includes(subService));
@@ -84,8 +84,8 @@ export default async function SubServicePage({ params }) {
       />
       <PageHeader
         eyebrow={service.name}
-        title={`${subService} Advocates`}
-        subtitle={`Verified advocates who handle ${subService} matters under ${service.name}. Compare experience, fees and contact them directly.`}
+        title={`${subService} Lawyers`}
+        subtitle={`Verified lawyers who handle ${subService} matters under ${service.name}. Compare experience, fees and contact them directly.`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Legal Services', href: '/legal-services' },
@@ -114,8 +114,8 @@ export default async function SubServicePage({ params }) {
                 </div>
               </div>
               <p className="mt-5 text-[15px] leading-relaxed text-ink/70">
-                Looking for a <span className="font-medium text-ink">{subService}</span> advocate?
-                Legal Care India connects you with verified advocates who specialise in {subService}{' '}
+                Looking for a <span className="font-medium text-ink">{subService}</span> lawyer?
+                Legal Care India connects you with verified lawyers who specialise in {subService}{' '}
                 matters under {service.name}. Compare their experience, ratings and consultation
                 fees, then reach out directly — no middlemen and no commission on your case.
               </p>
@@ -145,7 +145,7 @@ export default async function SubServicePage({ params }) {
                     <Users className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <dt className="text-xs text-ink/50">Advocates for this matter</dt>
+                    <dt className="text-xs text-ink/50">Lawyers for this matter</dt>
                     <dd className="font-semibold text-ink">{advocates.length}</dd>
                   </div>
                 </div>
@@ -176,13 +176,13 @@ export default async function SubServicePage({ params }) {
           </div>
         </SectionReveal>
 
-        {/* ── Advocates for this matter ─────────────────────────────── */}
+        {/* ── Lawyers for this matter ─────────────────────────────── */}
         <div className="mt-14">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-display text-xl font-semibold text-ink">
               {advocates.length > 0
-                ? `${pluralize(advocates.length, 'advocate')} for ${subService}`
-                : `${subService} Advocates`}
+                ? `${pluralize(advocates.length, 'lawyer')} for ${subService}`
+                : `${subService} Lawyers`}
             </h2>
             <Link
               href={`/legal-services/${service.slug}`}
@@ -197,14 +197,14 @@ export default async function SubServicePage({ params }) {
             <AdvocateListing
               advocates={advocates}
               showFilters={false}
-              emptyTitle={`No ${subService} advocates yet`}
-              emptyMessage={`No advocate has listed ${subService} as a specific matter yet. Browse all ${service.name} advocates — many can still help with your ${subService} matter.`}
+              emptyTitle={`No ${subService} lawyers yet`}
+              emptyMessage={`No lawyer has listed ${subService} as a specific matter yet. Browse all ${service.name} lawyers — many can still help with your ${subService} matter.`}
               emptyAction={
                 <Link
                   href={`/legal-services/${service.slug}`}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
                 >
-                  Browse all {service.name} advocates
+                  Browse all {service.name} lawyers
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               }
@@ -219,11 +219,11 @@ export default async function SubServicePage({ params }) {
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
                 <h2 className="font-display text-xl font-semibold text-ink">
-                  {subService} advocates by city
+                  {subService} lawyers by city
                 </h2>
               </div>
               <p className="mt-1.5 text-sm text-ink/55">
-                Find {subService} advocates in your city.
+                Find {subService} lawyers in your city.
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
                 {cities.map((c) => (

@@ -6,7 +6,7 @@ const CONTACT_TYPES = ['call', 'whatsapp', 'email'];
 
 /**
  * POST /api/activity  { advocateId, type }
- * Logs a user's Call / WhatsApp / Email tap on an advocate profile so it shows
+ * Logs a user's Call / WhatsApp / Email tap on a lawyer profile so it shows
  * in their account history. Bookings are logged server-side by /api/enquiries,
  * so only contact taps are accepted here.
  */

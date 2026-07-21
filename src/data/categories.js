@@ -23,73 +23,73 @@ export const CATEGORIES = [
     slug: 'civil-law', name: 'Civil Law', icon: Scale, advocates: 4200,
     description: 'Property, contracts and civil disputes.',
     overview:
-      'Civil law covers disputes between individuals or organisations — property, money recovery, contracts, injunctions and more. A civil advocate helps you file or defend suits, draft notices and represent you before civil courts to protect your rights and interests.',
+      'Civil law covers disputes between individuals or organisations — property, money recovery, contracts, injunctions and more. A civil lawyer helps you file or defend suits, draft notices and represent you before civil courts to protect your rights and interests.',
   },
   {
     slug: 'criminal-law', name: 'Criminal Law', icon: Gavel, advocates: 3800,
     description: 'Bail, defense and criminal proceedings.',
     overview:
-      'Criminal law deals with offences against the state and society — from bail and FIR quashing to trial defence and appeals. A criminal advocate protects your rights at every stage, from police station to the highest court, and builds a strong defence strategy.',
+      'Criminal law deals with offences against the state and society — from bail and FIR quashing to trial defence and appeals. A criminal lawyer protects your rights at every stage, from police station to the highest court, and builds a strong defence strategy.',
   },
   {
     slug: 'family-law', name: 'Family Law', icon: Users, advocates: 3100,
     description: 'Divorce, custody and maintenance.',
     overview:
-      'Family law handles sensitive personal matters like divorce, child custody, maintenance, adoption and inheritance. A family advocate guides you through the emotional and legal process with confidentiality, aiming for a fair and timely resolution.',
+      'Family law handles sensitive personal matters like divorce, child custody, maintenance, adoption and inheritance. A family lawyer guides you through the emotional and legal process with confidentiality, aiming for a fair and timely resolution.',
   },
   {
     slug: 'property-law', name: 'Property Law', icon: Home, advocates: 2900,
     description: 'Registration, disputes and tenancy.',
     overview:
-      'Property law covers buying, selling, registration, title verification, tenancy and property disputes. A property advocate ensures your transactions are legally sound, verifies ownership and helps resolve encroachment, partition and eviction matters.',
+      'Property law covers buying, selling, registration, title verification, tenancy and property disputes. A property lawyer ensures your transactions are legally sound, verifies ownership and helps resolve encroachment, partition and eviction matters.',
   },
   {
     slug: 'corporate-law', name: 'Corporate Law', icon: Briefcase, advocates: 2400,
     description: 'Company, compliance and contracts.',
     overview:
-      'Corporate law supports businesses with incorporation, contracts, compliance, mergers, funding and dispute resolution. A corporate advocate helps you set up, run and grow your company while staying compliant and protecting your commercial interests.',
+      'Corporate law supports businesses with incorporation, contracts, compliance, mergers, funding and dispute resolution. A corporate lawyer helps you set up, run and grow your company while staying compliant and protecting your commercial interests.',
   },
   {
     slug: 'tax-law', name: 'Tax Law', icon: Coins, advocates: 1700,
     description: 'Income tax, GST and appeals.',
     overview:
-      'Tax law covers income tax, GST, assessments, notices and appeals. A tax advocate helps you respond to departmental notices, file appeals, plan your taxes lawfully and represent you before tax authorities and tribunals.',
+      'Tax law covers income tax, GST, assessments, notices and appeals. A tax lawyer helps you respond to departmental notices, file appeals, plan your taxes lawfully and represent you before tax authorities and tribunals.',
   },
   {
     slug: 'labour-law', name: 'Labour & Employment', icon: HeartHandshake, advocates: 1500,
     description: 'Workplace and employment matters.',
     overview:
-      'Labour and employment law deals with workplace rights — wrongful termination, employment contracts, PF/ESI, industrial disputes and harassment. An advocate protects both employees and employers and ensures fair, compliant workplace practices.',
+      'Labour and employment law deals with workplace rights — wrongful termination, employment contracts, PF/ESI, industrial disputes and harassment. A lawyer protects both employees and employers and ensures fair, compliant workplace practices.',
   },
   {
     slug: 'constitutional-law', name: 'Constitutional Law', icon: Landmark, advocates: 900,
     description: 'Writs, PILs and fundamental rights.',
     overview:
-      'Constitutional law protects your fundamental rights through writ petitions, PILs and challenges to government action. A constitutional advocate takes matters to the High Courts and Supreme Court to enforce rights and hold authorities accountable.',
+      'Constitutional law protects your fundamental rights through writ petitions, PILs and challenges to government action. A constitutional lawyer takes matters to the High Courts and Supreme Court to enforce rights and hold authorities accountable.',
   },
   {
     slug: 'consumer-law', name: 'Consumer Law', icon: ShieldCheck, advocates: 1300,
     description: 'Consumer complaints and redressal.',
     overview:
-      'Consumer law helps you fight defective products, deficient services, unfair trade practices and false claims. A consumer advocate files complaints before consumer forums and helps you recover refunds, replacements and compensation.',
+      'Consumer law helps you fight defective products, deficient services, unfair trade practices and false claims. A consumer lawyer files complaints before consumer forums and helps you recover refunds, replacements and compensation.',
   },
   {
     slug: 'intellectual-property', name: 'Intellectual Property', icon: FileText, advocates: 800,
     description: 'Trademark, copyright and patents.',
     overview:
-      'Intellectual property law protects your brand, creations and inventions — trademarks, copyrights, patents and designs. An IP advocate handles registration, licensing and infringement action so your ideas stay legally protected.',
+      'Intellectual property law protects your brand, creations and inventions — trademarks, copyrights, patents and designs. An IP lawyer handles registration, licensing and infringement action so your ideas stay legally protected.',
   },
   {
     slug: 'real-estate', name: 'Real Estate / RERA', icon: Building2, advocates: 1100,
     description: 'RERA, builder and buyer disputes.',
     overview:
-      'Real estate and RERA law protects homebuyers and investors against project delays, possession issues and builder defaults. A RERA advocate files complaints, claims refunds with interest and holds developers accountable under the RERA Act.',
+      'Real estate and RERA law protects homebuyers and investors against project delays, possession issues and builder defaults. A RERA lawyer files complaints, claims refunds with interest and holds developers accountable under the RERA Act.',
   },
   {
     slug: 'immigration-law', name: 'Immigration Law', icon: Globe2, advocates: 600,
     description: 'Visa, citizenship and travel matters.',
     overview:
-      'Immigration law covers visas, work permits, citizenship, OCI/PIO and passport matters. An immigration advocate guides you through applications, documentation and appeals for smooth and lawful travel, work and residency.',
+      'Immigration law covers visas, work permits, citizenship, OCI/PIO and passport matters. An immigration lawyer guides you through applications, documentation and appeals for smooth and lawful travel, work and residency.',
   },
 ];
 

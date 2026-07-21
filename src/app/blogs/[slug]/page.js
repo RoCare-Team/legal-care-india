@@ -80,17 +80,17 @@ export default async function BlogPostPage({ params }) {
           <p>
             This is a sample article body for <strong>{post.title}</strong>. In production this
             content would come from your CMS. It walks readers through the topic in clear,
-            practical steps so they know what to expect and how an advocate can help.
+            practical steps so they know what to expect and how a lawyer can help.
           </p>
           <p>
-            When you&apos;re ready, browse verified advocates who specialise in{' '}
+            When you&apos;re ready, browse verified lawyers who specialise in{' '}
             {post.category.toLowerCase()} and reach out directly by call, WhatsApp or email.
           </p>
         </article>
 
         <div className="mt-8 rounded-2xl bg-muted/50 p-6 text-center">
           <p className="font-medium text-ink">Need help with a {post.category.toLowerCase()} matter?</p>
-          <Button href="/advocates" className="mt-3">Find an Advocate</Button>
+          <Button href="/lawyers" className="mt-3">Find a Lawyer</Button>
         </div>
       </Container>
 

@@ -7,7 +7,7 @@ const STEPS = [
     icon: Search,
     title: 'Search & Filter',
     description:
-      'Search by legal service, city, language or experience to shortlist advocates that fit your needs.',
+      'Search by legal service, city, language or experience to shortlist lawyers that fit your needs.',
   },
   {
     icon: UserCheck,
@@ -19,7 +19,7 @@ const STEPS = [
     icon: CalendarCheck,
     title: 'Connect Directly',
     description:
-      'Reach out to the advocate directly to discuss your matter and book a consultation.',
+      'Reach out to the lawyer directly to discuss your matter and book a consultation.',
   },
 ];
 
@@ -32,7 +32,7 @@ export default function HowItWorks() {
       <Heading
         centered
         eyebrow="How It Works"
-        subtitle="Finding the right advocate is simple, transparent and free."
+        subtitle="Finding the right lawyer is simple, transparent and free."
       >
         Get Legal Help in 3 Easy Steps
       </Heading>

@@ -6,7 +6,7 @@ import { advocateProfilePath } from '@/utils/advocateUrl';
  * DashboardTopbar — identity banner at the top of the dashboard shell.
  *
  * @param {object} props
- * @param {object} props.advocate  demo advocate profile
+ * @param {object} props.advocate  demo lawyer profile
  */
 export default function DashboardTopbar({ advocate }) {
   if (!advocate) return null;
@@ -30,7 +30,7 @@ export default function DashboardTopbar({ advocate }) {
         </div>
       </div>
       <Button
-        href={`/advocates/${advocateProfilePath(advocate)}`}
+        href={`/lawyers/${advocateProfilePath(advocate)}`}
         target="_blank"
         rel="noopener noreferrer"
         variant="outline"

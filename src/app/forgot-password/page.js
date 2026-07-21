@@ -6,7 +6,7 @@ import RegisterAside from '@/components/register/RegisterAside';
 export const metadata = {
   ...createMetadata({
     title: 'Forgot Password',
-    description: 'Reset your Legal Care India advocate account password.',
+    description: 'Reset your Legal Care India lawyer account password.',
     path: '/forgot-password',
   }),
   robots: { index: false, follow: false },

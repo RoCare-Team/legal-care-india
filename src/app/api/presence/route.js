@@ -7,8 +7,8 @@ import { ONLINE_WINDOW_MS } from '@/lib/consultations';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/presence — the ids of advocates who are currently online. Being
- * online takes BOTH signals: the advocate flipped their availability switch on
+ * GET /api/presence — the ids of lawyers who are currently online. Being
+ * online takes BOTH signals: the lawyer flipped their availability switch on
  * AND their call listener has checked in recently (i.e. they actually have the
  * site open). Leaving the toggle on and closing the tab shows Offline, so a
  * visitor is never told someone is reachable when they aren't.

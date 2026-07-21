@@ -4,7 +4,7 @@ import EnquiryStatusSelect from './EnquiryStatusSelect';
 
 /**
  * RecentEnquiries — feed of recent client consultation requests submitted via
- * the "Book Consultation" form on the advocate's public profile.
+ * the "Book Consultation" form on the lawyer's public profile.
  *
  * @param {object} props
  * @param {Array} [props.enquiries]  serialized enquiries, newest first

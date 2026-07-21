@@ -8,9 +8,9 @@ import { breadcrumbSchema } from '@/lib/schema';
 import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
-  title: 'Find Advocates by City',
+  title: 'Find Lawyers by City',
   description:
-    'Browse verified advocates across every major city in India — Delhi, Mumbai, Bengaluru, Hyderabad and more.',
+    'Browse verified lawyers across every major city in India — Delhi, Mumbai, Bengaluru, Hyderabad and more.',
   path: '/cities',
 });
 
@@ -27,8 +27,8 @@ export default async function CitiesPage() {
       />
       <PageHeader
         eyebrow="Browse by City"
-        title="Find Advocates in Your City"
-        subtitle="Select a city to discover verified advocates near you and connect with them directly."
+        title="Find Lawyers in Your City"
+        subtitle="Select a city to discover verified lawyers near you and connect with them directly."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Cities' }]}
       />
       <Container className="py-10 sm:py-12">

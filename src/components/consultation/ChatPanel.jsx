@@ -12,7 +12,7 @@ function fmt(ms) {
 }
 
 /**
- * ChatPanel — the shared live chat used by both the user and the advocate once
+ * ChatPanel — the shared live chat used by both the user and the lawyer once
  * a consultation connects. A live countdown to `session.endsAt` sits in the
  * header; when it hits zero (or the status leaves 'active') the input locks.
  *

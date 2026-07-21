@@ -8,7 +8,7 @@ import { SITE } from '@/constants/site';
  * @param {object} [options]
  * @param {string} [options.title]        Page title (without the site suffix)
  * @param {string} [options.description]  Meta description
- * @param {string} [options.path]         Route path, e.g. "/advocates"
+ * @param {string} [options.path]         Route path, e.g. "/lawyers"
  * @param {string[]} [options.keywords]   Extra keywords
  * @param {string} [options.image]        OG image URL (absolute or root-relative)
  * @param {boolean} [options.noindex]     Exclude the page from search indexes

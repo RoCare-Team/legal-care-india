@@ -8,7 +8,7 @@ import { slugify } from '@/utils/slugify';
 
 /**
  * SearchBar — the primary directory search: legal service/keyword + city.
- * Navigates to the advocates listing with query params.
+ * Navigates to the lawyers listing with query params.
  *
  * @param {object} props
  * @param {string} [props.className]
@@ -29,7 +29,7 @@ export default function SearchBar({ className }) {
     if (query.trim()) params.set('q', query.trim());
     if (city.trim()) params.set('city', slugify(city));
     startTransition(() => {
-      router.push(`/advocates${params.toString() ? `?${params}` : ''}`);
+      router.push(`/lawyers${params.toString() ? `?${params}` : ''}`);
     });
   };
 

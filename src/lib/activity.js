@@ -4,7 +4,7 @@ import Advocate from '@/models/Advocate';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /**
- * Activity data-access — logs and reads a user's interactions with advocates.
+ * Activity data-access — logs and reads a user's interactions with lawyers.
  */
 
 /** Human-friendly "time ago" label from a Date/ISO value. */
@@ -27,7 +27,7 @@ function timeAgo(value) {
 }
 
 /**
- * Record one interaction. Looks up the advocate to snapshot their name/link/
+ * Record one interaction. Looks up the lawyer to snapshot their name/link/
  * phone so the account history stays readable even if the profile changes.
  * Best-effort — never throws (a failed log must not break the user action).
  */
@@ -57,7 +57,7 @@ function serialize(r) {
   return {
     id: String(r._id),
     advocateId: r.advocateId || '',
-    advocateName: r.advocateName || 'Advocate',
+    advocateName: r.advocateName || 'Lawyer',
     advocateProfilePath: r.advocateProfilePath || '',
     advocatePhone: r.advocatePhone || '',
     advocateCity: r.advocateCity || '',

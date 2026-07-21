@@ -126,7 +126,7 @@ export default function CitiesManager({ cities }) {
               disabled={!state}
             />
           </FormField>
-          <FormField label="Advocates count (optional)" htmlFor="c-adv">
+          <FormField label="Lawyers count (optional)" htmlFor="c-adv">
             <Input id="c-adv" type="number" min="0" value={advocates} onChange={(e) => setAdvocates(e.target.value)} placeholder="e.g. 1200" />
           </FormField>
           <FormField label="City image (optional)" htmlFor="c-img">
@@ -215,7 +215,7 @@ export default function CitiesManager({ cities }) {
                   )}
                 </div>
                 <p className="truncate text-xs text-ink/50">
-                  {c.state} · {c.advocates || 0} advocates
+                  {c.state} · {c.advocates || 0} lawyers
                 </p>
               </div>
               <Link

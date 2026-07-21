@@ -4,7 +4,7 @@ import { setUserAnonymous } from '@/lib/users';
 
 /**
  * PATCH /api/user/me — update the logged-in user's account preferences.
- * Currently just the anonymity switch (hide my name from advocates).
+ * Currently just the anonymity switch (hide my name from lawyers).
  */
 export async function PATCH(request) {
   const id = await getSessionUserId();

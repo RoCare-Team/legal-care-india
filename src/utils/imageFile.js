@@ -1,5 +1,5 @@
 /**
- * Client-side image helpers for the advocate dashboard.
+ * Client-side image helpers for the lawyer dashboard.
  *
  * Images are stored inline as compressed JPEG data URLs (no external upload
  * service is wired up). To keep MongoDB documents and page payloads small, we

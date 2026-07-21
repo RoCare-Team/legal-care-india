@@ -35,7 +35,7 @@ export default function StepPractice({ data, set, errors }) {
         />
       </FormField>
 
-      {/* Live-chat booking plans — the advocate sets duration + price per plan. */}
+      {/* Live-chat booking plans — the lawyer sets duration + price per plan. */}
       <div className="sm:col-span-2">
         <div className="mb-2 flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">

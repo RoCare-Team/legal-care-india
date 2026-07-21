@@ -17,7 +17,7 @@ import { getServiceBySlug, getSubServiceLinks, CATEGORIES } from '@/data/categor
 import { pluralize } from '@/utils/formatters';
 
 // City + legal-service combos render on demand (dynamicParams defaults to true)
-// and cache. Advocate data is tag-cached so new registrations appear at once.
+// and cache. Lawyer data is tag-cached so new registrations appear at once.
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -31,37 +31,37 @@ export async function generateMetadata({ params }) {
   if (!city || !service) return createMetadata({ title: 'Not Found', path: '/cities' });
 
   return createMetadata({
-    title: `${service.name} Advocates in ${city.name}`,
-    description: `Find verified ${service.name} advocates in ${city.name}, ${city.state}. ${service.description} Compare experience and contact them directly.`,
+    title: `${service.name} Lawyers in ${city.name}`,
+    description: `Find verified ${service.name} lawyers in ${city.name}, ${city.state}. ${service.description} Compare experience and contact them directly.`,
     path: `/${city.slug}/${service.slug}`,
     keywords: [
-      `${service.name} advocate in ${city.name}`,
+      `${service.name} lawyer in ${city.name}`,
       `${service.name} lawyer ${city.name}`,
     ],
   });
 }
 
 const WHY_POINTS = [
-  { icon: ShieldCheck, title: 'Verified advocates', text: 'Every profile is registered and reviewed — you connect only with genuine, practising advocates.' },
-  { icon: MessageSquare, title: 'Contact directly', text: 'Call, WhatsApp or email the advocate yourself. No middlemen, no commission on your case.' },
+  { icon: ShieldCheck, title: 'Verified lawyers', text: 'Every profile is registered and reviewed — you connect only with genuine, practising lawyers.' },
+  { icon: MessageSquare, title: 'Contact directly', text: 'Call, WhatsApp or email the lawyer yourself. No middlemen, no commission on your case.' },
   { icon: BadgeIndianRupee, title: 'Transparent fees', text: 'Consultation fees are listed upfront on each profile, so you choose what fits your budget.' },
 ];
 
 function buildFaqs(service, city, count) {
   return [
     {
-      q: `How do I find a good ${service.name} advocate in ${city.name}?`,
-      a: `Browse verified ${service.name} advocates in ${city.name} on Legal Care India, compare their experience, ratings and consultation fees, and contact the right one directly.`,
+      q: `How do I find a good ${service.name} lawyer in ${city.name}?`,
+      a: `Browse verified ${service.name} lawyers in ${city.name} on Legal Care India, compare their experience, ratings and consultation fees, and contact the right one directly.`,
     },
     {
-      q: `How many ${service.name} advocates are in ${city.name}?`,
+      q: `How many ${service.name} lawyers are in ${city.name}?`,
       a: count > 0
-        ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, `${service.name} advocate`)} listed in ${city.name}.`
-        : `${service.name} advocates are being onboarded in ${city.name}. New verified profiles appear here as they register.`,
+        ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, `${service.name} lawyer`)} listed in ${city.name}.`
+        : `${service.name} lawyers are being onboarded in ${city.name}. New verified profiles appear here as they register.`,
     },
     {
-      q: `Is contacting a ${service.name} advocate in ${city.name} free?`,
-      a: 'Yes. Browsing profiles and contacting advocates is completely free. You only pay the advocate directly for their consultation or case work.',
+      q: `Is contacting a ${service.name} lawyer in ${city.name} free?`,
+      a: 'Yes. Browsing profiles and contacting lawyers is completely free. You only pay the lawyer directly for their consultation or case work.',
     },
   ];
 }
@@ -76,15 +76,15 @@ export default async function CityCategoryPage({ params }) {
   const subServices = getSubServiceLinks(service.name);
   const faqs = buildFaqs(service, city, 0);
 
-  // Advocates practising this service AND based in this city.
+  // Lawyers practising this service AND based in this city.
   const allAdvocates = await getAllAdvocates();
   const advocates = allAdvocates.filter(
     (a) => a.specializations?.includes(service.name) && a.city === city.name
   );
   const count = advocates.length;
   faqs[1].a = count > 0
-    ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, `${service.name} advocate`)} listed in ${city.name}.`
-    : `${service.name} advocates are being onboarded in ${city.name}. New verified profiles appear here as they register.`;
+    ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, `${service.name} lawyer`)} listed in ${city.name}.`
+    : `${service.name} lawyers are being onboarded in ${city.name}. New verified profiles appear here as they register.`;
 
   // Other legal services in the same city.
   const otherServices = CATEGORIES.filter((c) => c.slug !== service.slug).slice(0, 6);
@@ -96,7 +96,7 @@ export default async function CityCategoryPage({ params }) {
           serviceSchema({
             name: `${service.name} in ${city.name}`,
             slug: `${city.slug}/${service.slug}`,
-            description: `${service.name} advocates in ${city.name}`,
+            description: `${service.name} lawyers in ${city.name}`,
           }),
           faqSchema(faqs),
           breadcrumbSchema([
@@ -108,9 +108,9 @@ export default async function CityCategoryPage({ params }) {
         ]}
       />
       <PageHeader
-        eyebrow={count > 0 ? `${pluralize(count, 'advocate')} available` : `${service.name} · ${city.state}`}
-        title={`${service.name} Advocates in ${city.name}`}
-        subtitle={`Verified ${service.name} advocates in ${city.name}, ${city.state}. ${service.description}`}
+        eyebrow={count > 0 ? `${pluralize(count, 'lawyer')} available` : `${service.name} · ${city.state}`}
+        title={`${service.name} Lawyers in ${city.name}`}
+        subtitle={`Verified ${service.name} lawyers in ${city.name}, ${city.state}. ${service.description}`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Cities', href: '/cities' },
@@ -143,7 +143,7 @@ export default async function CityCategoryPage({ params }) {
               </div>
               <p className="mt-5 text-[15px] leading-relaxed text-ink/70">
                 {service.overview || service.description} Find and connect with verified{' '}
-                {service.name} advocates in {city.name}, {city.state} — compare experience, ratings
+                {service.name} lawyers in {city.name}, {city.state} — compare experience, ratings
                 and fees, then reach out directly.
               </p>
             </div>
@@ -157,7 +157,7 @@ export default async function CityCategoryPage({ params }) {
                     <Users className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <dt className="text-xs text-ink/50">Advocates here</dt>
+                    <dt className="text-xs text-ink/50">Lawyers here</dt>
                     <dd className="font-semibold text-ink">{count}</dd>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default async function CityCategoryPage({ params }) {
                 </h2>
               </div>
               <p className="mt-1.5 text-sm text-ink/55">
-                Tap a matter to see advocates in {city.name} who handle exactly that.
+                Tap a matter to see lawyers in {city.name} who handle exactly that.
               </p>
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {subServices.map((item) => (
@@ -225,13 +225,13 @@ export default async function CityCategoryPage({ params }) {
           </SectionReveal>
         )}
 
-        {/* ── Advocates ─────────────────────────────────────────────── */}
+        {/* ── Lawyers ─────────────────────────────────────────────── */}
         <div className="mt-14">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-display text-xl font-semibold text-ink">
               {count > 0
-                ? `${pluralize(count, 'advocate')} for ${service.name} in ${city.name}`
-                : `${service.name} Advocates in ${city.name}`}
+                ? `${pluralize(count, 'lawyer')} for ${service.name} in ${city.name}`
+                : `${service.name} Lawyers in ${city.name}`}
             </h2>
             <Link
               href={`/legal-services/${service.slug}`}
@@ -245,8 +245,8 @@ export default async function CityCategoryPage({ params }) {
             <AdvocateListing
               advocates={advocates}
               showFilters={false}
-              emptyTitle={`No ${service.name} advocates in ${city.name} yet`}
-              emptyMessage={`No verified ${service.name} advocate has registered in ${city.name} so far. Explore ${service.name} advocates in all cities, or all advocates in ${city.name}.`}
+              emptyTitle={`No ${service.name} lawyers in ${city.name} yet`}
+              emptyMessage={`No verified ${service.name} lawyer has registered in ${city.name} so far. Explore ${service.name} lawyers in all cities, or all lawyers in ${city.name}.`}
               emptyAction={
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
@@ -260,7 +260,7 @@ export default async function CityCategoryPage({ params }) {
                     href={`/${city.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-primary/30 hover:text-primary"
                   >
-                    All advocates in {city.name}
+                    All lawyers in {city.name}
                   </Link>
                 </div>
               }
@@ -272,7 +272,7 @@ export default async function CityCategoryPage({ params }) {
         <SectionReveal>
           <div className="mt-14 rounded-3xl border border-ink/8 bg-muted/40 p-6 sm:p-8">
             <h2 className="font-display text-xl font-semibold text-ink">
-              Why find your {service.name} advocate in {city.name} here
+              Why find your {service.name} lawyer in {city.name} here
             </h2>
             <div className="mt-6 grid gap-5 md:grid-cols-3">
               {WHY_POINTS.map(({ icon: PointIcon, title, text }) => (

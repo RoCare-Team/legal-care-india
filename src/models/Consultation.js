@@ -13,13 +13,13 @@ const MessageSchema = new Schema(
 );
 
 /**
- * Consultation — a paid, time-boxed chat session a user books with an advocate.
+ * Consultation — a paid, time-boxed chat session a user books with a lawyer.
  *
  * Lifecycle:
- *   pending   → user booked, waiting for the advocate to accept
- *   active    → advocate accepted; wallet charged; chat open until `endsAt`
+ *   pending   → user booked, waiting for the lawyer to accept
+ *   active    → lawyer accepted; wallet charged; chat open until `endsAt`
  *   ended     → time up or ended early
- *   rejected  → advocate declined (no charge)
+ *   rejected  → lawyer declined (no charge)
  *   cancelled → user backed out while still pending (no charge)
  */
 const ConsultationSchema = new Schema(
@@ -41,7 +41,7 @@ const ConsultationSchema = new Schema(
 
     messages: { type: [MessageSchema], default: [] },
 
-    startedAt: { type: Date, default: null }, // when the advocate accepted
+    startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)
     endedAt: { type: Date, default: null },   // when it actually ended
 

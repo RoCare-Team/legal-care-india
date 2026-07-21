@@ -41,7 +41,7 @@ export default function CategoryCard({ category }) {
         <div className="mt-auto flex items-center pt-4">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-amber-700">
             <Users className="h-3.5 w-3.5" aria-hidden="true" />
-            {formatCompactNumber(advocates)}+ advocates
+            {formatCompactNumber(advocates)}+ lawyers
           </span>
         </div>
       </div>

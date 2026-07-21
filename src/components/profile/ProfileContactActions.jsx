@@ -16,8 +16,8 @@ import BookConsultationModal from './BookConsultationModal';
  * @param {{ phone?: string, whatsapp?: string, email?: string }} props.contact
  * @param {string} props.name
  * @param {string} props.waText      pre-encoded WhatsApp message
- * @param {string} props.advocateId  advocate MongoDB _id (for activity + booking)
- * @param {Array}  [props.plans]     the advocate's own live-chat rates
+ * @param {string} props.advocateId  lawyer MongoDB _id (for activity + booking)
+ * @param {Array}  [props.plans]     the lawyer's own live-chat rates
  */
 export default function ProfileContactActions({ contact = {}, name, waText, advocateId, plans = [] }) {
   const { role, user, loading } = useAuth();
@@ -25,7 +25,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
   const [bookOpen, setBookOpen] = useState(false);
   const authed = role !== null;
 
-  // Book Consultation: signed-out → gate; advocate → not applicable; user → book.
+  // Book Consultation: signed-out → gate; lawyer → not applicable; user → book.
   const onBook = () => {
     if (loading) return;
     if (!authed) {
@@ -64,7 +64,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
   return (
     <>
       <div className="space-y-2">
-        {/* Primary CTA — book a paid live chat, shown when the advocate offers it. */}
+        {/* Primary CTA — book a paid live chat, shown when the lawyer offers it. */}
         {role !== 'advocate' && plans.length > 0 && (
           <Button
             type="button"

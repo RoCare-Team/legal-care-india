@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 
 /**
  * The way back out of an admin-opened account. Rendered only while the session
- * is impersonated — without it the admin would have to log the advocate out to
+ * is impersonated — without it the admin would have to log the lawyer out to
  * stop being them.
  */
 export default function ExitImpersonation({ role = 'advocate', className = 'mt-4 w-full' }) {

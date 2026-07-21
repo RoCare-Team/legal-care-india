@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import AdvocateCard from '@/components/cards/AdvocateCard';
 
 /**
- * FeaturedCarousel — horizontal slider of advocate cards. Shows 3 per view on
+ * FeaturedCarousel — horizontal slider of lawyer cards. Shows 3 per view on
  * desktop (2 on tablet, ~1 on mobile) and slides sideways when there are more,
  * instead of wrapping onto new rows. Arrows on desktop; swipe/scroll elsewhere.
  *
@@ -32,7 +32,7 @@ export default function FeaturedCarousel({ advocates }) {
           <button
             type="button"
             onClick={() => scroll(-1)}
-            aria-label="Previous advocates"
+            aria-label="Previous lawyers"
             className="grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-surface text-ink/60 shadow-sm transition-colors hover:border-primary hover:text-primary"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -40,7 +40,7 @@ export default function FeaturedCarousel({ advocates }) {
           <button
             type="button"
             onClick={() => scroll(1)}
-            aria-label="Next advocates"
+            aria-label="Next lawyers"
             className="grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-surface text-ink/60 shadow-sm transition-colors hover:border-primary hover:text-primary"
           >
             <ChevronRight className="h-5 w-5" />

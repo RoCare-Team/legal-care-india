@@ -10,7 +10,7 @@ import { CATEGORIES } from '@/data/categories';
 export const metadata = createMetadata({
   title: 'Legal Services',
   description:
-    'Explore every legal service on Legal Care India — from Civil and Criminal to Family, Property, Corporate and Tax law — and find the right advocate.',
+    'Explore every legal service on Legal Care India — from Civil and Criminal to Family, Property, Corporate and Tax law — and find the right lawyer.',
   path: '/legal-services',
 });
 
@@ -26,7 +26,7 @@ export default function LegalServicesPage() {
       <PageHeader
         eyebrow="Browse by Legal Service"
         title="Explore Legal Services"
-        subtitle="Pick a legal service to find advocates who specialise in exactly what your matter needs."
+        subtitle="Pick a legal service to find lawyers who specialise in exactly what your matter needs."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Legal Services' }]}
       />
       <Container className="py-10 sm:py-12">

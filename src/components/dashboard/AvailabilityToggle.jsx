@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 /**
- * AvailabilityToggle — the advocate's online/offline switch. Flipping it saves
+ * AvailabilityToggle — the lawyer's online/offline switch. Flipping it saves
  * immediately (PATCH /api/dashboard/profile) and updates their public presence
  * badge on the directory and profile.
  *

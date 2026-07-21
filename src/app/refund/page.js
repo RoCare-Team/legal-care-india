@@ -19,7 +19,7 @@ export default function RefundPage() {
     >
       <h2>Free directory listing</h2>
       <p>
-        Creating an advocate profile and appearing in the {SITE.name} directory is currently{' '}
+        Creating a lawyer profile and appearing in the {SITE.name} directory is currently{' '}
         <strong>free of charge</strong>. There is nothing to refund for a free listing.
       </p>
 
@@ -36,9 +36,9 @@ export default function RefundPage() {
 
       <h2>Consultation fees</h2>
       <p>
-        Any consultation or professional fee you pay <strong>directly to an advocate</strong> is between
-        you and that advocate. {SITE.name} does not collect these fees and is not responsible for their
-        refund. Please discuss fee and refund terms directly with the advocate.
+        Any consultation or professional fee you pay <strong>directly to a lawyer</strong> is between
+        you and that lawyer. {SITE.name} does not collect these fees and is not responsible for their
+        refund. Please discuss fee and refund terms directly with the lawyer.
       </p>
 
       <h2>How to request a refund</h2>

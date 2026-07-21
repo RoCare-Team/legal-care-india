@@ -5,7 +5,7 @@ import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 /**
- * DeleteAccount — a "Danger Zone" card that lets an advocate permanently
+ * DeleteAccount — a "Danger Zone" card that lets a lawyer permanently
  * delete their own account. Requires typing DELETE to confirm, calls
  * `DELETE /api/dashboard/profile`, then sends the (now signed-out) user home.
  */

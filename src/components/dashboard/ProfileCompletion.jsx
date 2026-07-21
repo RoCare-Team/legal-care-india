@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 
 /**
- * ProfileCompletion — progress ring/bar + checklist driving advocates to
+ * ProfileCompletion — progress ring/bar + checklist driving lawyers to
  * finish their profile so it goes live.
  *
  * @param {object} props

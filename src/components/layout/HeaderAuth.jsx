@@ -33,7 +33,7 @@ function WalletPill({ balance = 0 }) {
 /**
  * HeaderAuth — desktop auth actions for the header.
  * Logged out: two compact dropdowns (Log in / Sign up) that each expose the
- * User and Advocate options, keeping the navbar tidy. Logged in: role-aware
+ * User and Lawyer options, keeping the navbar tidy. Logged in: role-aware
  * account link + log out.
  */
 export default function HeaderAuth({ onDark = false }) {
@@ -76,7 +76,7 @@ export default function HeaderAuth({ onDark = false }) {
         className={ghostClass}
         items={[
           { icon: UserRound, label: 'As a User', sub: 'Client account', href: '/user/login' },
-          { icon: Scale, label: 'As an Advocate', sub: 'Manage your profile', href: '/login' },
+          { icon: Scale, label: 'As a Lawyer', sub: 'Manage your profile', href: '/login' },
         ]}
       />
       <AuthDropdown
@@ -84,7 +84,7 @@ export default function HeaderAuth({ onDark = false }) {
         variant={ctaVariant}
         items={[
           { icon: UserRound, label: 'Sign up as User', sub: 'Free client account', href: '/user/signup' },
-          { icon: Scale, label: 'Register as Advocate', sub: 'List your practice', href: '/register' },
+          { icon: Scale, label: 'Register as Lawyer', sub: 'List your practice', href: '/register' },
         ]}
       />
     </div>

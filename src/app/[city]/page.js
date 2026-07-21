@@ -17,8 +17,8 @@ import { CATEGORIES } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
 // Prerender the curated/known cities; any other real city renders on demand
-// (dynamicParams defaults to true) and is cached. Advocate data is tag-cached
-// so new registrations appear immediately (see lib/advocates).
+// (dynamicParams defaults to true) and is cached. Lawyer data is tag-cached
+// so new registrations appear immediately (see lib/lawyers).
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -32,23 +32,23 @@ export async function generateMetadata({ params }) {
   if (!city) return createMetadata({ title: 'City Not Found', path: '/cities' });
 
   return createMetadata({
-    title: `Advocates in ${city.name}`,
-    description: `Find and connect with verified advocates in ${city.name}, ${city.state}. Search by legal service, compare experience and contact them directly.`,
+    title: `Lawyers in ${city.name}`,
+    description: `Find and connect with verified lawyers in ${city.name}, ${city.state}. Search by legal service, compare experience and contact them directly.`,
     path: `/${city.slug}`,
-    keywords: [`advocates in ${city.name}`, `lawyers in ${city.name}`, `${city.name} advocate`],
+    keywords: [`lawyers in ${city.name}`, `lawyers in ${city.name}`, `${city.name} lawyer`],
   });
 }
 
 const WHY_POINTS = [
   {
     icon: ShieldCheck,
-    title: 'Verified advocates',
-    text: 'Every profile is registered and reviewed — you connect only with genuine, practising advocates.',
+    title: 'Verified lawyers',
+    text: 'Every profile is registered and reviewed — you connect only with genuine, practising lawyers.',
   },
   {
     icon: MessageSquare,
     title: 'Contact directly',
-    text: 'Call, WhatsApp or email the advocate yourself. No middlemen, no commission on your case.',
+    text: 'Call, WhatsApp or email the lawyer yourself. No middlemen, no commission on your case.',
   },
   {
     icon: BadgeIndianRupee,
@@ -60,18 +60,18 @@ const WHY_POINTS = [
 function buildFaqs(city, count) {
   return [
     {
-      q: `How do I find a good advocate in ${city.name}?`,
-      a: `Browse verified advocates in ${city.name} on Legal Care India, filter by legal service, compare their experience, ratings and consultation fees, and contact the right one directly.`,
+      q: `How do I find a good lawyer in ${city.name}?`,
+      a: `Browse verified lawyers in ${city.name} on Legal Care India, filter by legal service, compare their experience, ratings and consultation fees, and contact the right one directly.`,
     },
     {
-      q: `How many advocates are listed in ${city.name}?`,
+      q: `How many lawyers are listed in ${city.name}?`,
       a: count > 0
-        ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, 'verified advocate')} listed in ${city.name}, across a range of legal services.`
-        : `Advocates are being onboarded in ${city.name}. New verified profiles appear here as soon as they register.`,
+        ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, 'verified lawyer')} listed in ${city.name}, across a range of legal services.`
+        : `Lawyers are being onboarded in ${city.name}. New verified profiles appear here as soon as they register.`,
     },
     {
-      q: `Is contacting an advocate in ${city.name} free?`,
-      a: 'Yes. Browsing profiles and contacting advocates is completely free. You only pay the advocate directly for their consultation or case work.',
+      q: `Is contacting a lawyer in ${city.name} free?`,
+      a: 'Yes. Browsing profiles and contacting lawyers is completely free. You only pay the lawyer directly for their consultation or case work.',
     },
   ];
 }
@@ -94,8 +94,8 @@ export default async function CityPage({ params }) {
       <JsonLd
         data={[
           webPageSchema({
-            name: `Advocates in ${city.name}`,
-            description: `Verified advocates in ${city.name}, ${city.state}.`,
+            name: `Lawyers in ${city.name}`,
+            description: `Verified lawyers in ${city.name}, ${city.state}.`,
             path: `/${city.slug}`,
           }),
           faqSchema(faqs),
@@ -107,9 +107,9 @@ export default async function CityPage({ params }) {
         ]}
       />
       <PageHeader
-        eyebrow={count > 0 ? `${pluralize(count, 'advocate')} available` : `${city.state}`}
-        title={`Advocates in ${city.name}`}
-        subtitle={`Discover verified advocates across ${city.name}, ${city.state} and reach them directly by call, WhatsApp or email.`}
+        eyebrow={count > 0 ? `${pluralize(count, 'lawyer')} available` : `${city.state}`}
+        title={`Lawyers in ${city.name}`}
+        subtitle={`Discover verified lawyers across ${city.name}, ${city.state} and reach them directly by call, WhatsApp or email.`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Cities', href: '/cities' },
@@ -135,7 +135,7 @@ export default async function CityPage({ params }) {
               </div>
               <p className="mt-5 text-[15px] leading-relaxed text-ink/70">
                 Looking for a lawyer in {city.name}? Legal Care India helps you find and connect
-                with verified advocates across {city.name}, {city.state} — covering civil, criminal,
+                with verified lawyers across {city.name}, {city.state} — covering civil, criminal,
                 family, property, corporate and many other legal matters. Compare experience,
                 ratings and fees, then reach out directly.
               </p>
@@ -152,7 +152,7 @@ export default async function CityPage({ params }) {
                     <Users className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <dt className="text-xs text-ink/50">Advocates available</dt>
+                    <dt className="text-xs text-ink/50">Lawyers available</dt>
                     <dd className="font-semibold text-ink">{count}</dd>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export default async function CityPage({ params }) {
               Legal services in {city.name}
             </h2>
             <p className="mt-1.5 text-sm text-ink/55">
-              Browse advocates by the type of legal matter you need help with.
+              Browse lawyers by the type of legal matter you need help with.
             </p>
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {CATEGORIES.map((c) => {
@@ -214,22 +214,22 @@ export default async function CityPage({ params }) {
           </div>
         </SectionReveal>
 
-        {/* ── Advocates in this city ────────────────────────────────── */}
+        {/* ── Lawyers in this city ────────────────────────────────── */}
         <div className="mt-14">
           <h2 className="mb-5 font-display text-xl font-semibold text-ink">
-            Advocates in {city.name}
+            Lawyers in {city.name}
           </h2>
           <AdvocateListing
             advocates={allAdvocates}
             initial={{ city: city.name }}
-            emptyTitle={`No advocates in ${city.name} yet`}
-            emptyMessage={`No verified advocate has registered in ${city.name} so far. Explore advocates in nearby cities or check back soon.`}
+            emptyTitle={`No lawyers in ${city.name} yet`}
+            emptyMessage={`No verified lawyer has registered in ${city.name} so far. Explore lawyers in nearby cities or check back soon.`}
             emptyAction={
               <Link
-                href="/advocates"
+                href="/lawyers"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
               >
-                Browse all advocates
+                Browse all lawyers
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             }
@@ -240,7 +240,7 @@ export default async function CityPage({ params }) {
         <SectionReveal>
           <div className="mt-14 rounded-3xl border border-ink/8 bg-muted/40 p-6 sm:p-8">
             <h2 className="font-display text-xl font-semibold text-ink">
-              Why find your {city.name} advocate here
+              Why find your {city.name} lawyer here
             </h2>
             <div className="mt-6 grid gap-5 md:grid-cols-3">
               {WHY_POINTS.map(({ icon: PointIcon, title, text }) => (
@@ -262,7 +262,7 @@ export default async function CityPage({ params }) {
         <SectionReveal>
           <div className="mt-14">
             <h2 className="mb-5 font-display text-xl font-semibold text-ink">
-              Advocates in {city.name} — FAQs
+              Lawyers in {city.name} — FAQs
             </h2>
             <div className="space-y-3">
               {faqs.map((faq) => (
@@ -289,7 +289,7 @@ export default async function CityPage({ params }) {
           <SectionReveal>
             <div className="mt-14">
               <h2 className="mb-5 font-display text-xl font-semibold text-ink">
-                Advocates in other cities
+                Lawyers in other cities
               </h2>
               <div className="flex flex-wrap gap-2.5">
                 {otherCities.map((c) => (

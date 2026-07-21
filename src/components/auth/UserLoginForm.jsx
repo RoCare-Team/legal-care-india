@@ -93,9 +93,9 @@ export default function UserLoginForm() {
         </Link>
       </p>
       <p className="mt-2 text-center text-sm text-ink/50">
-        Are you an advocate?{' '}
+        Are you a lawyer?{' '}
         <Link href="/login" className="font-medium text-primary hover:underline">
-          Advocate login
+          Lawyer login
         </Link>
       </p>
     </form>

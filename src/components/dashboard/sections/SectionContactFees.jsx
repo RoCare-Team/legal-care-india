@@ -6,7 +6,7 @@ import { formatDuration } from '@/constants/consultationPlans';
 
 /**
  * SectionContactFees — direct contact channels, the headline consultation fee,
- * and the advocate's own live-chat plans (they set both duration and price).
+ * and the lawyer's own live-chat plans (they set both duration and price).
  */
 export default function SectionContactFees({ data, set }) {
   return (

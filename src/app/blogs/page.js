@@ -10,7 +10,7 @@ import { BLOGS } from '@/data/blogs';
 export const metadata = createMetadata({
   title: 'Legal Blogs & Guides',
   description:
-    'Practical legal guides and articles from Legal Care India — understand your rights, processes and how to work with an advocate.',
+    'Practical legal guides and articles from Legal Care India — understand your rights, processes and how to work with a lawyer.',
   path: '/blogs',
 });
 
@@ -26,7 +26,7 @@ export default function BlogsPage() {
       <PageHeader
         eyebrow="Legal Blogs & Guides"
         title="Understand your legal matters"
-        subtitle="Plain-language guides to help you make informed decisions and work effectively with an advocate."
+        subtitle="Plain-language guides to help you make informed decisions and work effectively with a lawyer."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Blogs' }]}
       />
       <Container className="py-10 sm:py-12">

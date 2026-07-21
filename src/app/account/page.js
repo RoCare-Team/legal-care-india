@@ -20,7 +20,7 @@ export default async function AccountPage() {
   if (!user) redirect('/user/login');
 
   const allConsultations = await getUserConsultations(id);
-  // Rows the user cleared from their own list (the advocate still sees theirs).
+  // Rows the user cleared from their own list (the lawyer still sees theirs).
   const consultations = allConsultations.filter((c) => !c.hidden);
 
   const session = await getSession();

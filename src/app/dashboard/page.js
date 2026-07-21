@@ -33,7 +33,7 @@ export default async function DashboardOverviewPage() {
   const all = await getAdvocateConsultations(id);
   const checklist = buildChecklist(advocate);
 
-  // Rows the advocate cleared drop out of the feed and the stats alike.
+  // Rows the lawyer cleared drop out of the feed and the stats alike.
   const consultations = all.filter((c) => !c.hidden);
   const done = consultations.filter((c) => c.charged);
   const earned = done.reduce((sum, c) => sum + c.price, 0);

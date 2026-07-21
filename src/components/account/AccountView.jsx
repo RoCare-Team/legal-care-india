@@ -110,8 +110,8 @@ export default function AccountView({ user, consultations = [] }) {
 
           {/* Footer actions */}
           <div className="relative mt-auto space-y-2 border-t border-ink/8 py-4 pr-4">
-            <Button href="/advocates" size="sm" fullWidth leftIcon={<Search className="h-4 w-4" />}>
-              Find Advocates
+            <Button href="/lawyers" size="sm" fullWidth leftIcon={<Search className="h-4 w-4" />}>
+              Find Lawyers
             </Button>
             <Button
               type="button"
@@ -227,7 +227,7 @@ function StatCard({ icon: Icon, value, label, tone }) {
 function ConsultationsView({ consultations = [], onRemove }) {
   const [busyId, setBusyId] = useState(null);
 
-  // Clears the row from this user's list only — the advocate keeps their record.
+  // Clears the row from this user's list only — the lawyer keeps their record.
   const remove = async (c) => {
     const ok = window.confirm(
       `Remove your consultation with ${c.advocateName} from this list?\n\nThis only clears it from your account.`
@@ -253,7 +253,7 @@ function ConsultationsView({ consultations = [], onRemove }) {
     return (
       <div>
         <h2 className="font-display text-2xl font-semibold text-ink">Consultations</h2>
-        <p className="mt-1 text-sm text-ink/55">Your booked chat consultations with advocates.</p>
+        <p className="mt-1 text-sm text-ink/55">Your booked chat consultations with lawyers.</p>
         <div className="mt-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-ink/15 py-12 text-center">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-ink/5 text-ink/40">
             <CalendarCheck className="h-6 w-6" aria-hidden="true" />
@@ -261,11 +261,11 @@ function ConsultationsView({ consultations = [], onRemove }) {
           <div>
             <p className="text-sm font-medium text-ink/70">No consultations yet</p>
             <p className="mt-0.5 text-xs text-ink/45">
-              Book a consultation from any advocate&apos;s profile to start a live chat.
+              Book a consultation from any lawyer&apos;s profile to start a live chat.
             </p>
           </div>
-          <Button href="/advocates" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
-            Find Advocates
+          <Button href="/lawyers" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
+            Find Lawyers
           </Button>
         </div>
       </div>
@@ -275,7 +275,7 @@ function ConsultationsView({ consultations = [], onRemove }) {
   return (
     <div>
       <h2 className="font-display text-2xl font-semibold text-ink">Consultations</h2>
-      <p className="mt-1 text-sm text-ink/55">Advocates you booked and how long you talked.</p>
+      <p className="mt-1 text-sm text-ink/55">Lawyers you booked and how long you talked.</p>
 
       <ul className="mt-6 space-y-3">
         {consultations.map((c) => {
@@ -514,8 +514,8 @@ function ProfileView({ user }) {
       </div>
 
       <div className="mt-7 flex flex-wrap gap-2">
-        <Button href="/advocates" leftIcon={<Search className="h-4 w-4" />}>
-          Find Advocates
+        <Button href="/lawyers" leftIcon={<Search className="h-4 w-4" />}>
+          Find Lawyers
         </Button>
         <Button
           type="button"
@@ -530,7 +530,7 @@ function ProfileView({ user }) {
   );
 }
 
-/** The "hide my name from advocates" preference — saves instantly on toggle. */
+/** The "hide my name from lawyers" preference — saves instantly on toggle. */
 function AnonymousSetting({ initial = false }) {
   const [anonymous, setAnonymous] = useState(Boolean(initial));
   const [saving, setSaving] = useState(false);
@@ -569,8 +569,8 @@ function AnonymousSetting({ initial = false }) {
           <span className="block text-sm font-medium text-ink">Stay anonymous</span>
           <span className="block text-xs text-ink/50">
             {anonymous
-              ? 'Advocates see you as “Anonymous” — your name stays hidden.'
-              : 'Advocates can see your name when you consult them.'}
+              ? 'Lawyers see you as “Anonymous” — your name stays hidden.'
+              : 'Lawyers can see your name when you consult them.'}
           </span>
         </span>
       </span>
@@ -610,11 +610,11 @@ function EmptyConsultations() {
       <div>
         <p className="text-sm font-medium text-ink/70">No consultations yet</p>
         <p className="mt-0.5 text-xs text-ink/45">
-          Book a live chat from any advocate&apos;s profile and it will show up here.
+          Book a live chat from any lawyer&apos;s profile and it will show up here.
         </p>
       </div>
-      <Button href="/advocates" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
-        Find Advocates
+      <Button href="/lawyers" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
+        Find Lawyers
       </Button>
     </div>
   );

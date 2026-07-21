@@ -61,7 +61,7 @@ const structuredData = {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: `${SITE.url}/advocates?q={search_term_string}`,
+          urlTemplate: `${SITE.url}/lawyers?q={search_term_string}`,
         },
         'query-input': 'required name=search_term_string',
       },

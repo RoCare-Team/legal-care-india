@@ -19,27 +19,27 @@ export default function PrivacyPage() {
     >
       <p>
         {SITE.name} (&quot;we&quot;, &quot;us&quot;) respects your privacy. This policy explains what
-        information we collect when you use our advocate directory platform and how we use it.
+        information we collect when you use our lawyer directory platform and how we use it.
       </p>
 
       <h2>Information we collect</h2>
       <ul>
-        <li><strong>Advocate accounts:</strong> name, email, phone, city, bar council number, professional details, photos and any profile content you provide.</li>
+        <li><strong>Lawyer accounts:</strong> name, email, phone, city, bar council number, professional details, photos and any profile content you provide.</li>
         <li><strong>Visitors:</strong> search queries and basic usage data to improve the service.</li>
         <li><strong>Contact requests:</strong> details you submit through our contact or enquiry forms.</li>
       </ul>
 
       <h2>How we use your information</h2>
       <ul>
-        <li>To create and display advocate profiles in the public directory.</li>
-        <li>To let clients discover and contact advocates.</li>
+        <li>To create and display lawyer profiles in the public directory.</li>
+        <li>To let clients discover and contact lawyers.</li>
         <li>To operate, secure and improve the platform.</li>
         <li>To send account-related messages such as password reset codes.</li>
       </ul>
 
       <h2>Public profiles</h2>
       <p>
-        Information an advocate adds to their profile (including name, city, contact details and
+        Information a lawyer adds to their profile (including name, city, contact details and
         photos) is <strong>publicly visible</strong> by design, so that clients can find and reach
         them. Do not add information you do not want to be public.
       </p>

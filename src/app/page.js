@@ -10,8 +10,8 @@ import Testimonials from '@/components/home/Testimonials';
 import CTA from '@/components/home/CTA';
 
 export const metadata = createMetadata({ path: '/' });
-// Statically rendered and served from the CDN. The advocate data it shows is
-// tag-cached, so registrations/edits refresh it instantly (see lib/advocates).
+// Statically rendered and served from the CDN. The lawyer data it shows is
+// tag-cached, so registrations/edits refresh it instantly (see lib/lawyers).
 export const revalidate = 3600;
 
 /**

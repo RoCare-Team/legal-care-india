@@ -4,7 +4,7 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import { getAllCities } from '@/lib/cities';
 
 /**
- * PopularCities — quick access to advocate listings by major city.
+ * PopularCities — quick access to lawyer listings by major city.
  */
 export default async function PopularCities() {
   // Homepage shows only the first 12 cities; the rest live on the /cities page
@@ -16,7 +16,7 @@ export default async function PopularCities() {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <Heading
           eyebrow="Browse by City"
-          subtitle="Discover verified advocates in your city across India."
+          subtitle="Discover verified lawyers in your city across India."
         >
           Popular Cities
         </Heading>

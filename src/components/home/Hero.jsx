@@ -7,32 +7,32 @@ export default function Hero() {
   const popular = CATEGORIES.slice(0, 5);
 
   return (
-    <section className="relative overflow-hidden bg-[#0F172A] text-white py-14 sm:py-20 lg:py-28 border-b border-[#0F172A]">
+    <section className="relative overflow-hidden bg-[#0F172A] text-white pt-6 pb-14 sm:pt-10 sm:pb-20 lg:pt-14 lg:pb-28 border-b border-[#0F172A]">
       {/* Banner background image — shown full */}
       <Image
-        src="/banner5.png"
+        src="/banner-3.png"
         alt=""
         fill
         priority
         sizes="100vw"
-        className="pointer-events-none object-cover object-center"
+        className="pointer-events-none object-cover object-center brightness-[0.7]"
       />
-      {/* Light left-weighted overlay: keeps the white text readable while the
-          image stays clearly visible, especially on the right. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/85 via-[#0F172A]/45 to-[#0F172A]/10" />
+      {/* Dark, on-theme overlay: deep navy across the whole image (heavier on the
+          left where the text sits) so the hero reads as one dark themed block. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/85 via-[#0F172A]/60 to-[#0F172A]/40" />
 
       <Container className="relative z-10">
         <div className="flex max-w-2xl flex-col items-start text-left">
           {/* Top Indicator */}
           <div className="animate-fade-up inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-[#D4AF37] mb-4 sm:mb-6 backdrop-blur-sm">
-            <span>🇮🇳</span> India&apos;s Advocate Directory Platform
+            <span>🇮🇳</span> India&apos;s Lawyer Directory Platform
           </div>
 
           {/* Heading — LCP element, renders instantly */}
           <h1 className="font-display text-[2rem] font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15] drop-shadow-lg">
             Get Anonymous Legal Assistance <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E7C766] to-[#D4AF37]">
-              From Verified Advocates
+              From Verified Lawyers
             </span>
           </h1>
 
@@ -41,7 +41,7 @@ export default function Hero() {
             className="animate-fade-up mt-4 max-w-xl text-sm sm:text-lg text-slate-200 leading-relaxed font-normal drop-shadow"
             style={{ animationDelay: '0.1s' }}
           >
-            Consult experienced advocates for family, property, criminal, workplace, and other legal matters—while keeping your identity completely anonymous. Secure, confidential, and privacy-focused.
+            Consult experienced lawyers for family, property, criminal, workplace, and other legal matters—while keeping your identity completely anonymous. Secure, confidential, and privacy-focused.
           </p>
 
           {/* Search Bar */}

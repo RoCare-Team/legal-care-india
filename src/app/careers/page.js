@@ -5,7 +5,7 @@ import { Button } from '@/components/ui';
 
 export const metadata = createMetadata({
   title: 'Careers',
-  description: `Join the team building ${SITE.name} — India's advocate directory platform.`,
+  description: `Join the team building ${SITE.name} — India's lawyer directory platform.`,
   path: '/careers',
 });
 
@@ -18,7 +18,7 @@ export default function CareersPage() {
       breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Careers' }]}
     >
       <p>
-        We&apos;re a small, ambitious team building the most trusted way to discover verified advocates
+        We&apos;re a small, ambitious team building the most trusted way to discover verified lawyers
         across India. If you care about access to justice and love building great products, we&apos;d
         love to hear from you.
       </p>
@@ -28,7 +28,7 @@ export default function CareersPage() {
         <li>Engineering (web, backend, mobile)</li>
         <li>Product &amp; design</li>
         <li>Growth &amp; marketing</li>
-        <li>Advocate onboarding &amp; support</li>
+        <li>Lawyer onboarding &amp; support</li>
       </ul>
 
       <h2>Current openings</h2>

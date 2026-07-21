@@ -8,6 +8,7 @@ import { generateLegalCareId } from '@/lib/legalCareId';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { slugify } from '@/utils/slugify';
 import { normalizePlans } from '@/constants/consultationPlans';
+import { geocodeAddress } from '@/lib/geocode';
 
 /** Trim + dedupe a raw string array, dropping empties. */
 function cleanList(raw) {
@@ -27,8 +28,8 @@ async function uniqueLegalCareId() {
 
 /**
  * POST /api/auth/register
- * Creates a real advocate account from the registration wizard, logs the
- * advocate in (httpOnly cookie) and publishes their profile so it appears in
+ * Creates a real lawyer account from the registration wizard, logs the
+ * lawyer in (httpOnly cookie) and publishes their profile so it appears in
  * the public directory immediately.
  */
 export async function POST(request) {
@@ -78,6 +79,11 @@ export async function POST(request) {
     const passwordHash = await hashPassword(password);
     const digits = phone.replace(/[^0-9]/g, '');
 
+    // Geocode the office so the lawyer shows up in the "near me" distance
+    // filter. Best-effort — if OpenStreetMap can't resolve it, we save nulls and
+    // the lawyer can refine their address later from the dashboard.
+    const location = await geocodeAddress({ address: officeAddress, city, state });
+
     const advocate = await Advocate.create({
       email: normalizedEmail,
       passwordHash,
@@ -95,11 +101,15 @@ export async function POST(request) {
       subSpecializations: Array.isArray(subServices) ? subServices : [],
       languages: Array.isArray(languages) ? languages : [],
       courts: cleanList(courts),
-      // Base city is always part of the cities the advocate serves.
+      // Base city is always part of the cities the lawyer serves.
       practiceCities: cleanList([city, ...(Array.isArray(practiceCities) ? practiceCities : [])]),
       consultationFee: Number(fee) || 0,
       consultationPlans: normalizePlans(consultationPlans),
-      office: { name: officeName || '', address: officeAddress || '' },
+      office: {
+        name: officeName || '',
+        address: officeAddress || '',
+        location: location || { lat: null, lng: null },
+      },
       contact: { phone: phone.trim(), whatsapp: digits, email: normalizedEmail },
       // New registrations wait for admin approval before going public.
       status: 'pending',

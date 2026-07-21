@@ -4,7 +4,7 @@
  */
 export const MAIN_NAV = [
   { label: 'Home', href: '/' },
-  { label: 'Find Advocates', href: '/advocates' },
+  { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
   { label: 'Cities', href: '/cities' },
   { label: 'Blogs', href: '/blogs' },
@@ -14,8 +14,8 @@ export const MAIN_NAV = [
 
 /** Primary calls-to-action shown in the header and mobile drawer. */
 export const AUTH_NAV = {
-  login: { label: 'Advocate Login', href: '/login' },
-  register: { label: 'Register as Advocate', href: '/register' },
+  login: { label: 'Lawyer Login', href: '/login' },
+  register: { label: 'Register as Lawyer', href: '/register' },
   userLogin: { label: 'User Login', href: '/user/login' },
   userSignup: { label: 'Sign Up', href: '/user/signup' },
 };
@@ -24,17 +24,17 @@ export const FOOTER_NAV = [
   {
     title: 'Platform',
     links: [
-      { label: 'Find Advocates', href: '/advocates' },
+      { label: 'Find Lawyers', href: '/lawyers' },
       { label: 'Legal Services', href: '/legal-services' },
       { label: 'Browse Cities', href: '/cities' },
       { label: 'How It Works', href: '/#how-it-works' },
     ],
   },
   {
-    title: 'For Advocates',
+    title: 'For Lawyers',
     links: [
-      { label: 'Register as Advocate', href: '/register' },
-      { label: 'Advocate Login', href: '/login' },
+      { label: 'Register as Lawyer', href: '/register' },
+      { label: 'Lawyer Login', href: '/login' },
       { label: 'Verification', href: '/verification' },
       { label: 'Success Stories', href: '/success-stories' },
     ],

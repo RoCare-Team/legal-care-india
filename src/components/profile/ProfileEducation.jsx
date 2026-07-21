@@ -9,7 +9,7 @@ import ProfileSection from './ProfileSection';
  */
 export default function ProfileEducation({ advocate }) {
   const education = (advocate.education || []).filter((e) => e && e.degree);
-  // Hide the section entirely until the advocate adds qualifications.
+  // Hide the section entirely until the lawyer adds qualifications.
   if (education.length === 0) return null;
 
   return (

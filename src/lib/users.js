@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 
 /**
- * User data-access layer (client accounts, distinct from advocates).
+ * User data-access layer (client accounts, distinct from lawyers).
  */
 
 /** Strip Mongo internals and return a plain, client-safe user object. */

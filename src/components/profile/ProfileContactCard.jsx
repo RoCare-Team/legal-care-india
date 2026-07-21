@@ -14,7 +14,7 @@ import ProfileContactActions from './ProfileContactActions';
 export default function ProfileContactCard({ advocate }) {
   const { contact = {}, name } = advocate;
   const advocateId = advocate._id || advocate.id || '';
-  // The advocate's own live-chat rates (only the durations they priced).
+  // The lawyer's own live-chat rates (only the durations they priced).
   const plans = advocatePlans(advocate.consultationPlans);
   // Only keep timing rows that actually have a day + hours filled in.
   const timing = (advocate.timing || []).filter((t) => t && t.day && t.hours);
@@ -23,8 +23,8 @@ export default function ProfileContactCard({ advocate }) {
   return (
     <aside id="contact" className="scroll-mt-24 space-y-4 lg:sticky lg:top-24">
       <div className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">
-        {/* Live-chat plans the advocate set — everyone sees the rates; the
-            advocate can confirm what they added, users see the options. */}
+        {/* Live-chat plans the lawyer set — everyone sees the rates; the
+            lawyer can confirm what they added, users see the options. */}
         {plans.length > 0 && (
           <div className="mb-4 rounded-xl border border-ink/8 bg-muted/40 p-3.5">
             <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/45">

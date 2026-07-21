@@ -55,7 +55,7 @@ export default function UserSignupForm() {
     >
       <h1 className="font-display text-2xl font-semibold text-ink">Create Your Account</h1>
       <p className="mt-1 text-sm text-ink/55">
-        Sign up to save advocates and manage your enquiries — it&apos;s free.
+        Sign up to save lawyers and manage your enquiries — it&apos;s free.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -113,9 +113,9 @@ export default function UserSignupForm() {
         </Link>
       </p>
       <p className="mt-2 text-center text-sm text-ink/50">
-        Are you an advocate?{' '}
+        Are you a lawyer?{' '}
         <Link href="/register" className="font-medium text-primary hover:underline">
-          Register as an advocate
+          Register as a lawyer
         </Link>
       </p>
     </form>

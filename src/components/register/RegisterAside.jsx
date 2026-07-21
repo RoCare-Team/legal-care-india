@@ -21,7 +21,7 @@ export default function RegisterAside() {
         Grow your practice with Legal Care India
       </h2>
       <p className="relative mt-2 text-sm text-white/80">
-        Join thousands of advocates reaching clients who need them — build a premium public profile
+        Join thousands of lawyers reaching clients who need them — build a premium public profile
         in minutes.
       </p>
 

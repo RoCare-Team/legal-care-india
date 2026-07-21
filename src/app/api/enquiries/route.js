@@ -9,12 +9,12 @@ import { logActivity } from '@/lib/activity';
  * POST /api/enquiries
  * Body: { advocateId, name, phone, email?, preferredDate?, message }
  *
- * A signed-in user sends a consultation request to an advocate. The enquiry is
- * stored against the advocate's _id so it shows in their dashboard.
+ * A signed-in user sends a consultation request to a lawyer. The enquiry is
+ * stored against the lawyer's _id so it shows in their dashboard.
  * Only logged-in users may send enquiries (matches the profile contact gate).
  */
 export async function POST(request) {
-  // Must be signed in as a user (or advocate) to send an enquiry.
+  // Must be signed in as a user (or lawyer) to send an enquiry.
   const session = await getSession();
   if (!session) {
     return NextResponse.json(
@@ -38,7 +38,7 @@ export async function POST(request) {
   const message = String(body?.message || '').trim();
 
   if (!advocateId) {
-    return NextResponse.json({ error: 'Missing advocate.' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing lawyer.' }, { status: 400 });
   }
   if (name.length < 2) {
     return NextResponse.json({ error: 'Please enter your name.' }, { status: 400 });
@@ -56,10 +56,10 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    // Confirm the advocate exists (and grab their name/LCI for the record).
+    // Confirm the lawyer exists (and grab their name/LCI for the record).
     const advocate = await Advocate.findById(advocateId).select('name legalCareId').lean();
     if (!advocate) {
-      return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
     }
 
     await Enquiry.create({
@@ -81,7 +81,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       ok: true,
-      message: 'Your consultation request has been sent to the advocate.',
+      message: 'Your consultation request has been sent to the lawyer.',
     });
   } catch (err) {
     console.error('create enquiry error', err);

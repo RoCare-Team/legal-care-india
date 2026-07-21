@@ -12,7 +12,7 @@ export default function Categories() {
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <Heading
           eyebrow="Browse by Legal Service"
-          subtitle="Find the right advocate for your specific legal need."
+          subtitle="Find the right lawyer for your specific legal need."
         >
           Popular Legal Services
         </Heading>

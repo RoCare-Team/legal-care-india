@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 /**
- * PresenceProvider — polls /api/presence and shares the set of online advocate
+ * PresenceProvider — polls /api/presence and shares the set of online lawyer
  * ids app-wide, so any card/profile badge can reflect live online/offline
  * status without a page refresh. Mounted once at the app root.
  */
@@ -51,7 +51,7 @@ export default function PresenceProvider({ children }) {
 }
 
 /**
- * useIsOnline(id, fallback) — live online status for one advocate.
+ * useIsOnline(id, fallback) — live online status for one lawyer.
  * Until the first poll lands (`online === null`) it returns the server-rendered
  * `fallback` so nothing flickers.
  */

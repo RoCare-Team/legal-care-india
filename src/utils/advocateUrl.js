@@ -1,13 +1,13 @@
 /**
- * Advocate public-profile URL helpers.
+ * Lawyer public-profile URL helpers.
  *
  * Profile URLs combine an SEO slug with the permanent Legal Care India ID:
- *   /advocates/manoj-sharma-lci-8kq9pm
+ *   /lawyers/manoj-sharma-lci-8kq9pm
  * The `lci-xxxxxx` suffix is the stable identifier — the slug is cosmetic, so
- * the profile keeps working even if the advocate later changes their name.
+ * the profile keeps working even if the lawyer later changes their name.
  */
 
-/** Build the canonical profile path segment for an advocate. */
+/** Build the canonical profile path segment for a lawyer. */
 export function advocateProfilePath(advocate) {
   if (advocate?.legalCareId) {
     return `${advocate.slug}-${advocate.legalCareId.toLowerCase()}`;

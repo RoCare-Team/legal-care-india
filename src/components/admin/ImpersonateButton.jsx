@@ -5,7 +5,7 @@ import { LogIn, Loader2 } from 'lucide-react';
 
 /**
  * Opens a member's own account as them, without needing their password. Used
- * from both the advocates and users tables.
+ * from both the lawyers and users tables.
  *
  * @param {object} props
  * @param {string} props.id

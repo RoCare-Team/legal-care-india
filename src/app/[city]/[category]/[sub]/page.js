@@ -16,7 +16,7 @@ import { getServiceBySlug, getSubServiceBySlug, getSubServiceLinks } from '@/dat
 import { pluralize } from '@/utils/formatters';
 
 // City → service → matter combos render on demand (dynamicParams defaults to
-// true) and cache. Advocate data is tag-cached so new registrations show at once.
+// true) and cache. Lawyer data is tag-cached so new registrations show at once.
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -33,19 +33,19 @@ export async function generateMetadata({ params }) {
   }
 
   return createMetadata({
-    title: `${subService} Advocates in ${city.name}`,
-    description: `Find verified ${subService} advocates in ${city.name}, ${city.state} (${service.name}). Compare experience, fees and contact them directly.`,
+    title: `${subService} Lawyers in ${city.name}`,
+    description: `Find verified ${subService} lawyers in ${city.name}, ${city.state} (${service.name}). Compare experience, fees and contact them directly.`,
     path: `/${city.slug}/${service.slug}/${sub}`,
     keywords: [
-      `${subService} advocate in ${city.name}`,
+      `${subService} lawyer in ${city.name}`,
       `${subService} lawyer ${city.name}`,
-      `${service.name} advocate ${city.name}`,
+      `${service.name} lawyer ${city.name}`,
     ],
   });
 }
 
 const TRUST = [
-  { icon: ShieldCheck, label: 'Verified advocates' },
+  { icon: ShieldCheck, label: 'Verified lawyers' },
   { icon: MessageSquare, label: 'Contact directly' },
   { icon: BadgeIndianRupee, label: 'Transparent fees' },
 ];
@@ -59,7 +59,7 @@ export default async function CityCategorySubPage({ params }) {
 
   const Icon = service.icon;
 
-  // Advocates who practise this specific matter AND are based in this city.
+  // Lawyers who practise this specific matter AND are based in this city.
   const allAdvocates = await getAllAdvocates();
   const advocates = allAdvocates.filter(
     (a) => a.subSpecializations?.includes(subService) && a.city === city.name
@@ -89,8 +89,8 @@ export default async function CityCategorySubPage({ params }) {
       />
       <PageHeader
         eyebrow={`${service.name} · ${city.name}`}
-        title={`${subService} Advocates in ${city.name}`}
-        subtitle={`Verified advocates who handle ${subService} matters in ${city.name}, ${city.state}. Compare experience, fees and contact them directly.`}
+        title={`${subService} Lawyers in ${city.name}`}
+        subtitle={`Verified lawyers who handle ${subService} matters in ${city.name}, ${city.state}. Compare experience, fees and contact them directly.`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Cities', href: '/cities' },
@@ -122,8 +122,8 @@ export default async function CityCategorySubPage({ params }) {
                 </div>
               </div>
               <p className="mt-5 text-[15px] leading-relaxed text-ink/70">
-                Looking for a <span className="font-medium text-ink">{subService}</span> advocate in{' '}
-                {city.name}? Legal Care India connects you with verified advocates in {city.name},{' '}
+                Looking for a <span className="font-medium text-ink">{subService}</span> lawyer in{' '}
+                {city.name}? Legal Care India connects you with verified lawyers in {city.name},{' '}
                 {city.state} who specialise in {subService} matters under {service.name}. Compare
                 their experience, ratings and consultation fees, then reach out directly.
               </p>
@@ -150,7 +150,7 @@ export default async function CityCategorySubPage({ params }) {
                     <Users className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div>
-                    <dt className="text-xs text-ink/50">Advocates here</dt>
+                    <dt className="text-xs text-ink/50">Lawyers here</dt>
                     <dd className="font-semibold text-ink">{advocates.length}</dd>
                   </div>
                 </div>
@@ -185,13 +185,13 @@ export default async function CityCategorySubPage({ params }) {
           </div>
         </SectionReveal>
 
-        {/* ── Advocates ─────────────────────────────────────────────── */}
+        {/* ── Lawyers ─────────────────────────────────────────────── */}
         <div className="mt-14">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-display text-xl font-semibold text-ink">
               {advocates.length > 0
-                ? `${pluralize(advocates.length, 'advocate')} for ${subService} in ${city.name}`
-                : `${subService} Advocates in ${city.name}`}
+                ? `${pluralize(advocates.length, 'lawyer')} for ${subService} in ${city.name}`
+                : `${subService} Lawyers in ${city.name}`}
             </h2>
             <Link
               href={`/legal-services/${service.slug}/${sub}`}
@@ -206,8 +206,8 @@ export default async function CityCategorySubPage({ params }) {
             <AdvocateListing
               advocates={advocates}
               showFilters={false}
-              emptyTitle={`No ${subService} advocates in ${city.name} yet`}
-              emptyMessage={`No advocate has listed ${subService} in ${city.name} so far. Browse ${subService} advocates in all cities, or explore all advocates in ${city.name}.`}
+              emptyTitle={`No ${subService} lawyers in ${city.name} yet`}
+              emptyMessage={`No lawyer has listed ${subService} in ${city.name} so far. Browse ${subService} lawyers in all cities, or explore all lawyers in ${city.name}.`}
               emptyAction={
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
@@ -221,7 +221,7 @@ export default async function CityCategorySubPage({ params }) {
                     href={`/${city.slug}`}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-primary/30 hover:text-primary"
                   >
-                    All advocates in {city.name}
+                    All lawyers in {city.name}
                   </Link>
                 </div>
               }
@@ -234,7 +234,7 @@ export default async function CityCategorySubPage({ params }) {
           <SectionReveal>
             <div className="mt-14 rounded-3xl border border-ink/8 bg-muted/40 p-6 sm:p-8">
               <h2 className="font-display text-xl font-semibold text-ink">
-                {subService} advocates in other cities
+                {subService} lawyers in other cities
               </h2>
               <div className="mt-5 flex flex-wrap gap-2.5">
                 {otherCities.map((c) => (

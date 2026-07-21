@@ -8,7 +8,7 @@ import { sendOtpSms, normalizeIndianMobile } from '@/lib/sms';
 /**
  * POST /api/auth/forgot-password  { email }
  * If an account exists, generates a 6-digit OTP, stores its hash + expiry, and
- * sends it to the advocate's registered email AND phone. Always returns the same
+ * sends it to the lawyer's registered email AND phone. Always returns the same
  * success response so the endpoint can't reveal which emails are registered.
  */
 export async function POST(request) {

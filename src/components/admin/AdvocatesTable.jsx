@@ -9,7 +9,7 @@ import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
 
-/** Approve / unpublish control for a single advocate row. */
+/** Approve / unpublish control for a single lawyer row. */
 function StatusAction({ advocate }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -80,7 +80,7 @@ function DeleteAction({ advocate }) {
     <button
       type="button"
       onClick={remove}
-      title="Delete advocate"
+      title="Delete lawyer"
       aria-label={`Delete ${advocate.name}`}
       className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
     >
@@ -103,7 +103,7 @@ function StatusBadge({ status }) {
 }
 
 /**
- * AdvocatesTable — client-side searchable/filterable advocates table.
+ * AdvocatesTable — client-side searchable/filterable lawyers table.
  *
  * @param {object} props
  * @param {Array} props.advocates
@@ -119,7 +119,7 @@ export default function AdvocatesTable({ advocates }) {
     [advocates]
   );
 
-  // Every unique practice area (specialization) across all advocates.
+  // Every unique practice area (specialization) across all lawyers.
   const fields = useMemo(
     () => [...new Set(advocates.flatMap((a) => a.specializations || []).filter(Boolean))].sort(),
     [advocates]
@@ -146,7 +146,7 @@ export default function AdvocatesTable({ advocates }) {
   const columns = [
     {
       key: 'name',
-      label: 'Advocate',
+      label: 'Lawyer',
       render: (a) => (
         <div className="flex items-center gap-3">
           <AdminAvatar name={a.name} />
@@ -234,7 +234,7 @@ export default function AdvocatesTable({ advocates }) {
             View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <Link
-            href={`/advocates/${a.slug}-${a.legalCareId.toLowerCase()}`}
+            href={`/lawyers/${a.slug}-${a.legalCareId.toLowerCase()}`}
             target="_blank"
             title="Open public profile"
             className="text-ink/35 hover:text-primary"
@@ -290,7 +290,7 @@ export default function AdvocatesTable({ advocates }) {
       <DataTable
         columns={columns}
         rows={filtered}
-        empty={active ? 'No advocates match your search or filters.' : 'No advocates registered yet.'}
+        empty={active ? 'No lawyers match your search or filters.' : 'No lawyers registered yet.'}
       />
     </div>
   );

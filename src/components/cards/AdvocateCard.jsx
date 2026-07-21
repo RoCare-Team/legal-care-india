@@ -10,12 +10,13 @@ import {
 import { Card, Badge, Button, Avatar } from "@/components/ui";
 import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
+import { formatDistance } from "@/utils/distance";
 import { advocateProfilePath } from "@/utils/advocateUrl";
 import CardContactActions from "./CardContactActions";
 import PresenceIndicator from "@/components/consultation/PresenceIndicator";
 
 /**
- * AdvocateCard — premium directory listing card for a single advocate.
+ * AdvocateCard — premium directory listing card for a single lawyer.
  * Presentational: receives a single `advocate` record.
  *
  * @param {object} props
@@ -37,10 +38,14 @@ export default function AdvocateCard({ advocate }) {
     consultationPlans = [],
     contact,
     online,
+    _distance,
   } = advocate;
 
-  // Headline rate = the advocate's cheapest live-chat plan, shown as
-  // "₹500 / 15 min". Advocates who haven't set any plan fall back to their flat
+  // Present only during a "near me" search — how far this office is from the user.
+  const distanceLabel = typeof _distance === 'number' ? formatDistance(_distance) : '';
+
+  // Headline rate = the lawyer's cheapest live-chat plan, shown as
+  // "₹500 / 15 min". Lawyers who haven't set any plan fall back to their flat
   // consultation fee.
   const cheapestPlan = consultationPlans.length
     ? consultationPlans.reduce((lo, p) => (p.price < lo.price ? p : lo))
@@ -86,7 +91,7 @@ export default function AdvocateCard({ advocate }) {
             {verified && (
               <span
                 className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-surface shadow"
-                aria-label="Verified advocate"
+                aria-label="Verified lawyer"
               >
                 <BadgeCheck className="h-4 w-4 text-primary" />
               </span>
@@ -102,6 +107,9 @@ export default function AdvocateCard({ advocate }) {
               <span className="truncate">
                 {city}, {state}
               </span>
+              {distanceLabel && (
+                <span className="ml-1 shrink-0 font-semibold text-primary">· {distanceLabel}</span>
+              )}
             </p>
             <Rating value={rating} reviews={reviews} size="sm" className="mt-1" />
           </div>
@@ -141,7 +149,7 @@ export default function AdvocateCard({ advocate }) {
           </div>
 
           <Button
-            href={`/advocates/${advocateProfilePath(advocate)}`}
+            href={`/lawyers/${advocateProfilePath(advocate)}`}
             fullWidth
             className="mt-2 group/btn"
             rightIcon={

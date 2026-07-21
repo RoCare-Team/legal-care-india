@@ -2,8 +2,8 @@ import { connectDB } from '@/lib/db';
 import Enquiry from '@/models/Enquiry';
 
 /**
- * Enquiry data-access layer. The advocate dashboard is rendered per-request
- * (it reads the session cookie) so these reads are not cached — the advocate
+ * Enquiry data-access layer. The lawyer dashboard is rendered per-request
+ * (it reads the session cookie) so these reads are not cached — the lawyer
  * always sees their latest enquiries.
  */
 
@@ -41,7 +41,7 @@ function serialize(r) {
 }
 
 /**
- * All enquiries for one advocate (by MongoDB _id), newest first.
+ * All enquiries for one lawyer (by MongoDB _id), newest first.
  * Returns an empty list if the DB is unreachable.
  */
 export async function getEnquiriesForAdvocate(advocateId, limit = 100) {
@@ -60,7 +60,7 @@ export async function getEnquiriesForAdvocate(advocateId, limit = 100) {
 
 /**
  * A user's own booking enquiries (by userId), newest first. Used to show the
- * advocate's response status on the user's account page.
+ * lawyer's response status on the user's account page.
  */
 export async function getEnquiriesForUser(userId) {
   try {

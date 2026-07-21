@@ -7,8 +7,8 @@ import { ADVOCATES_TAG } from '@/lib/advocates';
 
 /**
  * PATCH /api/admin/advocates  { id, action: 'approve' | 'unpublish' }
- * Admin-only. Approving publishes a pending advocate to the public directory;
- * unpublishing takes a live advocate back offline.
+ * Admin-only. Approving publishes a pending lawyer to the public directory;
+ * unpublishing takes a live lawyer back offline.
  */
 export async function PATCH(request) {
   const admin = await getAdminSession();
@@ -23,7 +23,7 @@ export async function PATCH(request) {
 
   const id = String(body?.id || '').trim();
   const action = String(body?.action || '').trim();
-  if (!id) return NextResponse.json({ error: 'Missing advocate.' }, { status: 400 });
+  if (!id) return NextResponse.json({ error: 'Missing lawyer.' }, { status: 400 });
 
   const status = action === 'approve' ? 'published' : action === 'unpublish' ? 'pending' : null;
   if (!status) return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
@@ -35,23 +35,23 @@ export async function PATCH(request) {
       { $set: { status } },
       { new: true }
     ).select('name status');
-    if (!updated) return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+    if (!updated) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
 
     // The public directory changed — drop the cached list and the pages that
-    // show advocates so the change is visible immediately.
+    // show lawyers so the change is visible immediately.
     revalidateTag(ADVOCATES_TAG);
     revalidatePath('/');
-    revalidatePath('/advocates');
+    revalidatePath('/lawyers');
 
     return NextResponse.json({ ok: true, status: updated.status });
   } catch (err) {
     console.error('advocate status update error', err);
-    return NextResponse.json({ error: 'Could not update the advocate. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not update the lawyer. Please try again.' }, { status: 500 });
   }
 }
 
 /**
- * DELETE /api/admin/advocates?id=xyz — permanently remove an advocate's account
+ * DELETE /api/admin/advocates?id=xyz — permanently remove a lawyer's account
  * and listing from the platform. Admin-only.
  */
 export async function DELETE(request) {
@@ -59,22 +59,22 @@ export async function DELETE(request) {
   if (!admin) return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
 
   const id = new URL(request.url).searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'Missing advocate.' }, { status: 400 });
+  if (!id) return NextResponse.json({ error: 'Missing lawyer.' }, { status: 400 });
 
   try {
     await connectDB();
     const deleted = await Advocate.findByIdAndDelete(id);
-    if (!deleted) return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+    if (!deleted) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
 
-    // Advocate removed from the public directory — refresh the cached list and
-    // the pages that show advocates.
+    // Lawyer removed from the public directory — refresh the cached list and
+    // the pages that show lawyers.
     revalidateTag(ADVOCATES_TAG);
     revalidatePath('/');
-    revalidatePath('/advocates');
+    revalidatePath('/lawyers');
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('advocate delete error', err);
-    return NextResponse.json({ error: 'Could not delete the advocate. Please try again.' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not delete the lawyer. Please try again.' }, { status: 500 });
   }
 }

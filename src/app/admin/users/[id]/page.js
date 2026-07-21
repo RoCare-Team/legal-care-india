@@ -96,7 +96,7 @@ export default async function AdminUserDetailPage({ params, searchParams }) {
               </span>
             )}
           </InfoRow>
-          <InfoRow label="Privacy">{user.anonymous ? 'Anonymous to advocates' : 'Name visible'}</InfoRow>
+          <InfoRow label="Privacy">{user.anonymous ? 'Anonymous to lawyers' : 'Name visible'}</InfoRow>
         </InfoCard>
 
         <InfoCard

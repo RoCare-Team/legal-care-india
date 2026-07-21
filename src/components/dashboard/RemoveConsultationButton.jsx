@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Trash2, Loader2 } from 'lucide-react';
 
 /**
- * RemoveConsultationButton — clears a consultation from the advocate's
+ * RemoveConsultationButton — clears a consultation from the lawyer's
  * dashboard. The record itself is kept, so the client still sees the
  * consultation they paid for and earnings totals stay accurate.
  *

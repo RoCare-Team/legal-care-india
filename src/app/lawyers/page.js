@@ -9,14 +9,14 @@ import { getServiceBySlug, getSubServiceBySlug } from '@/data/categories';
 import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
-  title: 'Find Verified Advocates',
+  title: 'Find Verified Lawyers',
   description:
-    'Search and compare verified advocates across India by legal service, city, language, experience and consultation fee.',
-  path: '/advocates',
+    'Search and compare verified lawyers across India by legal service, city, language, experience and consultation fee.',
+  path: '/lawyers',
 });
 
 // The page reads search filters (searchParams) so it renders per request, but
-// the advocate data itself is tag-cached — no MongoDB round-trip each visit.
+// the lawyer data itself is tag-cached — no MongoDB round-trip each visit.
 export const revalidate = 3600;
 
 /** Turn a slug back into a display name, e.g. "new-delhi" → "New Delhi". */
@@ -47,7 +47,7 @@ function resolveInitial(params = {}, cities = []) {
   if (params.city) {
     // Known cities resolve to their canonical name; anything else (e.g. a city
     // typed by hand that isn't in our list) still filters by its de-slugged name
-    // so it can match an advocate's practice cities.
+    // so it can match a lawyer's practice cities.
     const slug = String(params.city);
     const city = cities.find((c) => c.slug === slug);
     initial.city = city ? city.name : deslugify(slug);
@@ -66,22 +66,22 @@ export default async function AdvocatesPage({ searchParams }) {
         data={[
           breadcrumbSchema([
             { name: 'Home', path: '/' },
-            { name: 'Find Advocates', path: '/advocates' },
+            { name: 'Find Lawyers', path: '/lawyers' },
           ]),
           collectionSchema({
-            name: 'Find Verified Advocates Across India',
-            path: '/advocates',
+            name: 'Find Verified Lawyers Across India',
+            path: '/lawyers',
             description:
-              'Search and compare verified advocates across India by legal service, city and experience.',
+              'Search and compare verified lawyers across India by legal service, city and experience.',
             advocates,
           }),
         ]}
       />
       <PageHeader
-        eyebrow="Advocate Directory"
-        title="Find Verified Advocates Across India"
-        subtitle="Browse trusted advocates by legal service, city and experience — then call, WhatsApp or email them directly."
-        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Find Advocates' }]}
+        eyebrow="Lawyer Directory"
+        title="Find Verified Lawyers Across India"
+        subtitle="Browse trusted lawyers by legal service, city and experience — then call, WhatsApp or email them directly."
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Find Lawyers' }]}
       />
       {/* Pull the filter/search bar up so it floats over the hero — the first
           thing a visitor reaches, clearly above the fold. */}

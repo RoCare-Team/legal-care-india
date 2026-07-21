@@ -10,15 +10,15 @@ import { formatCompactNumber } from '@/utils/formatters';
 export const metadata = createMetadata({
   title: 'About Us',
   description:
-    'Legal Care India is a premium advocate discovery platform helping clients find verified advocates and helping advocates grow their practice.',
+    'Legal Care India is a premium lawyer discovery platform helping clients find verified lawyers and helping lawyers grow their practice.',
   path: '/about',
 });
 
 const VALUES = [
-  { icon: ShieldCheck, title: 'Verified & Trusted', text: 'Every advocate is verified against Bar Council details before their profile goes live.' },
-  { icon: Search, title: 'Easy Discovery', text: 'Find the right advocate by legal service, city, language and experience in seconds.' },
-  { icon: HeartHandshake, title: 'Direct Connection', text: 'Clients contact advocates directly — no commissions, no middlemen, no barriers.' },
-  { icon: Scale, title: 'Fair for Advocates', text: 'A premium public profile that helps advocates reach clients who genuinely need them.' },
+  { icon: ShieldCheck, title: 'Verified & Trusted', text: 'Every lawyer is verified against Bar Council details before their profile goes live.' },
+  { icon: Search, title: 'Easy Discovery', text: 'Find the right lawyer by legal service, city, language and experience in seconds.' },
+  { icon: HeartHandshake, title: 'Direct Connection', text: 'Clients contact lawyers directly — no commissions, no middlemen, no barriers.' },
+  { icon: Scale, title: 'Fair for Lawyers', text: 'A premium public profile that helps lawyers reach clients who genuinely need them.' },
 ];
 
 export default function AboutPage() {
@@ -29,7 +29,7 @@ export default function AboutPage() {
           webPageSchema({
             type: 'AboutPage',
             name: 'About Legal Care India',
-            description: 'Legal Care India is a premium advocate discovery platform helping clients find verified advocates.',
+            description: 'Legal Care India is a premium lawyer discovery platform helping clients find verified lawyers.',
             path: '/about',
           }),
           breadcrumbSchema([
@@ -40,8 +40,8 @@ export default function AboutPage() {
       />
       <PageHeader
         eyebrow="About Legal Care India"
-        title="Connecting India with trusted advocates"
-        subtitle="We're building the most trusted way to discover verified advocates and to help advocates grow their practice — transparently and directly."
+        title="Connecting India with trusted lawyers"
+        subtitle="We're building the most trusted way to discover verified lawyers and to help lawyers grow their practice — transparently and directly."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'About' }]}
       />
 
@@ -59,7 +59,7 @@ export default function AboutPage() {
       </Section>
 
       <Section spacing="sm" className="bg-muted/40">
-        <Heading eyebrow="Our Mission" subtitle="Legal help in India should be easy to find, transparent and trustworthy. We remove the guesswork — so clients reach the right advocate faster, and advocates are discovered by the clients who need them.">
+        <Heading eyebrow="Our Mission" subtitle="Legal help in India should be easy to find, transparent and trustworthy. We remove the guesswork — so clients reach the right lawyer faster, and lawyers are discovered by the clients who need them.">
           Making legal help accessible to every Indian
         </Heading>
       </Section>
@@ -82,15 +82,15 @@ export default function AboutPage() {
       <Container className="pb-16">
         <div className="rounded-3xl bg-gradient-to-br from-secondary to-primary px-6 py-12 text-center sm:px-12">
           <h2 className="font-display text-2xl font-semibold text-white sm:text-3xl">
-            Are you an advocate?
+            Are you a lawyer?
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-white/80">
             Create your verified profile and start receiving direct client enquiries today.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button href="/register" variant="accent" size="lg">Register as Advocate</Button>
-            <Button href="/advocates" size="lg" className="bg-white/10 text-white hover:bg-white/20">
-              Find Advocates
+            <Button href="/register" variant="accent" size="lg">Register as Lawyer</Button>
+            <Button href="/lawyers" size="lg" className="bg-white/10 text-white hover:bg-white/20">
+              Find Lawyers
             </Button>
           </div>
         </div>

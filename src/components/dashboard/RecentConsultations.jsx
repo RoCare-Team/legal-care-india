@@ -14,7 +14,7 @@ const STATUS_META = {
 };
 
 /**
- * RecentConsultations — feed of the advocate's latest live-chat consultations:
+ * RecentConsultations — feed of the lawyer's latest live-chat consultations:
  * who booked, how long they talked and what it earned.
  *
  * @param {object} props

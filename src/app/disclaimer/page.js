@@ -19,22 +19,22 @@ export default function DisclaimerPage() {
     >
       <h2>Not a law firm</h2>
       <p>
-        {SITE.name} is an advocate discovery and directory platform. It is <strong>not a law firm</strong>
+        {SITE.name} is a lawyer discovery and directory platform. It is <strong>not a law firm</strong>
         {' '}and does not provide legal advice, opinions, representation or referrals. Nothing on this
         platform should be treated as legal advice.
       </p>
 
       <h2>No attorney–client relationship</h2>
       <p>
-        Browsing profiles or contacting an advocate through this platform does not create an
+        Browsing profiles or contacting a lawyer through this platform does not create an
         attorney–client relationship. Such a relationship is formed only directly between you and the
-        advocate, on terms you agree with them.
+        lawyer, on terms you agree with them.
       </p>
 
       <h2>Accuracy of listings</h2>
       <p>
-        Profile information is provided by advocates themselves. While we encourage accuracy, we do not
-        independently guarantee the qualifications, experience, availability or conduct of any advocate.
+        Profile information is provided by lawyers themselves. While we encourage accuracy, we do not
+        independently guarantee the qualifications, experience, availability or conduct of any lawyer.
         Listings do not constitute endorsements. Please verify credentials independently before engaging
         anyone.
       </p>
@@ -42,7 +42,7 @@ export default function DisclaimerPage() {
       <h2>Your responsibility</h2>
       <p>
         Any decision you make based on information found here is at your own discretion and risk. We are
-        not responsible for the outcome of any engagement between clients and advocates.
+        not responsible for the outcome of any engagement between clients and lawyers.
       </p>
 
       <h2>Contact</h2>

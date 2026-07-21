@@ -8,7 +8,7 @@ import { Button } from '@/components/ui';
 
 /**
  * AuthGateModal — prompts a visitor to create an account / log in before they
- * can contact an advocate. Shown when a signed-out visitor taps Call / WhatsApp
+ * can contact a lawyer. Shown when a signed-out visitor taps Call / WhatsApp
  * / Email on a profile.
  *
  * @param {object} props
@@ -46,7 +46,7 @@ export default function AuthGateModal({ open, onClose, advocateName }) {
 
   if (!open || !mounted) return null;
 
-  // Portalled to <body>: any transformed ancestor (e.g. the advocate card's
+  // Portalled to <body>: any transformed ancestor (e.g. the lawyer card's
   // hover lift) would otherwise become the containing block for `fixed`, so the
   // modal would render inside the card instead of centred on the viewport.
   return createPortal(
@@ -81,8 +81,8 @@ export default function AuthGateModal({ open, onClose, advocateName }) {
         </h2>
         <p className="mt-1.5 text-sm text-ink/60">
           Sign up or log in to contact{' '}
-          <span className="font-medium text-ink/80">{advocateName || 'this advocate'}</span>{' '}
-          and save advocates you like. It only takes a minute.
+          <span className="font-medium text-ink/80">{advocateName || 'this lawyer'}</span>{' '}
+          and save lawyers you like. It only takes a minute.
         </p>
 
         <div className="mt-5 space-y-2">

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 /**
- * Advocate — the single document representing a registered advocate, their
+ * Advocate — the single document representing a registered lawyer, their
  * login credentials and their full public profile.
  *
  * `status` controls public visibility:
@@ -58,7 +58,7 @@ const AdvocateSchema = new Schema(
       index: true,
     },
     // SEO slug — no longer unique (the legalCareId disambiguates), so two
-    // advocates with the same name can both be "manoj-sharma".
+    // lawyers with the same name can both be "manoj-sharma".
     slug: { type: String, required: true, index: true },
     phone: { type: String, required: true },
 
@@ -76,15 +76,15 @@ const AdvocateSchema = new Schema(
     subSpecializations: { type: [String], default: [] },
     languages: { type: [String], default: [] },
 
-    // Courts the advocate practises in (e.g. High Court, District Court).
+    // Courts the lawyer practises in (e.g. High Court, District Court).
     courts: { type: [String], default: [] },
-    // Every city the advocate serves. `city` above is their primary/base city;
+    // Every city the lawyer serves. `city` above is their primary/base city;
     // this is the full list shown on the profile ("Practises in ...").
     practiceCities: { type: [String], default: [] },
 
     consultationFee: { type: Number, default: 0 },
 
-    // Live-chat consultation plans the advocate defines themselves — both the
+    // Live-chat consultation plans the lawyer defines themselves — both the
     // duration and the price. Empty ⇒ they don't offer live chat.
     consultationPlans: {
       type: [
@@ -105,6 +105,12 @@ const AdvocateSchema = new Schema(
       area: { type: String, default: '' },
       pincode: { type: String, default: '' },
       mapQuery: { type: String, default: '' },
+      // Geocoded office coordinates (from the address/pincode via OpenStreetMap).
+      // Powers the "lawyers near me" distance filter. null ⇒ not yet located.
+      location: {
+        lat: { type: Number, default: null },
+        lng: { type: Number, default: null },
+      },
     },
     timing: { type: [TimingSchema], default: [] },
 
@@ -130,18 +136,18 @@ const AdvocateSchema = new Schema(
     reviews: { type: Number, default: 0 },
     reviewsList: { type: [ReviewSchema], default: [] },
 
-    // Practice highlights shown on the profile (entered by the advocate).
+    // Practice highlights shown on the profile (entered by the lawyer).
     metrics: {
       cases: { type: Number, default: 0 },
       clients: { type: Number, default: 0 },
       successRate: { type: Number, default: 0 },
     },
 
-    // Presence — bumped by the advocate's call listener while they have the
+    // Presence — bumped by the lawyer's call listener while they have the
     // site open. Recent `lastSeenAt` ⇒ available to take live consultations.
     lastSeenAt: { type: Date, default: null },
 
-    // Manual availability switch the advocate flips in their dashboard. When
+    // Manual availability switch the lawyer flips in their dashboard. When
     // off (the default) they show as "Offline" everywhere and can't be booked,
     // regardless of whether they have the site open.
     available: { type: Boolean, default: false },

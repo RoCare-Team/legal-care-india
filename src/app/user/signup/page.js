@@ -6,7 +6,7 @@ import { getSession } from '@/lib/auth';
 
 export const metadata = createMetadata({
   title: 'Sign Up',
-  description: 'Create a free Legal Care India account to save advocates and manage your enquiries.',
+  description: 'Create a free Legal Care India account to save lawyers and manage your enquiries.',
   path: '/user/signup',
 });
 

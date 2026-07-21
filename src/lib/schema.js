@@ -62,7 +62,7 @@ export function serviceSchema(service) {
     '@context': 'https://schema.org',
     '@type': 'Service',
     serviceType: service.name,
-    name: `${service.name} Advocates`,
+    name: `${service.name} Lawyers`,
     description: service.description,
     provider: organizationNode,
     areaServed: { '@type': 'Country', name: 'India' },
@@ -72,7 +72,7 @@ export function serviceSchema(service) {
 
 /**
  * CollectionPage + ItemList — helps search engines understand a directory
- * listing of advocates.
+ * listing of lawyers.
  * @param {{name:string, path:string, description?:string, advocates:Array}} opts
  */
 export function collectionSchema({ name, path, description, advocates = [] }) {
@@ -89,7 +89,7 @@ export function collectionSchema({ name, path, description, advocates = [] }) {
       itemListElement: advocates.slice(0, 20).map((a, i) => ({
         '@type': 'ListItem',
         position: i + 1,
-        url: abs(`/advocates/${advocateProfilePath(a)}`),
+        url: abs(`/lawyers/${advocateProfilePath(a)}`),
         name: a.name,
       })),
     },

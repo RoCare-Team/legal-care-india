@@ -10,8 +10,8 @@ import ChatPanel from './ChatPanel';
 import MinimizedCallBar from './MinimizedCallBar';
 
 /**
- * AdvocateCallListener — mounted globally; only active for a signed-in advocate.
- * Polls the advocate's inbox, rings on a new incoming request, and drives the
+ * AdvocateCallListener — mounted globally; only active for a signed-in lawyer.
+ * Polls the lawyer's inbox, rings on a new incoming request, and drives the
  * accept/reject + live-chat flow. Charges happen server-side on accept.
  */
 export default function AdvocateCallListener() {

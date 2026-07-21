@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 /**
  * Authentication helpers: password hashing, JWT signing/verification and
- * the httpOnly session cookie used to identify the logged-in advocate.
+ * the httpOnly session cookie used to identify the logged-in lawyer.
  */
 export const AUTH_COOKIE = 'lci_token';
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -100,7 +100,7 @@ export async function getSession() {
   };
 }
 
-/** Current advocate id, or null if not signed in as an advocate. */
+/** Current lawyer id, or null if not signed in as a lawyer. */
 export async function getSessionAdvocateId() {
   const session = await getSession();
   return session && session.role === 'advocate' ? session.id : null;

@@ -5,7 +5,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { ADVOCATE_STATUS_OPTIONS, ADVOCATE_STATUS_META } from '@/constants/enquiryStatus';
 
 /**
- * EnquiryStatusSelect — lets the advocate set how they're handling an enquiry
+ * EnquiryStatusSelect — lets the lawyer set how they're handling an enquiry
  * (New / Pending / Confirmed / Declined). The chosen status is shown to the
  * client on their account page. Saves instantly via PATCH /api/enquiries/[id].
  *

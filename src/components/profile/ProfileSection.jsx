@@ -2,7 +2,7 @@ import { cn } from '@/utils/cn';
 
 /**
  * ProfileSection — a titled, anchorable card block used for every section
- * of the public advocate profile (About, Education, Reviews, FAQ, etc.).
+ * of the public lawyer profile (About, Education, Reviews, FAQ, etc.).
  *
  * @param {object} props
  * @param {string} props.id            anchor id

@@ -34,12 +34,12 @@ export default async function AdminAdvocateDetailPage({ params }) {
   const adv = await adminGetAdvocateById(id);
   if (!adv) notFound();
 
-  const publicUrl = `/advocates/${adv.slug}-${adv.legalCareId.toLowerCase()}`;
+  const publicUrl = `/lawyers/${adv.slug}-${adv.legalCareId.toLowerCase()}`;
   const location = [adv.city, adv.state].filter(Boolean).join(', ');
 
   return (
     <div className="mx-auto max-w-5xl">
-      <DetailBack href="/admin/advocates" label="Back to advocates" />
+      <DetailBack href="/admin/advocates" label="Back to lawyers" />
 
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">

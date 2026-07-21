@@ -51,6 +51,14 @@ const nextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  // The public directory moved from /advocates to /lawyers. Permanently
+  // redirect old links (bookmarks, indexed pages) to the new path.
+  async redirects() {
+    return [
+      { source: '/advocates', destination: '/lawyers', permanent: true },
+      { source: '/advocates/:path*', destination: '/lawyers/:path*', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -7,7 +7,7 @@ export default async function AdminAdvocatesPage() {
 
   return (
     <div>
-      <AdminPageHeader title="Advocates" subtitle="All registered advocates on the platform." count={advocates.length} />
+      <AdminPageHeader title="Lawyers" subtitle="All registered lawyers on the platform." count={advocates.length} />
       <AdvocatesTable advocates={advocates} />
     </div>
   );

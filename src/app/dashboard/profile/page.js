@@ -5,7 +5,7 @@ import { getAdvocateById } from '@/lib/advocates';
 import { getAllCities } from '@/lib/cities';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
-/** Flatten a full advocate profile into the editable form snapshot. */
+/** Flatten a full lawyer profile into the editable form snapshot. */
 function toSnapshot(a) {
   return {
     fullName: a.name,
@@ -35,7 +35,7 @@ function toSnapshot(a) {
     whatsapp: a.contact?.whatsapp || '',
     email: a.contact?.email || '',
     fee: String(a.consultationFee || ''),
-    // Live-chat plans the advocate defined (duration + price), as form strings.
+    // Live-chat plans the lawyer defined (duration + price), as form strings.
     consultationPlans: (a.consultationPlans || []).map((p) => ({
       minutes: String(p.minutes ?? ''),
       price: String(p.price ?? ''),
@@ -73,7 +73,7 @@ export default async function EditProfilePage() {
       <EditProfileForm
         initial={initial}
         cities={cities}
-        previewHref={`/advocates/${advocateProfilePath(advocate)}`}
+        previewHref={`/lawyers/${advocateProfilePath(advocate)}`}
       />
     </div>
   );

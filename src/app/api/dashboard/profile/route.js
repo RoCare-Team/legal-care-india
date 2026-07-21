@@ -6,9 +6,10 @@ import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
 import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
 import { normalizePlans } from '@/constants/consultationPlans';
 import { slugify } from '@/utils/slugify';
+import { geocodeAddress } from '@/lib/geocode';
 
 /**
- * GET /api/dashboard/profile — the logged-in advocate's full profile.
+ * GET /api/dashboard/profile — the logged-in lawyer's full profile.
  */
 export async function GET() {
   const id = await getSessionAdvocateId();
@@ -82,7 +83,7 @@ export async function PUT(request) {
   if (Array.isArray(timing)) update.timing = timing;
   if (fee !== undefined) update.consultationFee = Number(fee) || 0;
 
-  // Live-chat plans: the advocate's own duration + price rows (validated,
+  // Live-chat plans: the lawyer's own duration + price rows (validated,
   // deduped by duration and sorted shortest-first).
   if (Array.isArray(consultationPlans)) {
     update.consultationPlans = normalizePlans(consultationPlans);
@@ -103,8 +104,29 @@ export async function PUT(request) {
     if (social.twitter !== undefined) update['social.twitter'] = social.twitter;
   }
 
+  // If any address part changed, re-geocode the office so the "near me" filter
+  // stays accurate. We fill missing pieces from the current record.
+  const locationTouched =
+    officeAddress !== undefined || pincode !== undefined ||
+    city !== undefined || state !== undefined;
+
   try {
     await connectDB();
+
+    if (locationTouched) {
+      const current = await Advocate.findById(id).select('office city state').lean();
+      const loc = await geocodeAddress({
+        address: officeAddress !== undefined ? officeAddress : current?.office?.address,
+        pincode: pincode !== undefined ? pincode : current?.office?.pincode,
+        city: city !== undefined ? city : current?.city,
+        state: state !== undefined ? state : current?.state,
+      });
+      if (loc) {
+        update['office.location.lat'] = loc.lat;
+        update['office.location.lng'] = loc.lng;
+      }
+    }
+
     await Advocate.findByIdAndUpdate(id, { $set: update }, { runValidators: true });
     // Public profile/listing changed — refresh the cached directory.
     revalidateTag(ADVOCATES_TAG);
@@ -148,7 +170,7 @@ export async function PATCH(request) {
 }
 
 /**
- * DELETE /api/dashboard/profile — permanently deletes the logged-in advocate's
+ * DELETE /api/dashboard/profile — permanently deletes the logged-in lawyer's
  * account, removes them from the public directory and clears the session.
  */
 export async function DELETE() {
@@ -161,7 +183,7 @@ export async function DELETE() {
     if (!deleted) {
       return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
     }
-    // Advocate removed from the public listing — refresh the cached directory.
+    // Lawyer removed from the public listing — refresh the cached directory.
     revalidateTag(ADVOCATES_TAG);
 
     // Sign the user out by clearing the session cookie.

@@ -20,9 +20,9 @@ const STEP_TITLES = [
 ];
 
 /**
- * RegisterWizard — orchestrates the 4-step advocate registration flow.
+ * RegisterWizard — orchestrates the 4-step lawyer registration flow.
  * On final submit it creates a real account via /api/auth/register, then shows
- * the success screen (the advocate is already logged in at that point).
+ * the success screen (the lawyer is already logged in at that point).
  */
 export default function RegisterWizard({ cities }) {
   const [step, setStep] = useState(0);

@@ -4,34 +4,34 @@ import ContentPage from '@/components/shared/ContentPage';
 import { Button } from '@/components/ui';
 
 export const metadata = createMetadata({
-  title: 'Advocate Verification',
-  description: `How ${SITE.name} verifies advocates so clients can connect with confidence.`,
+  title: 'Lawyer Verification',
+  description: `How ${SITE.name} verifies lawyers so clients can connect with confidence.`,
   path: '/verification',
 });
 
 export default function VerificationPage() {
   return (
     <ContentPage
-      eyebrow="For Advocates"
-      title="Advocate Verification"
-      subtitle="How we help clients connect with genuine, trustworthy advocates."
+      eyebrow="For Lawyers"
+      title="Lawyer Verification"
+      subtitle="How we help clients connect with genuine, trustworthy lawyers."
       breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Verification' }]}
     >
       <p>
-        Trust is at the heart of {SITE.name}. The verification badge tells clients that an advocate&apos;s
+        Trust is at the heart of {SITE.name}. The verification badge tells clients that a lawyer&apos;s
         core details have been checked, so they can reach out with confidence.
       </p>
 
       <h2>What we check</h2>
       <ul>
-        <li><strong>Identity:</strong> the advocate&apos;s name and contact details.</li>
+        <li><strong>Identity:</strong> the lawyer&apos;s name and contact details.</li>
         <li><strong>Bar council registration:</strong> a valid bar council enrolment number.</li>
         <li><strong>Practice details:</strong> city, areas of practice and experience.</li>
       </ul>
 
       <h2>How to get verified</h2>
       <ul>
-        <li>Register for a free advocate account.</li>
+        <li>Register for a free lawyer account.</li>
         <li>Complete your profile, including your bar council number, from the dashboard.</li>
         <li>Our team reviews the details and adds the verified badge once confirmed.</li>
       </ul>
@@ -43,7 +43,7 @@ export default function VerificationPage() {
       </p>
 
       <div className="not-prose mt-8 flex flex-wrap gap-3">
-        <Button href="/register">Register as an Advocate</Button>
+        <Button href="/register">Register as a Lawyer</Button>
         <Button href="/contact" variant="outline">Contact our team</Button>
       </div>
     </ContentPage>

@@ -32,7 +32,7 @@ export async function GET(_request, { params }) {
 
 /**
  * PATCH /api/consultations/[id]  { action: 'accept'|'reject'|'cancel'|'end' }
- * Drives the session lifecycle. accept/reject are advocate-only; cancel is
+ * Drives the session lifecycle. accept/reject are lawyer-only; cancel is
  * user-only; end is either participant.
  */
 export async function PATCH(request, { params }) {

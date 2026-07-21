@@ -6,7 +6,7 @@ import { cn } from '@/utils/cn';
 import { DASHBOARD_NAV } from '@/constants/dashboard';
 
 /**
- * DashboardSidebar — grouped vertical navigation for the advocate dashboard.
+ * DashboardSidebar — grouped vertical navigation for the lawyer dashboard.
  * Sticky on desktop; renders as a horizontally scrollable strip on mobile.
  *
  * @param {object} props

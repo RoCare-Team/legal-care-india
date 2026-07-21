@@ -12,7 +12,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Presentation for each consultation status (advocate's point of view). */
+/** Presentation for each consultation status (lawyer's point of view). */
 const STATUS_META = {
   ended: { label: 'Completed', tone: 'bg-emerald-500/10 text-emerald-700' },
   active: { label: 'Ongoing', tone: 'bg-blue-500/10 text-blue-700' },
@@ -75,7 +75,7 @@ export default async function ConsultationsPage() {
   const id = await getSessionAdvocateId();
   if (!id) redirect('/login');
 
-  // Rows the advocate cleared drop out of the list and the totals alike.
+  // Rows the lawyer cleared drop out of the list and the totals alike.
   const all = await getAdvocateConsultations(id);
   const consultations = all.filter((c) => !c.hidden);
   const connected = consultations.filter((c) => c.charged);

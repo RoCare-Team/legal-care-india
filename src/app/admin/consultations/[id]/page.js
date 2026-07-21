@@ -90,7 +90,7 @@ export default async function AdminConsultationDetailPage({ params }) {
           <AdminAvatar name={c.advocateName} tone="bg-primary/10 text-primary" />
           <div>
             <p className="font-display text-lg font-semibold text-ink">{c.advocateName}</p>
-            <p className="text-xs text-ink/50">Advocate</p>
+            <p className="text-xs text-ink/50">Lawyer</p>
           </div>
         </div>
         <ConsultStatusPill status={c.status} />
@@ -135,7 +135,7 @@ export default async function AdminConsultationDetailPage({ params }) {
               <p className="text-sm font-medium text-ink/60">No messages in this session.</p>
               <p className="max-w-xs text-xs text-ink/40">
                 {c.status === 'pending'
-                  ? 'The advocate has not accepted the request yet.'
+                  ? 'The lawyer has not accepted the request yet.'
                   : c.status === 'rejected' || c.status === 'cancelled'
                     ? 'The session never connected, so no chat took place.'
                     : 'The session connected but neither side sent a message.'}
@@ -225,7 +225,7 @@ export default async function AdminConsultationDetailPage({ params }) {
             <InfoRow label="Planned end">{c.endsAt ? formatDateTime(c.endsAt) : null}</InfoRow>
             <InfoRow label="Ended">{c.endedAt ? formatDateTime(c.endedAt) : null}</InfoRow>
             <InfoRow label="From client">{userMsgs}</InfoRow>
-            <InfoRow label="From advocate">{advocateMsgs}</InfoRow>
+            <InfoRow label="From lawyer">{advocateMsgs}</InfoRow>
           </InfoCard>
 
           <InfoCard title="Participants">
@@ -251,7 +251,7 @@ export default async function AdminConsultationDetailPage({ params }) {
                   <AdminAvatar name={c.advocateName} tone="bg-primary/10 text-primary" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-ink">{c.advocateName}</span>
-                    <span className="block text-xs text-ink/45">Advocate profile</span>
+                    <span className="block text-xs text-ink/45">Lawyer profile</span>
                   </span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink/30" aria-hidden="true" />
                 </Link>

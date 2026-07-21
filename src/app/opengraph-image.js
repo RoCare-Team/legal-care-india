@@ -42,11 +42,11 @@ export default function OgImage() {
 
         <div style={{ display: 'flex', fontSize: 74, fontWeight: 800, lineHeight: 1.1, marginTop: 56 }}>
           Get Anonymous Legal Assistance
-          From Verified Advocates
+          From Verified Lawyers
         </div>
 
         <div style={{ display: 'flex', fontSize: 32, color: '#D4AF37', marginTop: 28, maxWidth: 900 }}>
-          Discover, compare and connect with verified advocates by legal service, city and experience.
+          Discover, compare and connect with verified lawyers by legal service, city and experience.
         </div>
       </div>
     ),

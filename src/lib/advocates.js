@@ -7,19 +7,19 @@ import { slugify } from '@/utils/slugify';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /**
- * Public advocate reads are cached and tagged so pages can render statically
+ * Public lawyer reads are cached and tagged so pages can render statically
  * (ISR) instead of hitting MongoDB on every request. The cache is invalidated
- * the moment an advocate registers or edits their profile via
+ * the moment a lawyer registers or edits their profile via
  * `revalidateTag(ADVOCATES_TAG)`, so new records still appear immediately.
  */
 export const ADVOCATES_TAG = 'advocates';
 const CACHE_TTL = 3600; // seconds — safety refresh; writes invalidate sooner
 
 /**
- * Advocate data-access layer.
+ * Lawyer data-access layer.
  *
  * The homepage/listing only need the lean records in `src/data/advocates.js`.
- * The public profile needs a rich, fully-populated advocate. Rather than bloat
+ * The public profile needs a rich, fully-populated lawyer. Rather than bloat
  * the source data with dozens of fields per record, we derive the extended
  * profile deterministically here (stable across renders — no Math.random),
  * merging any real overrides present on the base record.
@@ -130,8 +130,8 @@ const OFFICE_TIMING = [
 ];
 
 /**
- * Enrich a lean advocate record into a full public profile.
- * @param {object} a base advocate record
+ * Enrich a lean lawyer record into a full public profile.
+ * @param {object} a base lawyer record
  */
 export function buildAdvocateProfile(a) {
   const seed = hash(a.slug);
@@ -167,12 +167,12 @@ export function buildAdvocateProfile(a) {
     // This is only the first-paint value (these reads are ISR-cached, so the
     // heartbeat is usually stale here); /api/presence polls the live truth a
     // moment later. Erring toward "offline" means we never wrongly advertise
-    // an advocate as reachable.
+    // a lawyer as reachable.
     online:
       Boolean(a.available) &&
       Boolean(a.lastSeenAt) &&
       Date.now() - new Date(a.lastSeenAt).getTime() < ONLINE_WINDOW_MS,
-    // Live-chat rates the advocate set themselves (empty ⇒ chat not offered).
+    // Live-chat rates the lawyer set themselves (empty ⇒ chat not offered).
     consultationPlans: a.consultationPlans || [],
     rating: avgRating,
     reviews: reviewsCount,
@@ -183,7 +183,7 @@ export function buildAdvocateProfile(a) {
       a.barCouncilNumber || `${pick(BAR_COUNCILS, seed)}/${digits}/${2005 + (seed % 15)}`,
     about:
       a.about ||
-      `${a.name} is a ${a.verified ? 'verified ' : ''}advocate based in ${a.city}, ${a.state}, with over ${a.experience} years of experience in ${a.specializations?.join(', ') || 'multiple areas of law'}. Known for a client-first approach, ${a.name.split(' ')[1] || 'the advocate'} combines deep courtroom experience with clear, practical advice — helping individuals and businesses navigate complex legal matters with confidence.`,
+      `${a.name} is a ${a.verified ? 'verified ' : ''}lawyer based in ${a.city}, ${a.state}, with over ${a.experience} years of experience in ${a.specializations?.join(', ') || 'multiple areas of law'}. Known for a client-first approach, ${a.name.split(' ')[1] || 'the lawyer'} combines deep courtroom experience with clear, practical advice — helping individuals and businesses navigate complex legal matters with confidence.`,
     legalServices: (a.specializations || []).map((name) => ({
       name,
       slug: slugify(name),
@@ -215,7 +215,7 @@ export function buildAdvocateProfile(a) {
         label: ['Reception', 'Meeting Room', 'Library', 'Cabin', 'Waiting Area', 'Entrance'][i],
       })),
     faqs: a.faqs || buildFaqs(a),
-    // Real practice highlights entered by the advocate (0 when not provided).
+    // Real practice highlights entered by the lawyer (0 when not provided).
     metrics: {
       cases: a.metrics?.cases || 0,
       clients: a.metrics?.clients || 0,
@@ -230,12 +230,12 @@ export function buildAdvocateProfile(a) {
  * cache anything and rethrows. The thin public wrappers catch that and return
  * the static fallback WITHOUT caching it — so once the DB recovers, the very
  * next request fetches fresh data instead of serving a stale empty list.
- * A successful-but-empty result is still cached (it's a real "no advocates").
+ * A successful-but-empty result is still cached (it's a real "no lawyers").
  */
 const _getAllAdvocates = unstable_cache(
   async () => {
     await connectDB();
-    // Newest registrations first, so a freshly registered advocate shows up
+    // Newest registrations first, so a freshly registered lawyer shows up
     // at the start of the directory and the featured slider.
     const rows = await Advocate.find({ status: 'published' })
       .sort({ createdAt: -1 })
@@ -246,7 +246,7 @@ const _getAllAdvocates = unstable_cache(
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** All lean advocate records (falls back to static data if the DB is down). */
+/** All lean lawyer records (falls back to static data if the DB is down). */
 export async function getAllAdvocates() {
   try {
     return await _getAllAdvocates();
@@ -323,14 +323,14 @@ export async function getAllAdvocateParams() {
   }
 }
 
-/** Full profile for a single advocate id from MongoDB, or null. */
+/** Full profile for a single lawyer id from MongoDB, or null. */
 export async function getAdvocateById(id) {
   await connectDB();
   const advocate = await Advocate.findById(id).lean();
   return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
 }
 
-/** Related advocates: same specialization or city, excluding the given one. */
+/** Related lawyers: same specialization or city, excluding the given one. */
 export function getRelatedAdvocates(advocate, limit = 3) {
   const specs = new Set(advocate.specializations || []);
   return ADVOCATES.filter((a) => a.slug !== advocate.slug)

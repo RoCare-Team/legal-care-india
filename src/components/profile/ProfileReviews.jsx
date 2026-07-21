@@ -27,7 +27,7 @@ export default function ProfileReviews({ advocate }) {
           <p className="mt-1 text-xs text-ink/55">{pluralize(reviews, 'review')}</p>
         </div>
         <p className="text-sm text-ink/60 sm:border-l sm:border-ink/10 sm:pl-6">
-          Reviews are shared by clients who worked with this advocate. Have you consulted them?
+          Reviews are shared by clients who worked with this lawyer. Have you consulted them?
           Share your experience below.
         </p>
       </div>
@@ -56,7 +56,7 @@ export default function ProfileReviews({ advocate }) {
       ) : (
         <div className="rounded-xl border border-dashed border-ink/15 px-6 py-10 text-center">
           <p className="text-sm font-medium text-ink">No reviews yet</p>
-          <p className="mt-1 text-sm text-ink/55">Be the first to review this advocate.</p>
+          <p className="mt-1 text-sm text-ink/55">Be the first to review this lawyer.</p>
         </div>
       )}
 

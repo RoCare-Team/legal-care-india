@@ -3,25 +3,25 @@ import { MessageCircle, Phone, Video, HandHeart } from 'lucide-react';
 import { Section } from '@/components/ui';
 
 /**
- * QuickActions — four quick entry cards above Featured Advocates. Every card
- * takes the visitor to the advocate directory to start.
+ * QuickActions — four quick entry cards above Featured Lawyers. Every card
+ * takes the visitor to the lawyer directory to start.
  */
 const ACTIONS = [
   {
-    label: 'Chat with Advocate',
+    label: 'Chat with Lawyer',
     desc: 'Start a live chat',
     icon: MessageCircle,
     tone: 'text-primary',
     chip: 'bg-primary/10',
-    href: '/advocates',
+    href: '/lawyers',
   },
   {
-    label: 'Call Advocate',
+    label: 'Call Lawyer',
     desc: 'Talk over a call',
     icon: Phone,
     tone: 'text-emerald-600',
     chip: 'bg-emerald-500/10',
-    href: '/advocates',
+    href: '/lawyers',
   },
   {
     label: 'Video Call',
@@ -29,7 +29,7 @@ const ACTIONS = [
     icon: Video,
     tone: 'text-amber-600',
     chip: 'bg-amber-500/10',
-    href: '/advocates',
+    href: '/lawyers',
   },
   {
     label: 'Free Advice',
@@ -37,7 +37,7 @@ const ACTIONS = [
     icon: HandHeart,
     tone: 'text-rose-600',
     chip: 'bg-rose-500/10',
-    href: '/advocates',
+    href: '/lawyers',
   },
 ];
 

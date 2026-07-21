@@ -77,7 +77,7 @@ export default function Footer() {
         </div>
 
         <p className="mt-6 text-center text-xs leading-relaxed text-ink/45 sm:text-left">
-          Disclaimer: {SITE.name} is an advocate discovery and directory platform. It is
+          Disclaimer: {SITE.name} is a lawyer discovery and directory platform. It is
           not a law firm and does not provide legal advice, representation, or referrals.
           Listings do not constitute endorsements.
         </p>

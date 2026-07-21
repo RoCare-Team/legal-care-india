@@ -9,7 +9,7 @@ import {
 } from '@/lib/consultations';
 
 /**
- * GET /api/consultations — advocate's incoming feed (pending + active).
+ * GET /api/consultations — lawyer's incoming feed (pending + active).
  * Polled by the global call listener; also serves as the presence heartbeat.
  */
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
   if (!session || session.role !== 'advocate') {
     return NextResponse.json({ sessions: [] }, { status: session ? 200 : 401 });
   }
-  // Being here (listener polling) means the advocate is available.
+  // Being here (listener polling) means the lawyer is available.
   await markAdvocateOnline(session.id);
   const sessions = await getAdvocateInbox(session.id);
   return NextResponse.json({ sessions });
@@ -26,7 +26,7 @@ export async function GET() {
 /**
  * POST /api/consultations  { advocateId, planId }
  * A signed-in user books a consultation. Creates a pending request (charged
- * only when the advocate accepts). Rejects up front if the wallet can't cover it.
+ * only when the lawyer accepts). Rejects up front if the wallet can't cover it.
  */
 export async function POST(request) {
   const session = await getSession();
@@ -52,19 +52,19 @@ export async function POST(request) {
     getUserById(session.id),
     Advocate.findById(advocateId).select('name consultationPlans').lean(),
   ]);
-  if (!advocate) return NextResponse.json({ error: 'Advocate not found.' }, { status: 404 });
+  if (!advocate) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
 
-  // The plan (duration + price) always comes from the advocate's own list —
+  // The plan (duration + price) always comes from the lawyer's own list —
   // never from the client.
   const plan = getAdvocatePlan(advocate.consultationPlans, minutes);
   if (!plan) {
     return NextResponse.json(
-      { error: 'This advocate does not offer that consultation plan.' },
+      { error: 'This lawyer does not offer that consultation plan.' },
       { status: 400 }
     );
   }
 
-  // The advocate must be online to take a live consultation right now.
+  // The lawyer must be online to take a live consultation right now.
   if (!(await isAdvocateOnline(advocateId))) {
     return NextResponse.json(
       { error: 'offline', message: `${advocate.name} is offline right now. Please try again later.` },
@@ -81,7 +81,7 @@ export async function POST(request) {
 
   const created = await createConsultation({
     userId: session.id,
-    // The advocate sees "Anonymous" if the user turned that on in their account.
+    // The lawyer sees "Anonymous" if the user turned that on in their account.
     userName: user.anonymous ? 'Anonymous' : user.name,
     advocateId,
     advocateName: advocate.name,

@@ -5,7 +5,7 @@ import { formatCompactNumber } from '@/utils/formatters';
 
 /**
  * CityCard — image tile for the "Browse by City" grid. Shows a city photo with
- * a dark gradient overlay so the name + advocate count stay readable.
+ * a dark gradient overlay so the name + lawyer count stay readable.
  *
  * @param {object} props
  * @param {import('@/data/cities').CITIES[number]} props.city
@@ -46,7 +46,7 @@ export default function CityCard({ city }) {
         </p>
         <h3 className="mt-0.5 font-display text-xl font-bold leading-tight">{name}</h3>
         <p className="mt-1 text-xs font-semibold text-accent">
-          {formatCompactNumber(advocates)}+ advocates
+          {formatCompactNumber(advocates)}+ lawyers
         </p>
       </div>
     </Link>

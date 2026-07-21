@@ -69,7 +69,7 @@ export function ConsultStatusPill({ status }) {
 
 /**
  * List of consultations. `perspective` decides which counterparty name to show:
- * 'user' page shows the advocate, 'advocate' page shows the client.
+ * 'user' page shows the lawyer, 'advocate' page shows the client.
  */
 export function ConsultationList({ items, perspective = 'user', empty = 'No consultations yet.' }) {
   if (!items || items.length === 0) {

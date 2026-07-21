@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react';
 import { Container, Button } from '@/components/ui';
 
 /**
- * CTA — closing call-to-action inviting advocates to register on the platform.
+ * CTA — closing call-to-action inviting lawyers to register on the platform.
  */
 export default function CTA() {
   return (
@@ -14,7 +14,7 @@ export default function CTA() {
             aria-hidden="true"
           />
           <h2 className="relative font-display text-3xl font-semibold text-white sm:text-4xl">
-            Are You an Advocate?
+            Are You a Lawyer?
           </h2>
           <p className="relative mx-auto mt-3 max-w-xl text-white/80">
             Reach thousands of clients actively searching for legal help. Create your
@@ -27,14 +27,14 @@ export default function CTA() {
               size="lg"
               rightIcon={<ArrowRight className="h-4 w-4" />}
             >
-              Register as Advocate
+              Register as Lawyer
             </Button>
             <Button
               href="/login"
               size="lg"
               className="bg-white/10 text-white hover:bg-white/20"
             >
-              Advocate Login
+              Lawyer Login
             </Button>
           </div>
         </div>

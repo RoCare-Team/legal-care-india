@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
 /**
- * User — a regular client account (not an advocate).
+ * User — a regular client account (not a lawyer).
  *
  * Users can sign up to get a lightweight account on Legal Care India. For now
- * this is just identity + login credentials; richer features (saved advocates,
+ * this is just identity + login credentials; richer features (saved lawyers,
  * reviews, enquiries) can hang off this model later.
  */
 const { Schema } = mongoose;
@@ -28,7 +28,7 @@ const UserSchema = new Schema(
     phone: { type: String, default: '' },
     photo: { type: String, default: '' },
     city: { type: String, default: '' },
-    // Privacy preference: when on, the user's name is hidden from advocates
+    // Privacy preference: when on, the user's name is hidden from lawyers
     // (they see "Anonymous"). Set once in the account, applied to every booking.
     anonymous: { type: Boolean, default: false },
     // Wallet: prepaid balance (in ₹) the user tops up themselves, plus a ledger.

@@ -4,8 +4,8 @@ import LoginForm from '@/components/auth/LoginForm';
 import RegisterAside from '@/components/register/RegisterAside';
 
 export const metadata = createMetadata({
-  title: 'Advocate Login',
-  description: 'Sign in to your Legal Care India advocate dashboard to manage your public profile.',
+  title: 'Lawyer Login',
+  description: 'Sign in to your Legal Care India lawyer dashboard to manage your public profile.',
   path: '/login',
 });
 

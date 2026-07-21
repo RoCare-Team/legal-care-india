@@ -69,7 +69,7 @@ export default function SectionAboutServices({ data, set, cities = CITIES }) {
         )}
       </DashboardSection>
 
-      <DashboardSection id="courts" title="Courts" description="The courts you practise in — clients can filter advocates by court." icon={Gavel}>
+      <DashboardSection id="courts" title="Courts" description="The courts you practise in — clients can filter lawyers by court." icon={Gavel}>
         <ChipMultiSelect options={COURTS} value={data.courts || []} onChange={(v) => set('courts', v)} />
       </DashboardSection>
 

@@ -17,7 +17,7 @@ export default async function sitemap() {
 
   const staticRoutes = [
     { path: '/', priority: 1.0, changeFrequency: 'daily' },
-    { path: '/advocates', priority: 0.9, changeFrequency: 'daily' },
+    { path: '/lawyers', priority: 0.9, changeFrequency: 'daily' },
     { path: '/legal-services', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/cities', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/blogs', priority: 0.6, changeFrequency: 'weekly' },
@@ -58,7 +58,7 @@ export default async function sitemap() {
 
   const advocateParams = await getAllAdvocateParams();
   const advocateRoutes = advocateParams.map((param) => ({
-    url: new URL(`/advocates/${param}`, base).toString(),
+    url: new URL(`/lawyers/${param}`, base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.6,

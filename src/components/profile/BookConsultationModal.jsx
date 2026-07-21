@@ -11,10 +11,10 @@ import { refreshAuth } from '@/utils/authEvents';
 
 /**
  * BookConsultationModal — the user side of the paid live-chat flow:
- * pick a plan → connecting (waiting for the advocate) → chat (charged) → ended.
+ * pick a plan → connecting (waiting for the lawyer) → chat (charged) → ended.
  *
- * `plans` are the advocate's own rates (they set them in their dashboard), so
- * every advocate can charge what they like.
+ * `plans` are the lawyer's own rates (they set them in their dashboard), so
+ * every lawyer can charge what they like.
  */
 export default function BookConsultationModal({
   open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
@@ -47,7 +47,7 @@ export default function BookConsultationModal({
 
   const status = session?.status;
 
-  // The wallet is charged the moment the advocate accepts — refresh the navbar
+  // The wallet is charged the moment the lawyer accepts — refresh the navbar
   // balance right away rather than waiting for a page reload.
   useEffect(() => {
     if (status === 'active') refreshAuth();
@@ -64,7 +64,7 @@ export default function BookConsultationModal({
     return undefined;
   }, [status, onClose]);
 
-  // Don't hang on "Connecting…" forever — if the advocate doesn't accept in
+  // Don't hang on "Connecting…" forever — if the lawyer doesn't accept in
   // time (e.g. they went offline), cancel and show an offline notice.
   useEffect(() => {
     if (status !== 'pending' || !sessionId) return undefined;
@@ -188,13 +188,13 @@ export default function BookConsultationModal({
       icon={CalendarCheck}
     >
       <div className="p-5">
-        {/* Advocate offline */}
+        {/* Lawyer offline */}
         {offline ? (
           <div className="flex flex-col items-center py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
               <WifiOff className="h-7 w-7" />
             </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Advocate offline</h4>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer offline</h4>
             <p className="mt-1 text-sm text-ink/55">{offline}</p>
             <p className="mt-1 text-xs text-ink/45">You were not charged.</p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">

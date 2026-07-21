@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui';
 import ProfileSection from './ProfileSection';
 
 /**
- * ProfileLegalServices — the legal services this advocate practises,
+ * ProfileLegalServices — the legal services this lawyer practises,
  * each linking to the corresponding directory listing.
  *
  * @param {object} props
@@ -20,7 +20,7 @@ export default function ProfileLegalServices({ advocate }) {
         {services.map((s) => (
           <Link
             key={s.slug}
-            href={`/advocates?service=${s.slug}`}
+            href={`/lawyers?service=${s.slug}`}
             className="group flex items-center justify-between gap-2 rounded-xl border border-ink/8 bg-muted/40 px-4 py-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
           >
             <span className="text-sm font-medium text-ink/80 group-hover:text-primary">
