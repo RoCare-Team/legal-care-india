@@ -2,7 +2,16 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MessageSquare, Scale, User as UserIcon, ExternalLink } from 'lucide-react';
 import { adminGetConsultationById } from '@/lib/admin';
-import { DetailBack, InfoCard, InfoRow, StatTile, ConsultStatusPill } from '@/components/admin/DetailKit';
+import {
+  DetailBack,
+  InfoCard,
+  InfoRow,
+  StatTile,
+  ConsultStatusPill,
+  CallPill,
+  CALL_REASON_LABEL,
+  formatCallDuration,
+} from '@/components/admin/DetailKit';
 import { AdminAvatar } from '@/components/admin/DataTable';
 import { formatDate } from '@/utils/formatters';
 
@@ -71,6 +80,7 @@ export default async function AdminConsultationDetailPage({ params }) {
 
   const userMsgs = c.messages.filter((m) => m.from === 'user').length;
   const advocateMsgs = c.messages.length - userMsgs;
+  const call = c.call;
 
   return (
     <div>
@@ -96,7 +106,7 @@ export default async function AdminConsultationDetailPage({ params }) {
         <ConsultStatusPill status={c.status} />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Plan" value={`${c.minutes} min`} />
         <StatTile
           label={c.charged ? 'Charged' : 'Not charged'}
@@ -104,6 +114,12 @@ export default async function AdminConsultationDetailPage({ params }) {
           tone={c.charged ? 'text-emerald-600' : 'text-ink/40'}
         />
         <StatTile label="Messages" value={c.messages.length} />
+        {/* Video is bundled into the same fee — this is time on camera, not a charge. */}
+        <StatTile
+          label={call.connected ? 'On video' : 'Video call'}
+          value={call.connected ? formatCallDuration(call.durationSec) : call.attempted ? 'Missed' : 'None'}
+          tone={call.connected ? 'text-emerald-600' : call.attempted ? 'text-amber-600' : 'text-ink/40'}
+        />
         <StatTile label="Booked" value={formatDate(c.createdAt)} />
       </div>
 
@@ -226,6 +242,32 @@ export default async function AdminConsultationDetailPage({ params }) {
             <InfoRow label="Ended">{c.endedAt ? formatDateTime(c.endedAt) : null}</InfoRow>
             <InfoRow label="From client">{userMsgs}</InfoRow>
             <InfoRow label="From lawyer">{advocateMsgs}</InfoRow>
+          </InfoCard>
+
+          {/* Video call — the last attempt on this session. The signalling record
+              is reused on every ring, so earlier attempts are not kept. */}
+          <InfoCard title="Video call" action={<CallPill call={call} showDuration={false} />}>
+            {call.attempted ? (
+              <>
+                <InfoRow label="Rang at">{call.ringingAt ? formatDateTime(call.ringingAt) : null}</InfoRow>
+                <InfoRow label="Connected">{call.connectedAt ? formatDateTime(call.connectedAt) : null}</InfoRow>
+                <InfoRow label="Ended">{call.endedAt ? formatDateTime(call.endedAt) : null}</InfoRow>
+                <InfoRow label="Talk time">
+                  {call.connected ? formatCallDuration(call.durationSec) : null}
+                </InfoRow>
+                <InfoRow label="Outcome">
+                  {call.endedReason ? CALL_REASON_LABEL[call.endedReason] || call.endedReason : null}
+                </InfoRow>
+                <InfoRow label="Ended by">
+                  {call.endedBy === 'user' ? c.userName : call.endedBy === 'advocate' ? c.advocateName : null}
+                </InfoRow>
+              </>
+            ) : (
+              <p className="text-xs leading-relaxed text-ink/45">
+                No video call was placed on this session — the client never rang the lawyer.
+                Video is included in the consultation fee, so this costs nothing either way.
+              </p>
+            )}
           </InfoCard>
 
           <InfoCard title="Participants">

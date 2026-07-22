@@ -272,7 +272,7 @@ export async function adminGetConsultations() {
   const rows = await Consultation.find({})
     .sort({ createdAt: -1 })
     .limit(500)
-    .select('userName advocateName minutes price status startedAt endedAt messages createdAt')
+    .select('userName advocateName minutes price status startedAt endedAt messages call createdAt')
     .lean();
   return rows.map((r) => ({
     id: String(r._id),
@@ -284,9 +284,48 @@ export async function adminGetConsultations() {
     // Only a connected session (accepted by the lawyer) actually cost money.
     charged: ['active', 'ended'].includes(r.status),
     messagesCount: (r.messages || []).length,
+    // Latest video-call attempt on this session (see mapCall below).
+    call: mapCall(r.call),
     startedAt: iso(r.startedAt),
     createdAt: iso(r.createdAt),
   }));
+}
+
+/**
+ * The video-call leg of a consultation, flattened for the admin screens.
+ *
+ * Only the *latest* attempt survives in the record — the signalling sub-document
+ * is reused on every ring — so this is "the last call on this session", not a
+ * history. Signalling payloads (SDP/ICE) are deliberately dropped: they are
+ * useless to a human and can run to kilobytes.
+ */
+function mapCall(call) {
+  const c = call || {};
+  const status = c.status || 'idle';
+  const connectedAt = c.connectedAt ? new Date(c.connectedAt) : null;
+  const endedAt = c.endedAt ? new Date(c.endedAt) : null;
+
+  // Seconds actually spent on video: connect → hang-up. A call still running
+  // has no end yet, so it is measured against now.
+  let durationSec = 0;
+  if (connectedAt) {
+    const until = endedAt || (status === 'active' ? new Date() : null);
+    if (until) durationSec = Math.max(0, Math.round((until - connectedAt) / 1000));
+  }
+
+  return {
+    status,
+    // Did the two sides ever actually see each other on this session?
+    connected: Boolean(connectedAt),
+    // A ring that never got picked up (rejected, missed, or dropped first).
+    attempted: status !== 'idle',
+    endedReason: c.endedReason || '',
+    endedBy: c.endedBy || '',
+    ringingAt: iso(c.ringingAt),
+    connectedAt: iso(c.connectedAt),
+    endedAt: iso(c.endedAt),
+    durationSec,
+  };
 }
 
 /**
@@ -323,6 +362,7 @@ export async function adminGetConsultationById(id) {
       text: m.text || '',
       at: iso(m.at),
     })),
+    call: mapCall(r.call),
     hiddenForUser: Boolean(r.hiddenForUser),
     hiddenForAdvocate: Boolean(r.hiddenForAdvocate),
     startedAt: iso(r.startedAt),

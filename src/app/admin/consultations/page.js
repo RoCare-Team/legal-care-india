@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Scale, MessageSquare, IndianRupee } from 'lucide-react';
+import { Scale, MessageSquare, IndianRupee, Video } from 'lucide-react';
 import { adminGetConsultations } from '@/lib/admin';
 import DataTable, { AdminPageHeader, AdminAvatar } from '@/components/admin/DataTable';
+import { CallPill, formatCallDuration } from '@/components/admin/DetailKit';
 import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
 
@@ -24,6 +25,11 @@ export default async function AdminConsultationsPage({ searchParams }) {
   const revenue = consultations
     .filter((c) => c.charged)
     .reduce((sum, c) => sum + c.price, 0);
+
+  // Video-call usage across every session — how many actually connected, and
+  // how much time was spent on camera in total.
+  const callsConnected = consultations.filter((c) => c.call.connected).length;
+  const callSeconds = consultations.reduce((sum, c) => sum + c.call.durationSec, 0);
 
   const totalPages = Math.max(1, Math.ceil(consultations.length / PER_PAGE));
   const requested = Number.parseInt((await searchParams)?.page, 10);
@@ -82,6 +88,11 @@ export default async function AdminConsultationsPage({ searchParams }) {
       ),
     },
     {
+      key: 'call',
+      label: 'Video call',
+      render: (c) => <CallPill call={c.call} />,
+    },
+    {
       key: 'status',
       label: 'Status',
       render: (c) => {
@@ -109,14 +120,29 @@ export default async function AdminConsultationsPage({ searchParams }) {
         count={consultations.length}
       />
 
-      {/* Revenue strip — total collected from connected sessions. */}
-      <div className="mb-6 inline-flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface px-5 py-3.5 shadow-card">
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500/10 text-emerald-600">
-          <IndianRupee className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <div>
-          <p className="font-display text-2xl font-bold leading-tight text-ink">₹{revenue.toLocaleString('en-IN')}</p>
-          <p className="text-xs text-ink/50">Total collected from connected sessions</p>
+      {/* Summary strip — money collected, and how much of it went on video. */}
+      <div className="mb-6 flex flex-wrap gap-3">
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface px-5 py-3.5 shadow-card">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500/10 text-emerald-600">
+            <IndianRupee className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="font-display text-2xl font-bold leading-tight text-ink">₹{revenue.toLocaleString('en-IN')}</p>
+            <p className="text-xs text-ink/50">Total collected from connected sessions</p>
+          </div>
+        </div>
+
+        <div className="inline-flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface px-5 py-3.5 shadow-card">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Video className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="font-display text-2xl font-bold leading-tight text-ink">{callsConnected}</p>
+            <p className="text-xs text-ink/50">
+              Video calls connected
+              {callSeconds > 0 && <> · {formatCallDuration(callSeconds)} on camera</>}
+            </p>
+          </div>
         </div>
       </div>
 

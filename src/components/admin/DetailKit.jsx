@@ -1,5 +1,14 @@
 import Link from 'next/link';
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Scale, User as UserIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Scale,
+  User as UserIcon,
+  Video,
+  VideoOff,
+  PhoneMissed,
+} from 'lucide-react';
 import { formatDate } from '@/utils/formatters';
 
 /** Colour + label for each consultation status (shared across admin). */
@@ -10,6 +19,64 @@ export const CONSULT_STATUS_META = {
   rejected: { label: 'Rejected', tone: 'bg-rose-500/10 text-rose-600' },
   cancelled: { label: 'Cancelled', tone: 'bg-ink/10 text-ink/50' },
 };
+
+/**
+ * Colour + label for the video-call leg of a consultation (shared across admin).
+ * `idle` means nobody ever rang — the session was chat-only.
+ */
+export const CALL_STATUS_META = {
+  idle: { label: 'No call', tone: 'bg-ink/8 text-ink/45' },
+  ringing: { label: 'Ringing', tone: 'bg-amber-500/10 text-amber-600' },
+  active: { label: 'On call', tone: 'bg-emerald-500/10 text-emerald-600' },
+  ended: { label: 'Call ended', tone: 'bg-slate-500/10 text-slate-600' },
+};
+
+/** Plain-English wording for why the last call ended. */
+export const CALL_REASON_LABEL = {
+  rejected: 'Declined by the lawyer',
+  hangup: 'Hung up',
+  unanswered: 'Not answered',
+  'session-ended': 'Session time ran out',
+  failed: 'Connection failed',
+};
+
+/** 95 → "1m 35s", 3720 → "1h 2m". Zero reads as a dash, not "0s". */
+export function formatCallDuration(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds) || 0));
+  if (!s) return '—';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h) return `${h}h ${m}m`;
+  const rest = s % 60;
+  return m ? `${m}m ${rest}s` : `${rest}s`;
+}
+
+/**
+ * Compact video-call badge — status, plus the talk time once there is any.
+ * A call that never connected shows why instead of a duration.
+ */
+export function CallPill({ call, showDuration = true }) {
+  const c = call || {};
+  const meta = CALL_STATUS_META[c.status] || CALL_STATUS_META.idle;
+  const connected = Boolean(c.connected);
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.tone}`}>
+        {connected ? (
+          <Video className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : c.attempted ? (
+          <PhoneMissed className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <VideoOff className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
+        {meta.label}
+      </span>
+      {showDuration && connected && c.durationSec > 0 && (
+        <span className="text-[11px] font-semibold text-ink/50">{formatCallDuration(c.durationSec)}</span>
+      )}
+    </span>
+  );
+}
 
 /** "← Back to …" link at the top of a detail page. */
 export function DetailBack({ href, label }) {
