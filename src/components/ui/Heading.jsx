@@ -34,24 +34,41 @@ export default function Heading({
 
   return (
     <div className={cn(centered && 'text-center', className)}>
+      {/* Eyebrow as a bordered chip with a gold marker — a bare coloured word
+          gets lost above a large serif title. */}
       {eyebrow && (
-        <span className="mb-3 inline-block text-sm font-semibold uppercase tracking-wider text-primary">
+        <span
+          className={cn(
+            'mb-3.5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.06] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary',
+            centered && 'mx-auto'
+          )}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" />
           {eyebrow}
         </span>
       )}
       <Tag
         className={cn(
-          'font-display font-semibold leading-tight text-ink',
+          'font-display font-semibold leading-[1.12] tracking-[-0.015em] text-ink',
           size || SIZES[level]
         )}
         {...props}
       >
         {children}
       </Tag>
+      {/* Gold rule anchoring the title — the house signature, repeated at every
+          section heading so the brand reads as deliberate. Skipped on bare
+          headings (404, error pages), where a decorative flourish is noise. */}
+      {(eyebrow || subtitle) && (
+        <span
+          className={cn('rule-gold mt-4 block h-px w-24 rounded-full', centered && 'mx-auto')}
+          aria-hidden="true"
+        />
+      )}
       {subtitle && (
         <p
           className={cn(
-            'mt-4 text-base leading-relaxed text-ink/60 sm:text-lg',
+            'mt-3.5 text-base leading-relaxed text-ink/60 sm:text-[17px]',
             centered && 'mx-auto max-w-2xl'
           )}
         >

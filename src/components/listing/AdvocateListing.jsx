@@ -5,6 +5,7 @@ import { SearchX } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateCard from '@/components/cards/AdvocateCard';
 import ListingFilters from './ListingFilters';
+import { usePresence } from '@/components/consultation/PresenceProvider';
 import { pluralize } from '@/utils/formatters';
 import { distanceKm } from '@/utils/distance';
 
@@ -20,7 +21,16 @@ import { distanceKm } from '@/utils/distance';
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
-const EMPTY = { query: '', service: '', subService: '', court: '', city: '', sort: 'relevance', radius: '' };
+const EMPTY = {
+  query: '',
+  service: '',
+  subService: '',
+  court: '',
+  city: '',
+  availability: '', // '' | 'online' | 'offline'
+  sort: 'relevance',
+  radius: '',
+};
 
 function sortAdvocates(list, sort) {
   const copy = [...list];
@@ -58,6 +68,10 @@ export default function AdvocateListing({
   emptyAction,
 }) {
   const [filters, setFilters] = useState({ ...EMPTY, ...initial });
+
+  // Live online ids — the same source the card badges read, so the list and the
+  // green dots can never disagree. `null` until the first poll lands.
+  const presence = usePresence();
 
   // The searcher's coordinates (from the browser or a typed pincode) plus a
   // small bit of UI state for the location controls.
@@ -103,13 +117,27 @@ export default function AdvocateListing({
 
   const hasActiveFilters =
     Boolean(
-      filters.query || filters.service || filters.subService || filters.court || filters.city
+      filters.query ||
+        filters.service ||
+        filters.subService ||
+        filters.court ||
+        filters.city ||
+        filters.availability
     ) || filters.sort !== 'relevance' || Boolean(userLocation);
 
   const results = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
     const cityFilter = filters.city.trim().toLowerCase();
     const radius = Number(filters.radius) || 0;
+
+    // Reachable right now, straight from the presence poll. Before it lands
+    // nobody counts as online — the same rule the badges follow, so a lawyer is
+    // never listed under "Online now" while their own card reads Offline.
+    const isOnline = (a) => {
+      if (presence === null) return false;
+      const id = String(a.id || a._id || '');
+      return Boolean(id) && presence.has(id);
+    };
 
     let filtered = advocates.filter((a) => {
       // Free-text query matches name, tagline, legal services OR the courts the
@@ -131,7 +159,17 @@ export default function AdvocateListing({
         !cityFilter ||
         a.city?.toLowerCase() === cityFilter ||
         a.practiceCities?.some((c) => c.toLowerCase() === cityFilter);
-      return matchesQuery && matchesService && matchesSubService && matchesCourt && matchesCity;
+      const matchesAvailability =
+        !filters.availability ||
+        (filters.availability === 'online' ? isOnline(a) : !isOnline(a));
+      return (
+        matchesQuery &&
+        matchesService &&
+        matchesSubService &&
+        matchesCourt &&
+        matchesCity &&
+        matchesAvailability
+      );
     });
 
     // Distance: attach how far each lawyer is from the searcher, then (if a
@@ -157,7 +195,7 @@ export default function AdvocateListing({
       return sortByDistance(filtered);
     }
     return sortAdvocates(filtered, filters.sort);
-  }, [advocates, filters, userLocation]);
+  }, [advocates, filters, userLocation, presence]);
 
   return (
     <div className="space-y-6">
@@ -182,6 +220,11 @@ export default function AdvocateListing({
             <p className="text-sm text-ink/60">
               <span className="font-semibold text-ink">{results.length}</span>{' '}
               {pluralize(results.length, 'lawyer').replace(`${results.length} `, '')} found
+              {filters.availability === 'online'
+                ? ' online now'
+                : filters.availability === 'offline'
+                  ? ' offline'
+                  : ''}
               {userLocation && filters.radius ? ` within ${filters.radius} km` : ''}
             </p>
           </div>
@@ -204,6 +247,10 @@ export default function AdvocateListing({
             {emptyMessage ||
               (userLocation && filters.radius
                 ? `No lawyers found within ${filters.radius} km. Try a larger distance.`
+                : filters.availability === 'online'
+                ? 'No lawyer is online at the moment. Switch to All Lawyers to browse everyone — you can still call, email or message them.'
+                : filters.availability === 'offline'
+                ? 'Every lawyer here is online right now. Switch to All Lawyers to see the full list.'
                 : hasActiveFilters
                 ? 'Try broadening your search — remove a filter or search a different city or legal service.'
                 : 'No lawyer has been added here yet. Check back soon or explore other legal services.')}

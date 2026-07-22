@@ -14,7 +14,7 @@ import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 export default function ProfileHeader({ advocate }) {
   const {
     name, photo, coverImage, city, state, experience, rating, reviews, verified,
-    barCouncilNumber, tagline, languages = [], metrics, legalCareId, online, _id,
+    barCouncilNumber, tagline, languages = [], metrics, legalCareId, _id,
     courts = [], practiceCities = [],
   } = advocate;
 
@@ -60,7 +60,7 @@ export default function ProfileHeader({ advocate }) {
                   Verified
                 </Badge>
               )}
-              <PresenceIndicator id={_id} initialAvailable={online} variant="profile" />
+              <PresenceIndicator id={_id} variant="profile" />
             </div>
             {tagline && <p className="mt-1 text-sm text-ink/60">{tagline}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-3">

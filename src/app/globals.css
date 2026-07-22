@@ -46,12 +46,17 @@
     text-rendering: optimizeLegibility;
     /* Light page backdrop — soft slate with faint gold + navy glows. Fixed so it
        stays put while scrolling; lighter than the white cards so panels lift. */
-    background-color: #F6F8FB;
+    background-color: #F5F7FB;
     background-image:
-      radial-gradient(1000px 520px at 100% -10%, rgb(var(--color-accent) / 0.08), transparent 60%),
-      radial-gradient(950px 560px at -8% 0%, rgb(var(--color-primary) / 0.07), transparent 58%);
+      radial-gradient(1000px 520px at 100% -10%, rgb(var(--color-accent) / 0.09), transparent 60%),
+      radial-gradient(950px 560px at -8% 0%, rgb(var(--color-primary) / 0.08), transparent 58%),
+      /* Faint blueprint grid — reads as texture, not pattern, and keeps large
+         empty bands from looking like unfinished white space. */
+      linear-gradient(rgb(var(--color-primary) / 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--color-primary) / 0.028) 1px, transparent 1px);
+    background-size: auto, auto, 64px 64px, 64px 64px;
     background-attachment: fixed;
-    background-repeat: no-repeat;
+    background-repeat: no-repeat, no-repeat, repeat, repeat;
   }
 
   :focus-visible {
@@ -62,6 +67,54 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* ── Brand motifs ────────────────────────────────────────────────────────
+     Three small pieces of vocabulary shared by every page, so "premium legal"
+     is a system rather than a one-off flourish per section. */
+
+  /* Gold hairline that fades at both ends — used under section headings and
+     along the base of dark banners. */
+  .rule-gold {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--color-accent) / 0.85) 18%,
+      rgb(var(--color-accent) / 0.85) 82%,
+      transparent
+    );
+  }
+
+  /* Warm gold wash for a single emphasised phrase in a display heading. */
+  .text-gold {
+    background-image: linear-gradient(100deg, #E7C766 0%, #D4AF37 45%, #B8952B 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Panel that reads as engraved letterhead rather than a plain white box:
+     a gold hairline across the top edge, revealed on hover. */
+  .edge-gold {
+    position: relative;
+  }
+  .edge-gold::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    border-radius: inherit;
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--color-accent) / 0.9),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+  .edge-gold:hover::before {
+    opacity: 1;
   }
 
   /* Lightweight, JS-free entrance animation (replaces Framer Motion on the

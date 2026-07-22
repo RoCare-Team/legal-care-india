@@ -51,6 +51,15 @@ export default function PresenceProvider({ children }) {
 }
 
 /**
+ * usePresence() — the whole set of online lawyer ids, or `null` until the first
+ * poll lands. The directory needs this to filter a list; a card that only cares
+ * about itself should use `useIsOnline` below.
+ */
+export function usePresence() {
+  return useContext(PresenceContext);
+}
+
+/**
  * useIsOnline(id, fallback) — live online status for one lawyer.
  * Until the first poll lands (`online === null`) it returns the server-rendered
  * `fallback` so nothing flickers.

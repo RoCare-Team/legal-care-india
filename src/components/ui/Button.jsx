@@ -16,14 +16,23 @@ import { cn } from '@/utils/cn';
  * @param {import('react').ReactNode} props.children
  */
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60';
+  'group/btn inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-[0.01em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60';
 
+/**
+ * Filled buttons lift on hover instead of just darkening — a flat colour swap
+ * reads as a state change, a lift reads as something you can press. The navy
+ * carries a faint gradient so it doesn't look like a printed block.
+ */
 const VARIANTS = {
-  primary: 'bg-primary text-white shadow-sm hover:bg-primary-dark active:scale-[0.98]',
-  secondary: 'bg-secondary text-white shadow-sm hover:bg-secondary-dark active:scale-[0.98]',
-  accent: 'bg-accent text-[#0B1220] shadow-sm hover:brightness-95 active:scale-[0.98]',
-  outline: 'border border-ink/15 bg-surface text-ink hover:border-primary hover:text-primary',
-  ghost: 'text-ink hover:bg-ink/5',
+  primary:
+    'bg-gradient-to-b from-primary-light/95 via-primary to-primary-dark text-white shadow-brand hover:-translate-y-0.5 hover:shadow-brand-hover active:translate-y-0 active:scale-[0.98]',
+  secondary:
+    'bg-gradient-to-b from-secondary-light/90 via-secondary to-secondary-dark text-white shadow-brand hover:-translate-y-0.5 hover:shadow-brand-hover active:translate-y-0 active:scale-[0.98]',
+  accent:
+    'bg-gradient-to-b from-[#E7C766] via-accent to-[#BC9A2E] text-[#241B02] shadow-gold hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.98]',
+  outline:
+    'border border-ink/15 bg-surface text-ink shadow-sm hover:border-primary/60 hover:bg-primary/[0.04] hover:text-primary hover:shadow-card',
+  ghost: 'text-ink/80 hover:bg-primary/[0.06] hover:text-primary',
 };
 
 const SIZES = {

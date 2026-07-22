@@ -29,9 +29,12 @@ export default function Card({
   return (
     <Tag
       className={cn(
-        'rounded-2xl border border-ink/8 bg-surface shadow-card',
+        'relative overflow-hidden rounded-2xl border border-ink/8 bg-surface shadow-card',
+        // A gold hairline surfaces along the top edge on hover (see .edge-gold
+        // in globals.css) — the same cue used on headings, so panels and
+        // sections feel like one family.
         hoverable &&
-          'transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-card-hover',
+          'edge-gold transition-all duration-300 hover:-translate-y-1 hover:border-primary/20 hover:shadow-card-hover',
         PADDING[padding],
         className
       )}

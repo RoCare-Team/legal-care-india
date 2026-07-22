@@ -17,9 +17,9 @@ export default async function Testimonials() {
         <Heading
           centered
           eyebrow="Client Stories"
-          subtitle="Real reviews from people who used Legal Care India. Share yours too."
+          subtitle="People who found their advocate here, in their own words. Add yours once your matter is resolved."
         >
-          Trusted by Thousands
+          What Our Clients Say
         </Heading>
         <TestimonialForm />
       </div>

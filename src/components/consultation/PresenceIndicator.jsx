@@ -7,13 +7,20 @@ import { useIsOnline } from './PresenceProvider';
  * shared presence poll, so it flips the moment the lawyer toggles their
  * availability — no page refresh needed.
  *
+ * Deliberately starts at Offline rather than taking a server-rendered hint.
+ * The directory and profile pages are ISR-cached (an hour on /lawyers), so a
+ * server-computed "online" is whatever was true when the page was cached — it
+ * would show a stale green badge on every load for up to that whole hour.
+ * Reading Offline for the fraction of a second before the first poll lands is
+ * the honest failure: we never tell a visitor someone is reachable when they
+ * may not be.
+ *
  * @param {object} props
- * @param {string} props.id                 lawyer _id
- * @param {boolean} [props.initialAvailable] server-rendered status (avoids flicker)
+ * @param {string} props.id  lawyer _id
  * @param {'card'|'profile'} [props.variant]
  */
-export default function PresenceIndicator({ id, initialAvailable = false, variant = 'card' }) {
-  const online = useIsOnline(id, initialAvailable);
+export default function PresenceIndicator({ id, variant = 'card' }) {
+  const online = useIsOnline(id, false);
 
   if (variant === 'profile') {
     return (

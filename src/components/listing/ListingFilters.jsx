@@ -14,6 +14,17 @@ const SORT_OPTIONS = [
   { value: 'fee-high', label: 'Fee: High to Low' },
 ];
 
+/**
+ * Availability filter. "Online now" means reachable this second — the lawyer's
+ * switch is on AND they actually have the site open — so "Offline" is simply
+ * everyone else, including someone who left the toggle on and closed the tab.
+ */
+const AVAILABILITY_OPTIONS = [
+  { value: '', label: 'All Lawyers' },
+  { value: 'online', label: 'Online Now' },
+  { value: 'offline', label: 'Offline' },
+];
+
 /** Distance radius chips (km) shown once the searcher's location is known. */
 const RADIUS_OPTIONS = [3, 5, 10, 25, 50, 100];
 
@@ -35,7 +46,7 @@ function Field({ label, elevated, className, children }) {
  * ListingFilters — controlled filter bar for the lawyer directory.
  *
  * @param {object} props
- * @param {{query:string,service:string,subService:string,court:string,city:string,sort:string}} props.value
+ * @param {{query:string,service:string,subService:string,court:string,city:string,availability:string,sort:string}} props.value
  * @param {(patch:object)=>void} props.onChange
  * @param {()=>void} props.onReset
  * @param {boolean} props.hasActiveFilters
@@ -92,8 +103,8 @@ export default function ListingFilters({
       <div
         className={`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:gap-2.5 ${
           showCategory
-            ? 'xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
-            : 'xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1.15fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)]'
+            ? 'xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
+            : 'xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
         }`}
       >
         <Field label="Search" elevated={elevated}>
@@ -169,6 +180,14 @@ export default function ListingFilters({
               </option>
             ))}
           </Select>
+        </Field>
+        <Field label="Availability" elevated={elevated}>
+          <Select
+            value={value.availability || ''}
+            onChange={(e) => onChange({ availability: e.target.value })}
+            options={AVAILABILITY_OPTIONS}
+            aria-label="Filter by availability"
+          />
         </Field>
         <Field label="Sort by" elevated={elevated}>
           <Select

@@ -18,11 +18,14 @@ function StatItem({ value, suffix, label }) {
 
   return (
     <div ref={ref} className="text-center">
-      <p className="font-display text-3xl font-semibold text-white sm:text-4xl">
+      <p className="font-display text-4xl font-bold leading-none text-white sm:text-5xl">
         {formatCompactNumber(count)}
-        {suffix}
+        <span className="text-gold">{suffix}</span>
       </p>
-      <p className="mt-1 text-sm text-white/70">{label}</p>
+      <span className="rule-gold mx-auto mt-3 block h-px w-10" aria-hidden="true" />
+      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-white/65 sm:text-[13px]">
+        {label}
+      </p>
     </div>
   );
 }
@@ -47,8 +50,13 @@ export default function Stats() {
       {/* Subtle dotted texture */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:22px_22px] opacity-[0.05]" />
 
+      {/* Gold hairlines top and bottom — frames the band like a letterhead rule
+          instead of letting it float as a plain coloured stripe. */}
+      <span className="rule-gold absolute inset-x-0 top-0 h-px opacity-70" aria-hidden="true" />
+      <span className="rule-gold absolute inset-x-0 bottom-0 h-px opacity-70" aria-hidden="true" />
+
       <Container className="relative">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-y-10 sm:gap-8 md:grid-cols-4">
           {PLATFORM_STATS.map((stat) => (
             <StatItem key={stat.id} {...stat} />
           ))}

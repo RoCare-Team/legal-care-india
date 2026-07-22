@@ -14,10 +14,16 @@ import Container from './Container';
  * @param {string} [props.innerClassName]      applied to the Container
  * @param {import('react').ReactNode} props.children
  */
+/**
+ * Vertical rhythm. Two stacked sections each contribute their own padding, so
+ * the visible gap between them is roughly double these numbers — hence the
+ * tighter values: at py-20 the page read as disconnected bands with dead space
+ * between them.
+ */
 const SPACING = {
-  sm: 'py-10 sm:py-12',
-  default: 'py-14 sm:py-20',
-  lg: 'py-20 sm:py-28',
+  sm: 'py-8 sm:py-10',
+  default: 'py-10 sm:py-14',
+  lg: 'py-14 sm:py-20',
 };
 
 export default function Section({
