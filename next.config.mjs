@@ -7,6 +7,10 @@ const isProd = process.env.NODE_ENV === 'production';
  * Allows: self, inline styles/scripts (Next hydration + JSON-LD), images from
  * any HTTPS host + data/blob (base64 photos, Wikimedia), Google Analytics, and
  * the Google Maps embed on advocate profiles.
+ *
+ * `connect-src` also lists stun:/turn:/turns: — Chrome checks ICE server URLs
+ * against it, so the video call cannot negotiate without them. `media-src`
+ * covers the blob: streams the <video> elements play.
  */
 const csp = [
   "default-src 'self'",
@@ -14,7 +18,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com",
+  "media-src 'self' blob: mediastream:",
+  "connect-src 'self' blob: stun: turn: turns: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com",
   "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -29,7 +34,9 @@ const securityHeaders = [
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' },
+  // camera + microphone are granted to our own origin so the consultation
+  // video call can ask for them; the browser still prompts the user.
+  { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(self)' },
   ...(isProd ? [{ key: 'Content-Security-Policy', value: csp }] : []),
 ];
 

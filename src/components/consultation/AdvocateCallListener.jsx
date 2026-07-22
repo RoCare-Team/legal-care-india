@@ -19,6 +19,9 @@ export default function AdvocateCallListener() {
   const [incoming, setIncoming] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [minimized, setMinimized] = useState(false);
+  // Minimizing unmounts ChatPanel, which owns the video call — so while a call
+  // is up we keep the chat on screen and let the call's own controls tuck it away.
+  const [callActive, setCallActive] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [note, setNote] = useState('');
   const chimed = useRef(new Set());
@@ -73,6 +76,7 @@ export default function AdvocateCallListener() {
   useEffect(() => {
     if (activeSession?.status === 'ended') {
       setMinimized(false); // surface the "ended" state instead of staying tucked away
+      setCallActive(false);
       const t = setTimeout(() => setActiveId(null), 1200);
       return () => clearTimeout(t);
     }
@@ -145,7 +149,7 @@ export default function AdvocateCallListener() {
   if (activeId && activeSession && (activeSession.status === 'active' || activeSession.status === 'ended')) {
     // The X only tucks the chat away (like backgrounding a call) — it never
     // hangs up. Ending is the red button inside ChatPanel (onEnd).
-    if (minimized) {
+    if (minimized && !callActive) {
       return (
         <MinimizedCallBar
           name={activeSession.userName}
@@ -168,6 +172,7 @@ export default function AdvocateCallListener() {
           otherName={activeSession.userName}
           onSend={sendMessage}
           onEnd={endNow}
+          onCallActiveChange={setCallActive}
         />
       </ConsultationModal>
     );

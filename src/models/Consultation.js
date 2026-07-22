@@ -13,6 +13,46 @@ const MessageSchema = new Schema(
 );
 
 /**
+ * Call — the WebRTC video-call leg of a consultation.
+ *
+ * The two browsers stream to each other directly (peer-to-peer); this
+ * sub-document is only the *signalling* channel they use to find one another.
+ * Each side writes its SDP (`offer`/`answer`) and ICE candidates here and
+ * polls for the other's. Once connected, no audio or video passes through us.
+ *
+ * Only the client may ring; the lawyer accepts or rejects — the same direction
+ * as the booking itself. `id` is regenerated per attempt so both sides can tell
+ * a fresh ring apart from the leftovers of the previous one.
+ *
+ * Lifecycle:  idle → ringing → active → ended
+ */
+const CallSchema = new Schema(
+  {
+    id: { type: String, default: '' },
+    status: {
+      type: String,
+      enum: ['idle', 'ringing', 'active', 'ended'],
+      default: 'idle',
+    },
+    // 'rejected' | 'hangup' | 'unanswered' | 'session-ended' | 'failed'
+    endedReason: { type: String, default: '' },
+    // Who hung up, for the wording the other side sees.
+    endedBy: { type: String, enum: ['user', 'advocate', ''], default: '' },
+
+    // Signalling payloads (stringified RTCSessionDescription / RTCIceCandidate).
+    offer: { type: String, default: '' },
+    answer: { type: String, default: '' },
+    userCandidates: { type: [String], default: [] },
+    advocateCandidates: { type: [String], default: [] },
+
+    ringingAt: { type: Date, default: null },
+    connectedAt: { type: Date, default: null },
+    endedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
+/**
  * Consultation — a paid, time-boxed chat session a user books with a lawyer.
  *
  * Lifecycle:
@@ -40,6 +80,9 @@ const ConsultationSchema = new Schema(
     },
 
     messages: { type: [MessageSchema], default: [] },
+
+    // Video-call signalling for this session (see CallSchema above).
+    call: { type: CallSchema, default: () => ({}) },
 
     startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)

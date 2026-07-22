@@ -25,6 +25,9 @@ export default function BookConsultationModal({
   const [insufficient, setInsufficient] = useState(false);
   const [offline, setOffline] = useState('');
   const [minimized, setMinimized] = useState(false);
+  // Minimizing unmounts ChatPanel, which owns the video call — so while a call
+  // is up we keep the chat on screen and let the call's own controls tuck it away.
+  const [callActive, setCallActive] = useState(false);
 
   const [session, setSession, refresh] = useSessionPoll(sessionId, {
     enabled: open && Boolean(sessionId),
@@ -42,6 +45,7 @@ export default function BookConsultationModal({
       setOffline('');
       setCreating(false);
       setMinimized(false);
+      setCallActive(false);
     }
   }, [open, setSession]);
 
@@ -151,7 +155,7 @@ export default function BookConsultationModal({
   if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
     // The X only tucks the chat away (like backgrounding a call) — it never
     // hangs up. Ending is the red button inside ChatPanel (onEnd).
-    if (open && minimized) {
+    if (open && minimized && !callActive) {
       return (
         <MinimizedCallBar
           name={advocateName}
@@ -174,6 +178,7 @@ export default function BookConsultationModal({
           otherName={advocateName}
           onSend={sendMessage}
           onEnd={endNow}
+          onCallActiveChange={setCallActive}
         />
       </ConsultationModal>
     );

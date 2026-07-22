@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Send, Clock, Phone } from 'lucide-react';
+import { Send, Clock, Phone, Video, X } from 'lucide-react';
+import useVideoCall from '@/hooks/useVideoCall';
+import VideoCallOverlay from './VideoCallOverlay';
 
 /** MM:SS from milliseconds. */
 function fmt(ms) {
@@ -16,23 +18,56 @@ function fmt(ms) {
  * a consultation connects. A live countdown to `session.endsAt` sits in the
  * header; when it hits zero (or the status leaves 'active') the input locks.
  *
+ * The video call lives here too, so both sides of the app get it from the one
+ * place: the client rings from the header button, the lawyer's copy of this
+ * panel picks the ring up off the ordinary chat poll. The call is bounded by
+ * the same countdown — it costs nothing extra and dies when the session does.
+ *
  * @param {object} props
  * @param {object} props.session       serialized session (status, messages, endsAt…)
  * @param {'user'|'advocate'} props.viewerRole
  * @param {(text:string)=>Promise<void>} props.onSend
  * @param {()=>void} props.onEnd        end the session early
  * @param {string} props.otherName
+ * @param {(live:boolean)=>void} [props.onCallActiveChange]
+ *   Told when a video call goes up or down. The parents use it to refuse to
+ *   minimize the chat mid-call — minimizing unmounts this panel, which would
+ *   take the call down with it.
  */
-export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherName }) {
+export default function ChatPanel({
+  session, viewerRole, onSend, onEnd, otherName, onCallActiveChange,
+}) {
   const [text, setText] = useState('');
   const [remaining, setRemaining] = useState(session.remainingMs ?? 0);
   // Optimistic messages: rendered instantly on send, dropped once the server
   // echoes them back — so the chat feels immediate instead of waiting on a poll.
   const [pending, setPending] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [callMinimized, setCallMinimized] = useState(false);
   const scrollRef = useRef(null);
 
   const active = session.status === 'active' && remaining > 0;
+
+  // Video call. `session.call` rides along on the chat poll, which is what
+  // makes the lawyer's side ring without a second poller.
+  const call = useVideoCall({
+    sessionId: session.id,
+    viewerRole,
+    call: session.call,
+    sessionActive: active,
+  });
+
+  // A finished call always comes back to the foreground, so nobody is left
+  // wondering why the little "in call" pill went quiet.
+  const callLive = call.phase === 'connecting' || call.phase === 'connected';
+  useEffect(() => {
+    if (!callLive) setCallMinimized(false);
+  }, [callLive]);
+
+  // Let the parent know, so it keeps this panel mounted for the call's sake.
+  useEffect(() => {
+    onCallActiveChange?.(callLive);
+  }, [callLive, onCallActiveChange]);
 
   // Reconcile: remove each optimistic bubble once a matching server message
   // (same side + text) has arrived, consuming one server match per pending.
@@ -123,6 +158,19 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
           <p className="text-xs text-emerald-600">● Connected</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Only the client rings — the lawyer accepts, same as the booking. */}
+          {call.canStart && (
+            <button
+              type="button"
+              onClick={call.start}
+              disabled={call.busy}
+              title="Start video call"
+              aria-label="Start video call"
+              className="grid h-8 w-8 place-items-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary/20 disabled:opacity-50"
+            >
+              <Video className="h-4 w-4" />
+            </button>
+          )}
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
               remaining <= 60000 ? 'bg-red-500/10 text-red-600' : 'bg-primary/10 text-primary'
@@ -194,6 +242,45 @@ export default function ChatPanel({ session, viewerRole, onSend, onEnd, otherNam
           <p className="text-sm font-medium text-ink/70">Consultation ended</p>
           <p className="text-xs text-ink/45">The time for this session is over.</p>
         </div>
+      )}
+
+      {/* Camera / mic problem — usually a denied permission prompt. */}
+      {call.error && (
+        <div className="absolute inset-x-3 top-3 z-30 flex items-start gap-2 rounded-xl bg-red-600 px-3.5 py-2.5 text-sm text-white shadow-card-hover">
+          <span className="flex-1">{call.error}</span>
+          <button
+            type="button"
+            onClick={call.clearError}
+            aria-label="Dismiss"
+            className="shrink-0 rounded-md p-0.5 transition-colors hover:bg-white/20"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* The call itself. Stays mounted while minimized so the streams live on. */}
+      <VideoCallOverlay
+        call={call}
+        otherName={otherName}
+        endsAt={session.endsAt}
+        minimized={callMinimized}
+        onMinimize={() => setCallMinimized(true)}
+      />
+
+      {/* Tucked-away call — tap to come back to it. */}
+      {callLive && callMinimized && (
+        <button
+          type="button"
+          onClick={() => setCallMinimized(false)}
+          className="absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-600 py-1.5 pl-2.5 pr-4 text-white shadow-card-hover"
+        >
+          <span className="relative grid h-6 w-6 place-items-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-white/30" />
+            <Video className="h-3.5 w-3.5" />
+          </span>
+          <span className="text-xs font-semibold">Video call · tap to return</span>
+        </button>
       )}
     </div>
   );
