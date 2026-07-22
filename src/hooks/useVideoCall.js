@@ -26,10 +26,119 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const POLL_MS = 1000;
 
+/**
+ * Capture settings.
+ *
+ * Video is deliberately asked for at 640×360 / 24fps, not 720p. On a typical
+ * Indian mobile uplink a 720p stream eats the whole pipe, audio packets start
+ * queueing behind video frames, and the far end hears the hiss-and-stutter that
+ * lossy Opus produces. Voice is what a legal consultation actually runs on, so
+ * video gets the leftovers, not the other way round.
+ *
+ * Audio asks for mono at 48 kHz with the full browser cleanup chain on. Every
+ * value is `ideal`, never exact — an unmet exact constraint throws
+ * OverconstrainedError and the call would fail to start at all.
+ */
 const MEDIA = {
-  video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-  audio: { echoCancellation: true, noiseSuppression: true },
+  video: {
+    facingMode: 'user',
+    width: { ideal: 640 },
+    height: { ideal: 360 },
+    frameRate: { ideal: 24, max: 30 },
+  },
+  audio: {
+    echoCancellation: true,   // kills the far end's voice looping back through the speaker
+    noiseSuppression: true,   // kills steady fan / traffic / line hiss
+    autoGainControl: true,    // keeps a soft speaker audible without manual gain
+    channelCount: { ideal: 1 },
+    sampleRate: { ideal: 48000 },
+  },
 };
+
+// Send-side caps. Audio is tiny and must never be starved; video takes what is
+// left. 600 kbps is plenty for a talking head at 360p.
+const VIDEO_MAX_BITRATE = 600_000;
+const AUDIO_MAX_BITRATE = 40_000;
+
+/**
+ * Merge our Opus preferences into the SDP's fmtp line for the Opus payload.
+ *
+ * Chrome's default is `minptime=10;useinbandfec=1`, which leaves the codec free
+ * to run in stereo at a low average bitrate — wasteful for one voice, and the
+ * first thing to sound rough when packets drop. We pin it to mono, keep
+ * in-band FEC on (lost packets get reconstructed instead of clicking), and hold
+ * DTX off so the line never cuts to comfort noise mid-sentence.
+ *
+ * Parsed and re-emitted rather than string-appended, so nothing is duplicated
+ * if the browser already set a key.
+ */
+function withOpusParams(sdp) {
+  const rtpmap = sdp.match(/a=rtpmap:(\d+) opus\/48000/i);
+  if (!rtpmap) return sdp;
+  const pt = rtpmap[1];
+
+  const wanted = {
+    minptime: '10',
+    useinbandfec: '1',
+    usedtx: '0',
+    stereo: '0',
+    'sprop-stereo': '0',
+    maxaveragebitrate: '32000',
+    maxplaybackrate: '48000',
+  };
+
+  const fmtpLine = new RegExp(`^a=fmtp:${pt} (.*)$`, 'm');
+  const existing = sdp.match(fmtpLine);
+
+  const params = {};
+  if (existing) {
+    for (const pair of existing[1].split(';')) {
+      const [k, v] = pair.split('=');
+      if (k?.trim()) params[k.trim()] = (v ?? '').trim();
+    }
+  }
+  Object.assign(params, wanted);
+
+  const merged = Object.entries(params)
+    .map(([k, v]) => (v === '' ? k : `${k}=${v}`))
+    .join(';');
+
+  if (existing) return sdp.replace(fmtpLine, `a=fmtp:${pt} ${merged}`);
+  return sdp.replace(
+    new RegExp(`^(a=rtpmap:${pt} opus/48000.*)$`, 'm'),
+    `$1\r\na=fmtp:${pt} ${merged}`
+  );
+}
+
+/**
+ * Cap what we send, and tell the browser audio matters more than video.
+ * Best-effort throughout — `setParameters` support varies by browser, and a
+ * refused tweak should never take the call down with it.
+ */
+async function tuneSenders(pc) {
+  for (const sender of pc.getSenders()) {
+    if (!sender.track) continue;
+    try {
+      const params = sender.getParameters();
+      if (!params.encodings?.length) params.encodings = [{}];
+
+      if (sender.track.kind === 'video') {
+        params.encodings[0].maxBitrate = VIDEO_MAX_BITRATE;
+        params.encodings[0].maxFramerate = 24;
+        // Under strain, drop frames rather than turn the picture to mush.
+        params.degradationPreference = 'balanced';
+      } else {
+        params.encodings[0].maxBitrate = AUDIO_MAX_BITRATE;
+        params.encodings[0].networkPriority = 'high';
+        params.encodings[0].priority = 'high';
+      }
+
+      await sender.setParameters(params);
+    } catch {
+      /* browser refused the tweak — the call still works, just untuned */
+    }
+  }
+}
 
 // How long a 'disconnected' peer gets to come back before we give up. Covers
 // the other side closing their laptop or losing signal mid-call.
@@ -249,7 +358,8 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       const pc = await createPeer();
       await attachLocalMedia(pc);
       const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-      await pc.setLocalDescription(offer);
+      await pc.setLocalDescription({ type: offer.type, sdp: withOpusParams(offer.sdp) });
+      await tuneSenders(pc);
       await post({
         action: 'signal',
         callId: callIdRef.current,
@@ -353,6 +463,8 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       newTrack.enabled = camOn;
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       facingRef.current = next;
+      // A replaced track can come back at the browser's default bitrate.
+      await tuneSenders(pc);
     } catch {
       /* no second camera — stay on the current one */
     }
@@ -416,7 +528,8 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
           await pc.setRemoteDescription(JSON.parse(remote.offer));
           remoteDescSetRef.current = true;
           const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
+          await pc.setLocalDescription({ type: answer.type, sdp: withOpusParams(answer.sdp) });
+          await tuneSenders(pc);
           await post({
             action: 'signal',
             callId: callIdRef.current,
