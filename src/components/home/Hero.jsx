@@ -6,8 +6,11 @@ import { CATEGORIES } from '@/data/categories';
 export default function Hero() {
   const popular = CATEGORIES.slice(0, 5);
 
+  // The chip that used to sit above the title was also what pushed the heading
+  // clear of the header — with it gone, the section's top padding carries that
+  // job on its own.
   return (
-    <section className="relative overflow-hidden bg-[#0F172A] text-white pt-6 pb-14 sm:pt-10 sm:pb-20 lg:pt-14 lg:pb-28 border-b border-[#0F172A]">
+    <section className="relative overflow-hidden bg-[#0F172A] text-white pt-14 pb-14 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-28 border-b border-[#0F172A]">
       {/* Banner background image — shown full */}
       <Image
         src="/banner-3.png"
@@ -23,11 +26,6 @@ export default function Hero() {
 
       <Container className="relative z-10">
         <div className="flex max-w-2xl flex-col items-start text-left">
-          {/* Top Indicator */}
-          <div className="animate-fade-up inline-flex items-center gap-2 bg-[#D4AF37]/10 border border-[#D4AF37]/25 rounded-full px-3.5 py-1 text-xs font-medium tracking-wide text-[#D4AF37] mb-4 sm:mb-6 backdrop-blur-sm">
-            <span>🇮🇳</span> India&apos;s Lawyer Directory Platform
-          </div>
-
           {/* Heading — LCP element, renders instantly */}
           <h1 className="font-display text-[2rem] font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.15] drop-shadow-lg">
             Get Anonymous Legal Assistance <br className="hidden sm:block" />
