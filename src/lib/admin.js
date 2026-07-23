@@ -6,6 +6,7 @@ import User from '@/models/User';
 import Enquiry from '@/models/Enquiry';
 import Testimonial from '@/models/Testimonial';
 import Consultation from '@/models/Consultation';
+import Activity from '@/models/Activity';
 
 /**
  * Admin access + read-only data for the /admin panel.
@@ -289,6 +290,50 @@ export async function adminGetConsultations() {
     startedAt: iso(r.startedAt),
     createdAt: iso(r.createdAt),
   }));
+}
+
+/** 24-char hex — anything else would make an `_id` query throw a CastError. */
+const OBJECT_ID = /^[a-f\d]{24}$/i;
+
+/**
+ * Every phone call placed through the dialler, newest first — who called which
+ * lawyer, and when.
+ *
+ * These are read back out of `Activity`, which is written when a call is
+ * successfully handed to Smartflo. So this is a log of calls *placed*: a row
+ * does not prove the lawyer picked up, and calls the dialler refused never
+ * appear at all.
+ */
+export async function adminGetPhoneCalls() {
+  await connectDB();
+  const rows = await Activity.find({ type: 'call' })
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .lean();
+
+  // Activity snapshots the lawyer but keeps only the caller's id, so the client
+  // names come from one extra query rather than one lookup per row.
+  const ids = [...new Set(rows.map((r) => String(r.userId || '')))].filter((id) => OBJECT_ID.test(id));
+  const users = ids.length ? await User.find({ _id: { $in: ids } }).select('name phone').lean() : [];
+  const byId = new Map(users.map((u) => [String(u._id), u]));
+
+  return rows.map((r) => {
+    const user = byId.get(String(r.userId || ''));
+    return {
+      id: String(r._id),
+      userId: String(r.userId || ''),
+      // A caller whose account has since been deleted still has their calls on
+      // record; showing a blank cell would read as a bug.
+      userName: user?.name || 'Deleted user',
+      userPhone: user?.phone || '',
+      advocateId: r.advocateId || '',
+      advocateName: r.advocateName || 'Lawyer',
+      advocatePhone: r.advocatePhone || '',
+      advocateCity: r.advocateCity || '',
+      advocateProfilePath: r.advocateProfilePath || '',
+      createdAt: iso(r.createdAt),
+    };
+  });
 }
 
 /**
