@@ -2,11 +2,47 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Phone, Mail, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Phone, Mail, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
+
+/** Destructive delete, in its own column away from the Login/View controls. */
+function DeleteAction({ user }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const remove = async () => {
+    if (!window.confirm(`Delete ${user.name}? This permanently removes their account. Their consultations and call history stay on record.`)) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/admin/users?id=${user.id}`, { method: 'DELETE' });
+      if (res.ok) router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (busy) {
+    return <Loader2 className="h-4 w-4 animate-spin text-rose-500" aria-hidden="true" />;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={remove}
+      title="Delete user"
+      aria-label={`Delete ${user.name}`}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-rose-500 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+    >
+      <Trash2 className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
+}
 
 /**
  * UsersTable — client-side searchable/filterable users table.
@@ -72,6 +108,12 @@ export default function UsersTable({ users }) {
           View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       ),
+    },
+    {
+      key: 'delete',
+      label: '',
+      className: 'w-px',
+      render: (u) => <DeleteAction user={u} />,
     },
   ];
 
