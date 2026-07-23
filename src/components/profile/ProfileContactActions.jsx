@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Phone, MessageCircle, Mail, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
+import { useClickToCall } from '@/hooks/useClickToCall';
+import CallStatusModal from '@/components/consultation/CallStatusModal';
 import AuthGateModal from './AuthGateModal';
 import BookConsultationModal from './BookConsultationModal';
 
@@ -21,6 +23,8 @@ import BookConsultationModal from './BookConsultationModal';
  */
 export default function ProfileContactActions({ contact = {}, name, waText, advocateId, plans = [] }) {
   const { role, user, loading } = useAuth();
+  const call = useClickToCall();
+  const { start } = call;
   const [gateOpen, setGateOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const authed = role !== null;
@@ -61,6 +65,33 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
     track(type);
   };
 
+  /**
+   * Call is the one action that does not simply follow its href. For a signed-in
+   * client we bridge the call through the dialler instead: the lawyer's phone
+   * rings first and the client is joined once they answer. Everyone else —
+   * lawyers, and clients on a deployment with no dialler configured — keeps the
+   * plain `tel:` behaviour, which is why the href stays on the button.
+   */
+  const onCall = (e) => {
+    if (loading) {
+      e.preventDefault();
+      return;
+    }
+    if (!authed) {
+      e.preventDefault();
+      setGateOpen(true);
+      return;
+    }
+    if (role !== 'user' || !advocateId) {
+      track('call');
+      return; // let the tel: link through
+    }
+    e.preventDefault();
+    // The server logs this call as activity itself, so no track() here — a
+    // second entry would show every call twice in the account history.
+    start(advocateId, { fallbackTel: contact.phone.replace(/\s/g, '') });
+  };
+
   return (
     <>
       <div className="space-y-2">
@@ -78,12 +109,12 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
         {contact.phone && (
           <Button
             href={`tel:${contact.phone.replace(/\s/g, '')}`}
-            onClick={gate('call')}
+            onClick={onCall}
             variant={plans.length > 0 ? 'outline' : 'primary'}
             fullWidth
             leftIcon={<Phone className="h-4 w-4" />}
           >
-            Call Now
+            {call.status === 'dialing' ? 'Connecting…' : 'Call Now'}
           </Button>
         )}
         {contact.whatsapp && (
@@ -113,6 +144,12 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
+      <CallStatusModal
+        status={call.status}
+        error={call.error}
+        advocateName={name}
+        onClose={call.reset}
+      />
       <BookConsultationModal
         open={bookOpen}
         onClose={() => setBookOpen(false)}

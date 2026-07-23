@@ -144,7 +144,7 @@ export default function AdvocateCard({ advocate }) {
         {/* Footer: quick contact + primary CTA */}
         <div className="mt-auto pt-4">
           <div className="grid grid-cols-3 gap-2 border-t border-ink/8 pt-4">
-            <CardContactActions contact={contact} name={name} />
+            <CardContactActions contact={contact} name={name} advocateId={advocate._id} />
           </div>
 
           <Button

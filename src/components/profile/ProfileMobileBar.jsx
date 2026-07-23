@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { Phone, MessageCircle, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useClickToCall } from '@/hooks/useClickToCall';
+import CallStatusModal from '@/components/consultation/CallStatusModal';
 import AuthGateModal from './AuthGateModal';
 
 /**
@@ -14,9 +16,10 @@ import AuthGateModal from './AuthGateModal';
  * @param {object} props.advocate
  */
 export default function ProfileMobileBar({ advocate }) {
-  const { contact = {}, name } = advocate;
+  const { contact = {}, name, _id: advocateId } = advocate;
   const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India.`);
   const { role, loading } = useAuth();
+  const call = useClickToCall();
   const [gateOpen, setGateOpen] = useState(false);
   const authed = role !== null;
 
@@ -31,17 +34,28 @@ export default function ProfileMobileBar({ advocate }) {
     }
   };
 
+  /**
+   * Bridged call for signed-in clients — the lawyer rings first, the client is
+   * joined on answer. Plain `tel:` for everyone else.
+   */
+  const onCall = (e) => {
+    gate(e);
+    if (e.defaultPrevented || role !== 'user' || !advocateId) return;
+    e.preventDefault();
+    call.start(advocateId, { fallbackTel: (contact.phone || '').replace(/\s/g, '') });
+  };
+
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 bg-surface/95 p-3 backdrop-blur-md lg:hidden">
         <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
           <a
             href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
-            onClick={gate}
+            onClick={onCall}
             className="flex flex-col items-center gap-1 rounded-xl bg-primary py-2 text-xs font-semibold text-white"
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
-            Call
+            {call.status === 'dialing' ? 'Connecting…' : 'Call'}
           </a>
           <a
             href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
@@ -65,6 +79,12 @@ export default function ProfileMobileBar({ advocate }) {
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
+      <CallStatusModal
+        status={call.status}
+        error={call.error}
+        advocateName={name}
+        onClose={call.reset}
+      />
     </>
   );
 }
