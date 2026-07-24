@@ -40,6 +40,11 @@ function toSnapshot(a) {
       minutes: String(p.minutes ?? ''),
       price: String(p.price ?? ''),
     })),
+    // Video-call plans, same shape.
+    videoPlans: (a.videoPlans || []).map((p) => ({
+      minutes: String(p.minutes ?? ''),
+      price: String(p.price ?? ''),
+    })),
     certificates: a.certificates || [],
     awards: a.awards || [],
     social: {

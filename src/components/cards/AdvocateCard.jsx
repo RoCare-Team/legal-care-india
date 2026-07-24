@@ -12,6 +12,7 @@ import Rating from "@/components/shared/Rating";
 import { formatExperience } from "@/utils/formatters";
 import { formatDistance } from "@/utils/distance";
 import { advocateProfilePath } from "@/utils/advocateUrl";
+import { advocatePlans } from "@/constants/consultationPlans";
 import CardContactActions from "./CardContactActions";
 import PresenceIndicator from "@/components/consultation/PresenceIndicator";
 
@@ -36,6 +37,7 @@ export default function AdvocateCard({ advocate }) {
     languages = [],
     consultationFee,
     consultationPlans = [],
+    videoPlans = [],
     contact,
     _distance,
   } = advocate;
@@ -144,7 +146,13 @@ export default function AdvocateCard({ advocate }) {
         {/* Footer: quick contact + primary CTA */}
         <div className="mt-auto pt-4">
           <div className="grid grid-cols-3 gap-2 border-t border-ink/8 pt-4">
-            <CardContactActions contact={contact} name={name} advocateId={advocate._id} />
+            <CardContactActions
+              contact={contact}
+              name={name}
+              advocateId={advocate._id}
+              plans={advocatePlans(consultationPlans)}
+              videoPlans={advocatePlans(videoPlans)}
+            />
           </div>
 
           <Button

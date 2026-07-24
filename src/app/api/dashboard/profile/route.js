@@ -42,7 +42,7 @@ export async function PUT(request) {
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
-    phone, whatsapp, email, fee, social, consultationPlans,
+    phone, whatsapp, email, fee, social, consultationPlans, videoPlans,
   } = body || {};
 
   const update = {};
@@ -87,6 +87,10 @@ export async function PUT(request) {
   // deduped by duration and sorted shortest-first).
   if (Array.isArray(consultationPlans)) {
     update.consultationPlans = normalizePlans(consultationPlans);
+  }
+  // Video-call plans — same shape, priced separately.
+  if (Array.isArray(videoPlans)) {
+    update.videoPlans = normalizePlans(videoPlans);
   }
 
   if (officeName !== undefined) update['office.name'] = officeName;

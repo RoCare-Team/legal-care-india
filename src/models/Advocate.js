@@ -99,6 +99,21 @@ const AdvocateSchema = new Schema(
       default: [],
     },
 
+    // Video-call plans — priced separately from live chat, since a video
+    // consultation costs the lawyer more of their attention. Empty ⇒ no video.
+    videoPlans: {
+      type: [
+        new Schema(
+          {
+            minutes: { type: Number, required: true, min: 1 },
+            price: { type: Number, required: true, min: 1 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+
     office: {
       name: { type: String, default: '' },
       address: { type: String, default: '' },

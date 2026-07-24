@@ -85,7 +85,7 @@ export default async function AdvocatesPage({ searchParams }) {
       />
       {/* Pull the filter/search bar up so it floats over the hero — the first
           thing a visitor reaches, clearly above the fold. */}
-      <Container className="relative z-20 -mt-12 pb-10 sm:-mt-16 sm:pb-12">
+      <Container className="relative z-20 -mt-6 pb-10 sm:-mt-8 sm:pb-12">
         <AdvocateListing advocates={advocates} initial={initial} cities={cities} floatFilters />
       </Container>
     </>

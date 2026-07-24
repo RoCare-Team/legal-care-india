@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Search, SlidersHorizontal, X, MapPin, LocateFixed, Loader2 } from 'lucide-react';
 import { Input, Select, Button } from '@/components/ui';
+import FullScreenLoader from '@/components/shared/FullScreenLoader';
 import { LEGAL_SERVICE_NAMES, getSubServices } from '@/data/categories';
 import { CITIES } from '@/data/cities';
 import { COURTS } from '@/data/courts';
@@ -67,6 +69,30 @@ export default function ListingFilters({
   onUseMyLocation,
   onClearLocation,
 }) {
+  // The free-text box is deliberately NOT wired straight to the filter — the
+  // visitor types here and the search only runs when they submit (button or
+  // Enter). `queryText` is that local draft; `value.query` is what's applied.
+  const [queryText, setQueryText] = useState(value.query || '');
+  // Keep the box in sync when the applied query changes from elsewhere — a
+  // "Clear all", or an initial query carried in from the URL.
+  useEffect(() => {
+    setQueryText(value.query || '');
+  }, [value.query]);
+
+  // The same branded overlay the homepage search shows. Filtering is instant, so
+  // it's held briefly for the search to feel answered rather than flashing.
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
+  const submitSearch = (e) => {
+    e.preventDefault();
+    onChange({ query: queryText.trim() });
+    setSearching(true);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setSearching(false), 650);
+  };
+
   // Sub-categories of the chosen service (e.g. Tax Law → GST, Appeals).
   const subServices = getSubServices(value.service);
   // Show the Category dropdown only once a legal service (with sub-categories)
@@ -76,6 +102,8 @@ export default function ListingFilters({
   const hasLocationControls = Boolean(onUseMyLocation);
 
   return (
+    <>
+    {searching && <FullScreenLoader message="Finding lawyers for you" />}
     <div
       className={`rounded-2xl border border-ink/8 bg-surface p-4 sm:p-5 ${
         elevated ? 'shadow-card-hover ring-1 ring-ink/5' : 'shadow-card'
@@ -103,18 +131,26 @@ export default function ListingFilters({
       <div
         className={`grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:gap-2.5 ${
           showCategory
-            ? 'xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
-            : 'xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
+            ? 'xl:grid-cols-[minmax(0,2.3fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
+            : 'xl:grid-cols-[minmax(0,2.3fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,0.7fr)_minmax(0,0.85fr)_minmax(0,1fr)]'
         }`}
       >
         <Field label="Search" elevated={elevated}>
-          <Input
-            value={value.query}
-            onChange={(e) => onChange({ query: e.target.value })}
-            placeholder="Search by name or keyword"
-            leftIcon={<Search className="h-4 w-4" />}
-            aria-label="Search lawyers"
-          />
+          <form onSubmit={submitSearch} className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                value={queryText}
+                onChange={(e) => setQueryText(e.target.value)}
+                placeholder="Search by name or keyword"
+                leftIcon={<Search className="h-4 w-4" />}
+                aria-label="Search lawyers"
+              />
+            </div>
+            <Button type="submit" className="shrink-0 gap-1.5 px-4" aria-label="Search lawyers">
+              <Search className="h-4 w-4" />
+              Search
+            </Button>
+          </form>
         </Field>
         <Field label="Legal service" elevated={elevated}>
           <Select
@@ -288,5 +324,6 @@ export default function ListingFilters({
         </div>
       )}
     </div>
+    </>
   );
 }

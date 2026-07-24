@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
-  UserRound, LayoutDashboard, Clock,
+  UserRound, LayoutDashboard, Clock, RotateCcw,
   Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2, EyeOff,
 } from 'lucide-react';
 import { Avatar, Button } from '@/components/ui';
@@ -32,6 +32,21 @@ const CONSULT_STATUS_META = {
 /** Format a paise-safe rupee amount, e.g. 1500 -> "₹1,500". */
 function formatMoney(value = 0) {
   return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
+
+/** "8 min 30 sec" / "8 min" / "45 sec" from a whole-second count. */
+function formatLeftover(sec = 0) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  if (m && s) return `${m} min ${s} sec`;
+  if (m) return `${m} min`;
+  return `${s} sec`;
+}
+
+/** What the amount column shows: Free for a resumed session, else the price. */
+function amountLabel(c) {
+  if (c.isResume) return 'Free';
+  return c.charged ? formatMoney(c.price) : '—';
 }
 
 /**
@@ -192,14 +207,25 @@ function OverviewView({ user, consultations = [], onSeeConsultations }) {
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
                       {meta.label}
                     </span>
+                    {c.isResume && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-primary-dark">
+                        <RotateCcw className="h-3 w-3" /> Resumed
+                      </span>
+                    )}
                   </p>
                   <p className="text-xs text-ink/45">
                     {c.charged ? `${c.talkedMinutes} min talked · ` : ''}
                     {formatDate(c.createdAt)}
                   </p>
+                  {c.resumeLeftoverSeconds > 0 && (
+                    <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+                      <RotateCcw className="h-3 w-3" aria-hidden="true" />
+                      {formatLeftover(c.resumeLeftoverSeconds)} left · resume free within 24h
+                    </p>
+                  )}
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-ink">
-                  {c.charged ? formatMoney(c.price) : '—'}
+                  {amountLabel(c)}
                 </span>
               </li>
             );
@@ -285,19 +311,24 @@ function ConsultationsView({ consultations = [], onRemove }) {
               <div className="flex items-start gap-3">
                 <Avatar name={c.advocateName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate font-display text-base font-semibold text-ink">
                       {c.advocateName}
                     </p>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
                       {meta.label}
                     </span>
+                    {c.isResume && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-primary-dark">
+                        <RotateCcw className="h-3 w-3" /> Resumed · Free
+                      </span>
+                    )}
                   </div>
                   <p className="mt-0.5 text-xs text-ink/45">{formatDate(c.createdAt)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <span className="text-sm font-semibold text-ink">
-                    {c.charged ? formatMoney(c.price) : '—'}
+                    {amountLabel(c)}
                   </span>
                   {c.charged && (
                     <ViewConversationButton id={c.id} otherName={c.advocateName} viewerRole="user" />
@@ -339,6 +370,18 @@ function ConsultationsView({ consultations = [], onRemove }) {
                   </span>
                 )}
               </div>
+
+              {/* Leftover time still free to reconnect with this lawyer. */}
+              {c.resumeLeftoverSeconds > 0 && (
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-accent/30 bg-accent/[0.07] px-3 py-2.5 text-xs text-ink/70">
+                  <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    <span className="font-semibold text-ink">{formatLeftover(c.resumeLeftoverSeconds)} left.</span>{' '}
+                    Reopen {c.advocateName}&apos;s profile and tap <span className="font-medium text-ink">Book</span> to
+                    resume this time free — available for 24 hours.
+                  </span>
+                </div>
+              )}
             </li>
           );
         })}

@@ -58,14 +58,14 @@ export default function TestimonialForm() {
 
   return (
     <>
-      <Button
+      <button
         type="button"
-        variant="outline"
         onClick={() => setOpen(true)}
-        leftIcon={<PenLine className="h-4 w-4" />}
+        className="group inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-6 py-3 text-sm font-semibold text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent hover:bg-accent/15 hover:shadow-card"
       >
+        <PenLine className="h-4 w-4 transition-transform group-hover:-rotate-12" />
         Share your experience
-      </Button>
+      </button>
 
       {open && (
         <div

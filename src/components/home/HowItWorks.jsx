@@ -29,11 +29,7 @@ const STEPS = [
 export default function HowItWorks() {
   return (
     <Section id="how-it-works" className="pb-8 sm:pb-10">
-      <Heading
-        centered
-        eyebrow="How It Works"
-        subtitle="No middlemen, no referral fees — you choose the advocate and speak to them directly."
-      >
+      <Heading centered eyebrow="How It Works">
         From Your Problem to a Lawyer, in Three Steps
       </Heading>
 
@@ -48,19 +44,31 @@ export default function HowItWorks() {
 
         {STEPS.map(({ icon: Icon, title, description }, i) => (
           <SectionReveal key={title} delay={i * 0.1}>
-            <div className="edge-gold relative h-full overflow-hidden rounded-2xl border border-ink/8 bg-surface px-6 pb-7 pt-8 text-center shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
+            <div className="group edge-gold relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-ink/8 bg-gradient-to-b from-surface to-primary/[0.025] px-6 pb-7 pt-9 text-center shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/20 hover:shadow-card-hover">
               {/* Big ghosted numeral — gives the sequence weight without adding
                   another badge to read. */}
               <span
-                className="pointer-events-none absolute -right-1 -top-3 select-none font-display text-[5.5rem] font-bold leading-none text-primary/[0.06]"
+                className="pointer-events-none absolute -right-2 -top-4 select-none font-display text-[6rem] font-bold leading-none text-primary/[0.05] transition-colors duration-300 group-hover:text-accent/[0.12]"
                 aria-hidden="true"
               >
                 {i + 1}
               </span>
-              <span className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-brand ring-4 ring-surface">
-                <Icon className="h-6 w-6" aria-hidden="true" />
+
+              {/* Icon tile: soft navy at rest, fills to a navy gradient on hover;
+                  a gold step badge sits on its corner. */}
+              <span className="relative">
+                <span className="grid h-16 w-16 place-items-center rounded-2xl bg-primary/[0.08] text-primary ring-1 ring-primary/10 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-primary-dark group-hover:text-white group-hover:shadow-brand">
+                  <Icon className="h-7 w-7" aria-hidden="true" />
+                </span>
+                <span className="absolute -bottom-1.5 -right-1.5 grid h-6 w-6 place-items-center rounded-full bg-accent text-[11px] font-bold text-primary-dark shadow-sm ring-2 ring-surface">
+                  {i + 1}
+                </span>
               </span>
-              <h3 className="relative mt-5 font-display text-lg font-semibold text-ink">{title}</h3>
+
+              <p className="relative mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-accent">
+                Step {String(i + 1).padStart(2, '0')}
+              </p>
+              <h3 className="relative mt-1.5 font-display text-lg font-semibold text-ink">{title}</h3>
               <p className="relative mt-2 text-sm leading-relaxed text-ink/60">{description}</p>
             </div>
           </SectionReveal>

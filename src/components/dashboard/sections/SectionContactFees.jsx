@@ -1,4 +1,4 @@
-import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock } from 'lucide-react';
+import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock, Video } from 'lucide-react';
 import { FormField, Input } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
 import RepeatableList from '../RepeatableList';
@@ -63,6 +63,48 @@ export default function SectionContactFees({ data, set }) {
                   type="number"
                   min="1"
                   placeholder="500"
+                  value={item.price}
+                  onChange={(e) => update({ price: e.target.value })}
+                  leftIcon={<IndianRupee className="h-4 w-4" />}
+                />
+              </FormField>
+            </div>
+          )}
+        />
+      </DashboardSection>
+
+      <DashboardSection
+        id="video-rates"
+        title="Video Call Plans"
+        description="Priced separately from chat — set your own duration and price for a video consultation. Add none to not offer video calls."
+        icon={Video}
+      >
+        <RepeatableList
+          items={data.videoPlans || []}
+          onChange={(v) => set('videoPlans', v)}
+          template={{ minutes: '', price: '' }}
+          addLabel="Add video plan"
+          renderRow={(item, update) => (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Duration (minutes)"
+                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
+              >
+                <Input
+                  type="number"
+                  min="5"
+                  max="480"
+                  placeholder="15"
+                  value={item.minutes}
+                  onChange={(e) => update({ minutes: e.target.value })}
+                  leftIcon={<Clock className="h-4 w-4" />}
+                />
+              </FormField>
+              <FormField label="Price (₹)" hint="What you charge for this video call.">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="800"
                   value={item.price}
                   onChange={(e) => update({ price: e.target.value })}
                   leftIcon={<IndianRupee className="h-4 w-4" />}

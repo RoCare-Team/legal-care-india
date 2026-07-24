@@ -77,7 +77,7 @@ export default function PageHeader({
             </h1>
             {subtitle && (
               <p
-                className="animate-fade-up mt-4 max-w-2xl text-base leading-relaxed text-slate-300"
+                className="animate-fade-up mt-4 max-w-2xl text-base leading-8 text-slate-300"
                 style={{ animationDelay: '0.15s' }}
               >
                 {subtitle}

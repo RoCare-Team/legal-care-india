@@ -1,52 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff, RotateCcw } from 'lucide-react';
+import { Video, Loader2, Wallet, Clock, XCircle, WifiOff } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
-import ChatPanel from '@/components/consultation/ChatPanel';
-import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
+import VideoCallStage from '@/components/consultation/VideoCallStage';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { refreshAuth } from '@/utils/authEvents';
 
 /**
- * BookConsultationModal — the user side of the paid live-chat flow:
- * pick a plan → connecting (waiting for the lawyer) → chat (charged) → ended.
- *
- * `plans` are the lawyer's own rates (they set them in their dashboard), so
- * every lawyer can charge what they like.
+ * VideoConsultModal — the user side of a *video* consultation: pick a video
+ * plan → connecting (waiting for the lawyer) → the call connects automatically
+ * once they accept → ended. Priced from the lawyer's separate `videoPlans`, so
+ * the wallet is charged the video rate, not the chat rate.
  */
-/** "8 min 30 sec" / "8 min" / "45 sec" from a whole-second count. */
-function formatLeftover(sec = 0) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m && s) return `${m} min ${s} sec`;
-  if (m) return `${m} min`;
-  return `${s} sec`;
-}
-
-export default function BookConsultationModal({
+export default function VideoConsultModal({
   open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
 }) {
   const [sessionId, setSessionId] = useState(null);
-  // Leftover time with this lawyer that can be reconnected for free, if any.
-  const [resumable, setResumable] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [insufficient, setInsufficient] = useState(false);
   const [offline, setOffline] = useState('');
-  const [minimized, setMinimized] = useState(false);
-  // Minimizing unmounts ChatPanel, which owns the video call — so while a call
-  // is up we keep the chat on screen and let the call's own controls tuck it away.
-  const [callActive, setCallActive] = useState(false);
 
   const [session, setSession, refresh] = useSessionPoll(sessionId, {
     enabled: open && Boolean(sessionId),
     interval: 2000,
   });
 
-  // Reset everything when the modal closes — including the polled session, so
-  // reopening always starts fresh at plan selection (not the last ended chat).
   useEffect(() => {
     if (!open) {
       setSessionId(null);
@@ -55,49 +36,26 @@ export default function BookConsultationModal({
       setInsufficient(false);
       setOffline('');
       setCreating(false);
-      setMinimized(false);
-      setCallActive(false);
-      setResumable(null);
     }
   }, [open, setSession]);
 
-  // On opening (before a session exists) check for leftover time to offer a
-  // free resume. Refetched each open, so a just-spent leftover disappears.
-  useEffect(() => {
-    if (!open || !advocateId || sessionId) return undefined;
-    let cancelled = false;
-    fetch(`/api/consultations/resumable?advocateId=${advocateId}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setResumable(d.resumable || null);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open, advocateId, sessionId]);
-
   const status = session?.status;
 
-  // The wallet is charged the moment the lawyer accepts — refresh the navbar
-  // balance right away rather than waiting for a page reload.
+  // The wallet is charged the moment the lawyer accepts — refresh the navbar.
   useEffect(() => {
     if (status === 'active') refreshAuth();
   }, [status]);
 
-  // When the consultation ends (time up or either side hangs up), close the
-  // whole modal shortly after — the chat and its timer disappear.
+  // Close shortly after it ends (time up or hang-up).
   useEffect(() => {
     if (status === 'ended') {
-      setMinimized(false); // surface the "ended" state instead of staying tucked away
-      const t = setTimeout(onClose, 1200);
+      const t = setTimeout(onClose, 1500);
       return () => clearTimeout(t);
     }
     return undefined;
   }, [status, onClose]);
 
-  // Don't hang on "Connecting…" forever — if the lawyer doesn't accept in
-  // time (e.g. they went offline), cancel and show an offline notice.
+  // Give up on a lawyer who never answers the video request.
   useEffect(() => {
     if (status !== 'pending' || !sessionId) return undefined;
     const t = setTimeout(async () => {
@@ -107,7 +65,7 @@ export default function BookConsultationModal({
         body: JSON.stringify({ action: 'cancel' }),
       }).catch(() => {});
       setSessionId(null);
-      setOffline(`${advocateName} didn't respond. Please try again later.`);
+      setOffline(`${advocateName} didn't answer the video call. Please try again later.`);
     }, 45000);
     return () => clearTimeout(t);
   }, [status, sessionId, advocateName]);
@@ -120,7 +78,7 @@ export default function BookConsultationModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, minutes: plan.minutes }),
+        body: JSON.stringify({ advocateId, minutes: plan.minutes, type: 'video' }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -133,42 +91,7 @@ export default function BookConsultationModal({
         return;
       }
       if (!res.ok) {
-        setError(data.error || 'Could not start the request.');
-        return;
-      }
-      setSessionId(data.session.id);
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  /** Reconnect leftover time from an earlier session — free, no plan. */
-  const resume = async () => {
-    if (!resumable) return;
-    setError('');
-    setInsufficient(false);
-    setCreating(true);
-    try {
-      const res = await fetch('/api/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, resumeFrom: resumable.id }),
-      });
-      const data = await res.json();
-      if (res.status === 409 && data.error === 'offline') {
-        setOffline(data.message || `${advocateName} is offline right now.`);
-        return;
-      }
-      if (res.status === 409 && data.error === 'expired') {
-        // The 24h window closed (or it was already used) — drop the offer.
-        setResumable(null);
-        setError(data.message || 'This leftover time is no longer available.');
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error || 'Could not resume. Please try again.');
+        setError(data.error || 'Could not start the video call.');
         return;
       }
       setSessionId(data.session.id);
@@ -190,21 +113,8 @@ export default function BookConsultationModal({
     onClose();
   };
 
-  const sendMessage = async (text) => {
-    if (!sessionId) return;
-    const res = await fetch(`/api/consultations/${sessionId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      // Optimistic-ish: adopt the server's authoritative message list.
-      if (data.session) refresh();
-    }
-  };
-
-  const endNow = async () => {
+  // Hanging up (or the call otherwise finishing) ends the whole session.
+  const onCallEnded = useCallback(async () => {
     if (!sessionId) return;
     await fetch(`/api/consultations/${sessionId}`, {
       method: 'PATCH',
@@ -212,38 +122,17 @@ export default function BookConsultationModal({
       body: JSON.stringify({ action: 'end' }),
     }).catch(() => {});
     refresh();
-  };
+  }, [sessionId, refresh]);
 
-  // ── Chat (connected) — full-width modal ──────────────────────────────────
-  if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
-    // The X only tucks the chat away (like backgrounding a call) — it never
-    // hangs up. Ending is the red button inside ChatPanel (onEnd).
-    if (open && minimized && !callActive) {
-      return (
-        <MinimizedCallBar
-          name={advocateName}
-          endsAt={session.endsAt}
-          onRestore={() => setMinimized(false)}
-        />
-      );
-    }
+  // ── Live video call ──────────────────────────────────────────────────────
+  if (open && sessionId && session && status === 'active' && (session.remainingMs ?? 0) > 0) {
     return (
-      <ConsultationModal
-        open={open}
-        onClose={() => setMinimized(true)}
-        title={`Consultation · ${advocateName}`}
-        icon={CalendarCheck}
-        fullScreen
-      >
-        <ChatPanel
-          session={session}
-          viewerRole="user"
-          otherName={advocateName}
-          onSend={sendMessage}
-          onEnd={endNow}
-          onCallActiveChange={setCallActive}
-        />
-      </ConsultationModal>
+      <VideoCallStage
+        session={session}
+        viewerRole="user"
+        otherName={advocateName}
+        onEnded={onCallEnded}
+      />
     );
   }
 
@@ -252,17 +141,16 @@ export default function BookConsultationModal({
       open={open}
       onClose={status === 'pending' ? cancel : onClose}
       closable={status !== 'pending'}
-      title="Book Consultation"
-      icon={CalendarCheck}
+      title="Video Consultation"
+      icon={Video}
     >
       <div className="p-5">
-        {/* Lawyer offline */}
         {offline ? (
           <div className="flex flex-col items-center py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
               <WifiOff className="h-7 w-7" />
             </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer offline</h4>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer unavailable</h4>
             <p className="mt-1 text-sm text-ink/55">{offline}</p>
             <p className="mt-1 text-xs text-ink/45">You were not charged.</p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
@@ -274,12 +162,12 @@ export default function BookConsultationModal({
             <span className="relative grid h-16 w-16 place-items-center">
               <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
               <span className="grid h-16 w-16 place-items-center rounded-full bg-primary/10 text-primary">
-                <Loader2 className="h-7 w-7 animate-spin" />
+                <Video className="h-7 w-7" />
               </span>
             </span>
-            <h4 className="mt-5 font-display text-lg font-semibold text-ink">Connecting…</h4>
+            <h4 className="mt-5 font-display text-lg font-semibold text-ink">Ringing {advocateName}…</h4>
             <p className="mt-1 text-sm text-ink/55">
-              Waiting for {advocateName} to accept your request.
+              Your video call will connect as soon as they accept.
             </p>
             <button
               type="button"
@@ -294,7 +182,7 @@ export default function BookConsultationModal({
             <XCircle className="h-12 w-12 text-red-500" />
             <h4 className="mt-4 font-display text-lg font-semibold text-ink">Request declined</h4>
             <p className="mt-1 text-sm text-ink/55">
-              {advocateName} can&apos;t take your consultation right now. You were not charged.
+              {advocateName} can&apos;t take your video call right now. You were not charged.
             </p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
@@ -302,9 +190,20 @@ export default function BookConsultationModal({
           </div>
         ) : status === 'ended' || status === 'cancelled' ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Consultation ended</h4>
+            <Video className="h-12 w-12 text-emerald-500" />
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Video call ended</h4>
             <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+              Close
+            </button>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
+              <Video className="h-7 w-7" />
+            </span>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">No video plans</h4>
+            <p className="mt-1 text-sm text-ink/55">{advocateName} hasn&apos;t set up video calls yet.</p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
@@ -313,33 +212,9 @@ export default function BookConsultationModal({
           // Plan selection
           <>
             <p className="text-sm text-ink/60">
-              Choose a consultation length. You&apos;ll connect over live chat once {advocateName}{' '}
-              accepts, and only then is your wallet charged.
+              Choose a video call length. It connects automatically once {advocateName} accepts,
+              and only then is your wallet charged.
             </p>
-
-            {/* Free resume of leftover time — shown only when the user actually
-                has unused, still-valid minutes with this lawyer. */}
-            {resumable && (
-              <button
-                type="button"
-                disabled={creating}
-                onClick={resume}
-                className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-card disabled:opacity-60"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/25 text-primary-dark">
-                    <RotateCcw className="h-5 w-5" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">Resume where you left off</span>
-                    <span className="block text-xs text-ink/55">
-                      {formatLeftover(resumable.leftoverSeconds)} left · valid for 24 hours
-                    </span>
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">Free</span>
-              </button>
-            )}
 
             <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
               <span className="flex items-center gap-2 text-sm text-ink/60">
@@ -363,7 +238,7 @@ export default function BookConsultationModal({
                       <Clock className="h-4 w-4" />
                       <span className="font-display text-base font-bold text-ink">{plan.label}</span>
                     </span>
-                    <span className="mt-1 text-xs text-ink/50">Live chat consultation</span>
+                    <span className="mt-1 text-xs text-ink/50">Video consultation</span>
                     <span className="mt-3 font-display text-xl font-bold text-ink">
                       ₹{Number(plan.price).toLocaleString('en-IN')}
                     </span>

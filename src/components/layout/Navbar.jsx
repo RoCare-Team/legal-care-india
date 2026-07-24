@@ -25,7 +25,7 @@ export default function Navbar({ className, onDark = false }) {
             key={href}
             href={href}
             className={cn(
-              'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              'rounded-lg px-3.5 py-2 text-[15px] font-medium transition-colors',
               onDark
                 ? active
                   ? 'text-accent'

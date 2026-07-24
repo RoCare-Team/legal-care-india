@@ -15,6 +15,32 @@ export const ONLINE_WINDOW_MS = 12000;
 // A video call that nobody picks up within this window gives up on its own.
 export const CALL_RING_TIMEOUT_MS = 45000;
 
+// Free-resume rules for leftover time when a session ends early.
+const RESUME_MIN_LEFTOVER_MS = 60 * 1000;              // ≥ 1 min left to bother
+const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;          // resumable for 24h after
+
+/** Unused milliseconds on an ended session (0 if it ran its full time). */
+function leftoverMs(s) {
+  if (!s?.endsAt || !s?.endedAt) return 0;
+  return Math.max(0, new Date(s.endsAt).getTime() - new Date(s.endedAt).getTime());
+}
+
+/**
+ * Can this session's leftover time be reconnected for free right now? It must
+ * have actually connected, ended early with at least a minute unused, not been
+ * claimed already, and still be inside the 24-hour window.
+ */
+function isResumable(s) {
+  return (
+    s?.status === 'ended' &&
+    !s.resumed &&
+    Boolean(s.startedAt) &&
+    Boolean(s.endedAt) &&
+    leftoverMs(s) >= RESUME_MIN_LEFTOVER_MS &&
+    Date.now() - new Date(s.endedAt).getTime() <= RESUME_WINDOW_MS
+  );
+}
+
 /** Heartbeat: mark the lawyer as currently present. */
 export async function markAdvocateOnline(advocateId) {
   await connectDB();
@@ -61,6 +87,11 @@ export function serializeSession(doc) {
     advocateName: s.advocateName || '',
     minutes: s.minutes,
     price: s.price,
+    // 'chat' | 'video' — drives which UI the participants open.
+    type: s.type || 'chat',
+    // A free reconnection of leftover time (no charge). Lets both sides label
+    // the session correctly instead of showing "₹0".
+    isResume: Boolean(s.resumedFromId),
     status: s.status,
     startedAt: s.startedAt || null,
     endsAt: s.endsAt || null,
@@ -186,6 +217,10 @@ function talkedMinutes(s) {
  * @param {'user'|'advocate'} viewer
  */
 function toHistoryRow(r, viewer) {
+  // Leftover time this session still has free to reconnect (0 if none / spent /
+  // expired), so the account can show "X min left · resume free".
+  const leftMs = isResumable(r) ? leftoverMs(r) : 0;
+
   return {
     id: String(r._id),
     userId: String(r.userId),
@@ -197,6 +232,11 @@ function toHistoryRow(r, viewer) {
     status: r.status,
     // Only a connected session cost money / had a conversation.
     charged: ['active', 'ended'].includes(r.status),
+    // A free reconnection of earlier leftover time (price 0, no wallet charge).
+    isResume: Boolean(r.resumedFromId),
+    // Unused time still claimable from this session, and when that offer lapses.
+    resumeLeftoverSeconds: Math.floor(leftMs / 1000),
+    resumeExpiresAt: leftMs ? new Date(new Date(r.endedAt).getTime() + RESUME_WINDOW_MS).toISOString() : null,
     talkedMinutes: talkedMinutes(r),
     messagesCount: (r.messages || []).length,
     startedAt: r.startedAt || null,
@@ -257,10 +297,69 @@ export async function hideConsultationFor(id, participantId, viewer) {
 }
 
 /** Create a pending consultation request (no charge yet). */
-export async function createConsultation({ userId, userName, advocateId, advocateName, minutes, price }) {
+export async function createConsultation({ userId, userName, advocateId, advocateName, minutes, price, type = 'chat' }) {
   await connectDB();
   const doc = await Consultation.create({
-    userId, userName, advocateId, advocateName, minutes, price, status: 'pending',
+    userId, userName, advocateId, advocateName, minutes, price, type, status: 'pending',
+  });
+  return serializeSession(doc.toObject());
+}
+
+/**
+ * The user's leftover time with a given lawyer, if any is free to reconnect
+ * right now — or `null`. Powers the "Resume · Free" button on the profile.
+ */
+export async function getResumableSession(userId, advocateId) {
+  await connectDB();
+  // Only a handful of recent ended sessions matter — settle any that just
+  // expired so their leftover reads correctly, then take the newest resumable.
+  const docs = await Consultation.find({
+    userId, advocateId, status: { $in: ['active', 'ended'] }, resumed: false,
+  })
+    .sort({ endedAt: -1, createdAt: -1 })
+    .limit(5);
+  const settled = await Promise.all(docs.map((d) => settleIfExpired(d)));
+
+  const found = settled.find((s) => isResumable(s));
+  if (!found) return null;
+
+  const ms = leftoverMs(found);
+  return {
+    id: String(found._id),
+    leftoverMs: ms,
+    leftoverSeconds: Math.floor(ms / 1000),
+    // When the free window closes — 24h after the session ended.
+    expiresAt: new Date(new Date(found.endedAt).getTime() + RESUME_WINDOW_MS).toISOString(),
+  };
+}
+
+/**
+ * Start a free reconnection that spends a paid session's leftover time. Creates
+ * a pending, zero-price session the lawyer still has to accept — the parent's
+ * leftover is only marked spent once that acceptance goes through (see
+ * `acceptConsultation`), so a declined resume leaves the time intact.
+ */
+export async function resumeConsultation({ userId, userName, advocateId, advocateName, fromId }) {
+  await connectDB();
+  const parent = await Consultation.findOne({ _id: fromId, userId, advocateId });
+  if (!parent) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
+  await settleIfExpired(parent);
+  if (!isResumable(parent)) { const e = new Error('Not resumable'); e.code = 'BAD_STATE'; throw e; }
+
+  // If a resume off this session is already waiting for the lawyer, reuse it
+  // rather than stacking a second pending request.
+  const existing = await Consultation.findOne({ resumedFromId: parent._id, status: 'pending' });
+  if (existing) return serializeSession(existing.toObject());
+
+  const doc = await Consultation.create({
+    userId,
+    userName,
+    advocateId,
+    advocateName,
+    minutes: leftoverMs(parent) / 60000, // fractional; endsAt math handles it
+    price: 0,
+    status: 'pending',
+    resumedFromId: parent._id,
   });
   return serializeSession(doc.toObject());
 }
@@ -297,23 +396,36 @@ export async function acceptConsultation(id, advocateId) {
   if (!session) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
   if (session.status !== 'pending') { const e = new Error('Already handled'); e.code = 'BAD_STATE'; throw e; }
 
-  // Atomically debit the user only if they still have enough balance.
-  const debited = await User.findOneAndUpdate(
-    { _id: session.userId, walletBalance: { $gte: session.price } },
-    {
-      $inc: { walletBalance: -session.price },
-      $push: { walletTransactions: { type: 'debit', amount: session.price, note: `Consultation with ${session.advocateName}` } },
-    },
-    { new: true }
-  ).lean();
+  // A free resume of leftover time (price 0) skips the wallet entirely — it was
+  // already paid for on the original session.
+  if (session.price > 0) {
+    // Atomically debit the user only if they still have enough balance.
+    const debited = await User.findOneAndUpdate(
+      { _id: session.userId, walletBalance: { $gte: session.price } },
+      {
+        $inc: { walletBalance: -session.price },
+        $push: { walletTransactions: { type: 'debit', amount: session.price, note: `Consultation with ${session.advocateName}` } },
+      },
+      { new: true }
+    ).lean();
 
-  if (!debited) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
+    if (!debited) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
 
-  // Credit the lawyer's earnings wallet.
-  await Advocate.findByIdAndUpdate(advocateId, {
-    $inc: { walletBalance: session.price },
-    $push: { walletTransactions: { type: 'credit', amount: session.price, note: `Consultation with ${session.userName}` } },
-  });
+    // Credit the lawyer's earnings wallet.
+    await Advocate.findByIdAndUpdate(advocateId, {
+      $inc: { walletBalance: session.price },
+      $push: { walletTransactions: { type: 'credit', amount: session.price, note: `Consultation with ${session.userName}` } },
+    });
+  } else if (session.resumedFromId) {
+    // Now that the lawyer has taken the reconnection, spend the parent's
+    // leftover so it can't be claimed a second time. Atomic guard against two
+    // resumes racing to accept.
+    const claimed = await Consultation.findOneAndUpdate(
+      { _id: session.resumedFromId, resumed: false },
+      { $set: { resumed: true } }
+    );
+    if (!claimed) { const e = new Error('Leftover already spent'); e.code = 'BAD_STATE'; throw e; }
+  }
 
   const startedAt = new Date();
   session.status = 'active';

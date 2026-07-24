@@ -69,6 +69,11 @@ const ConsultationSchema = new Schema(
     advocateId: { type: Schema.Types.ObjectId, ref: 'Advocate', required: true, index: true },
     advocateName: { type: String, default: '' },
 
+    // Which kind of session: a text live-chat, or a video call (priced from the
+    // lawyer's separate video plans). The video call itself still rides on the
+    // `call` sub-document below — `type` only changes pricing and which UI opens.
+    type: { type: String, enum: ['chat', 'video'], default: 'chat' },
+
     minutes: { type: Number, required: true },
     price: { type: Number, required: true, min: 0 },
 
@@ -87,6 +92,13 @@ const ConsultationSchema = new Schema(
     startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)
     endedAt: { type: Date, default: null },   // when it actually ended
+
+    // Free "resume" of leftover time. When a session ends early, the unused
+    // minutes can be reconnected once, free, within 24h. `resumedFromId` points
+    // a free resume back at the paid session it drew from; `resumed` marks that
+    // paid session's leftover as spent so it can't be claimed twice.
+    resumedFromId: { type: Schema.Types.ObjectId, ref: 'Consultation', default: null },
+    resumed: { type: Boolean, default: false },
 
     // Either side can clear the row from their own list. The record itself
     // stays, so hiding it on one side never affects the other.

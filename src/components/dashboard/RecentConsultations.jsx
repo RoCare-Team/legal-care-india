@@ -58,11 +58,16 @@ export default function RecentConsultations({ consultations = [] }) {
                       <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
                         {meta.label}
                       </span>
+                      {c.isResume && (
+                        <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-primary-dark">
+                          Resumed · Free
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/55">
                       <span className="flex items-center gap-1">
                         <CalendarCheck className="h-3 w-3" aria-hidden="true" />
-                        {c.minutes} min booked
+                        {Math.round(c.minutes)} min booked
                       </span>
                       {c.charged && (
                         <span className="flex items-center gap-1">
@@ -74,8 +79,8 @@ export default function RecentConsultations({ consultations = [] }) {
                     <p className="mt-1.5 text-[11px] text-ink/40">{formatDate(c.createdAt)}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    <span className={`text-sm font-semibold ${c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
-                      {c.charged ? `+₹${Number(c.price).toLocaleString('en-IN')}` : '—'}
+                    <span className={`text-sm font-semibold ${c.isResume ? 'text-ink/50' : c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
+                      {c.isResume ? 'Free' : c.charged ? `+₹${Number(c.price).toLocaleString('en-IN')}` : '—'}
                     </span>
                     {c.charged && (
                       <ViewConversationButton id={c.id} otherName={c.userName} viewerRole="advocate" />

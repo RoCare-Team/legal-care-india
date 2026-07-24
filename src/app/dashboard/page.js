@@ -4,6 +4,7 @@ import DashboardStatCard from '@/components/dashboard/DashboardStatCard';
 import AvailabilityToggle from '@/components/dashboard/AvailabilityToggle';
 import ProfileCompletion from '@/components/dashboard/ProfileCompletion';
 import RecentConsultations from '@/components/dashboard/RecentConsultations';
+import PendingResumeCard from '@/components/dashboard/PendingResumeCard';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
 import { getAdvocateConsultations } from '@/lib/consultations';
@@ -37,6 +38,8 @@ export default async function DashboardOverviewPage() {
   const consultations = all.filter((c) => !c.hidden);
   const done = consultations.filter((c) => c.charged);
   const earned = done.reduce((sum, c) => sum + c.price, 0);
+  // Clients holding unused, still-valid time they can reconnect for free.
+  const resumable = consultations.filter((c) => c.resumeLeftoverSeconds > 0);
 
   return (
     <div className="space-y-6">
@@ -58,6 +61,8 @@ export default async function DashboardOverviewPage() {
         <DashboardStatCard icon={Star} value={advocate.rating || 0} label="Average Rating" tone="accent" />
         <DashboardStatCard icon={MessageSquare} value={advocate.reviews || 0} label="Total Reviews" tone="primary" />
       </div>
+
+      <PendingResumeCard items={resumable} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ProfileCompletion checklist={checklist} />

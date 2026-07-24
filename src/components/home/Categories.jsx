@@ -10,10 +10,7 @@ export default function Categories() {
   return (
     <Section id="legal-services">
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <Heading
-          eyebrow="Areas of Practice"
-          subtitle="Divorce, property disputes, cheque bounce, bail, company matters — go straight to advocates who argue these cases every week."
-        >
+        <Heading eyebrow="Areas of Practice">
           Find a Lawyer by Practice Area
         </Heading>
         <Button href="/legal-services" variant="outline" size="sm" className="shrink-0">

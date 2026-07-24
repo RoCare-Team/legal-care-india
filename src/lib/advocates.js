@@ -169,6 +169,8 @@ export function buildAdvocateProfile(a) {
     // PresenceProvider, which is the only source the badges trust.
     // Live-chat rates the lawyer set themselves (empty ⇒ chat not offered).
     consultationPlans: a.consultationPlans || [],
+    // Video-call rates, priced separately (empty ⇒ video not offered).
+    videoPlans: a.videoPlans || [],
     rating: avgRating,
     reviews: reviewsCount,
     reviewsList,

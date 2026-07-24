@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 /**
@@ -8,13 +10,22 @@ import { X } from 'lucide-react';
  *
  * `fullScreen` makes it fill the whole viewport on phones (used for the live
  * chat, which needs the room) while staying a centered card from `sm` up.
+ *
+ * Portalled to <body>: opened from an AdvocateCard, a `position: fixed` element
+ * would otherwise centre itself inside the card (its hover transform makes it
+ * the containing block) and get clipped by the card's overflow. The portal
+ * escapes both.
  */
 export default function ConsultationModal({
   open, onClose, title, icon: Icon, children, closable = true, fullScreen = false,
 }) {
-  if (!open) return null;
+  // Portals need a DOM; on the server there isn't one, so wait for mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  return (
+  if (!open || !mounted) return null;
+
+  return createPortal(
     <div
       className={`fixed inset-0 z-[60] flex items-center justify-center ${
         fullScreen ? 'p-0 sm:p-4' : 'p-4'
@@ -60,6 +71,7 @@ export default function ConsultationModal({
         {/* On phones the body takes the remaining height so the chat fills it. */}
         <div className={fullScreen ? 'flex min-h-0 flex-1 flex-col' : ''}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { SearchX } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { SearchX, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateCard from '@/components/cards/AdvocateCard';
 import ListingFilters from './ListingFilters';
@@ -57,6 +57,9 @@ function sortByDistance(list) {
   });
 }
 
+/** How many more cards to reveal each time the visitor scrolls to the end. */
+const BATCH_SIZE = 12;
+
 export default function AdvocateListing({
   advocates,
   initial = {},
@@ -68,6 +71,12 @@ export default function AdvocateListing({
   emptyAction,
 }) {
   const [filters, setFilters] = useState({ ...EMPTY, ...initial });
+  // How many cards are currently on screen. Grows as the visitor scrolls; the
+  // full `results` array is already in memory, so this is purely how much of it
+  // we render at once.
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  // Watched by an IntersectionObserver — when it scrolls into view, load more.
+  const sentinelRef = useRef(null);
 
   // Live online ids — the same source the card badges read, so the list and the
   // green dots can never disagree. `null` until the first poll lands.
@@ -197,6 +206,34 @@ export default function AdvocateListing({
     return sortAdvocates(filtered, filters.sort);
   }, [advocates, filters, userLocation, presence]);
 
+  // Collapse back to the first batch whenever the *filters* change — but not on
+  // a presence poll, which also rebuilds `results` yet must not throw away how
+  // far the visitor has already scrolled.
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [filters, userLocation]);
+
+  const pageResults = results.slice(0, visibleCount);
+  const hasMore = visibleCount < results.length;
+
+  // Reveal the next batch as the sentinel nears the viewport. Re-attaches on
+  // every change to visibleCount/length so it keeps firing while the sentinel
+  // stays in view (a long screen can swallow several batches at once).
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || visibleCount >= results.length) return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((c) => Math.min(c + BATCH_SIZE, results.length));
+        }
+      },
+      { rootMargin: '400px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, results.length]);
+
   return (
     <div className="space-y-6">
       {showFilters && (
@@ -232,11 +269,25 @@ export default function AdvocateListing({
       )}
 
       {results.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {results.map((advocate) => (
-            <AdvocateCard key={advocate.id || advocate._id || advocate.slug} advocate={advocate} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {pageResults.map((advocate) => (
+              <AdvocateCard key={advocate.id || advocate._id || advocate.slug} advocate={advocate} />
+            ))}
+          </div>
+
+          {hasMore && (
+            <>
+              {/* The observer target sits a little above the loader so the next
+                  batch is already loading before this row is reached. */}
+              <div ref={sentinelRef} aria-hidden="true" />
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-ink/50" aria-live="polite">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Loading more lawyers…
+              </div>
+            </>
+          )}
+        </>
       ) : (
         <div className="grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-muted/40 px-6 py-16 text-center">
           <SearchX className="h-10 w-10 text-ink/30" aria-hidden="true" />

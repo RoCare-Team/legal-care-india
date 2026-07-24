@@ -35,12 +35,17 @@ function ConsultationCard({ item: c }) {
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
               {meta.label}
             </span>
+            {c.isResume && (
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-primary-dark">
+                Resumed · Free
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-[11px] text-ink/40">{formatDate(c.createdAt)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <span className={`text-sm font-semibold ${c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
-            {c.charged ? `+${money(c.price)}` : '—'}
+          <span className={`text-sm font-semibold ${c.isResume ? 'text-ink/50' : c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
+            {c.isResume ? 'Free' : c.charged ? `+${money(c.price)}` : '—'}
           </span>
           {c.charged && (
             <ViewConversationButton id={c.id} otherName={c.userName} viewerRole="advocate" />
@@ -52,7 +57,7 @@ function ConsultationCard({ item: c }) {
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink/8 pt-3 text-xs text-ink/60">
         <span className="inline-flex items-center gap-1.5">
           <CalendarCheck className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
-          Booked {c.minutes} min
+          Booked {Math.round(c.minutes)} min
         </span>
         {c.charged && (
           <>
