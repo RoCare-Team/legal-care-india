@@ -8,6 +8,9 @@ import { Loader2 } from 'lucide-react';
  * immediately (PATCH /api/dashboard/profile) and updates their public presence
  * badge on the directory and profile.
  *
+ * A compact pill rather than a banner: it is a one-word status they glance at,
+ * not a section of the page, so it sits inline in the topbar next to their name.
+ *
  * @param {object} props
  * @param {boolean} props.initialAvailable
  */
@@ -35,49 +38,52 @@ export default function AvailabilityToggle({ initialAvailable = false }) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-ink/8 bg-surface p-4 shadow-card sm:p-5">
-      <div className="flex items-center gap-3">
-        <span className="relative grid h-10 w-10 shrink-0 place-items-center">
-          <span
-            className={`h-3 w-3 rounded-full ${
-              available ? 'bg-emerald-500' : 'bg-ink/25'
-            }`}
-          />
-          {available && (
-            <span className="absolute h-3 w-3 animate-ping rounded-full bg-emerald-500/60" />
-          )}
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-ink">
-            You are {available ? 'Online' : 'Offline'}
-          </p>
-          <p className="text-xs text-ink/55">
-            {available
-              ? 'Clients can see you online and start a live consultation.'
-              : 'You appear offline and can’t receive live consultations.'}
-          </p>
-        </div>
-      </div>
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={saving}
+      role="switch"
+      aria-checked={available}
+      // The label carries the state for screen readers, so the title can stay
+      // short enough to sit in a pill.
+      aria-label={`You are ${available ? 'online' : 'offline'} — tap to go ${available ? 'offline' : 'online'}`}
+      title={
+        available
+          ? 'Clients can see you online and start a consultation'
+          : 'You appear offline and can’t receive consultations'
+      }
+      className={`inline-flex shrink-0 items-center gap-2 rounded-full border py-1.5 pl-3 pr-1.5 transition-colors disabled:opacity-70 ${
+        available
+          ? 'border-emerald-500/30 bg-emerald-500/[0.08] hover:border-emerald-500/50'
+          : 'border-ink/12 bg-ink/[0.03] hover:border-ink/25'
+      }`}
+    >
+      <span className="relative grid h-2.5 w-2.5 shrink-0 place-items-center">
+        <span className={`h-2.5 w-2.5 rounded-full ${available ? 'bg-emerald-500' : 'bg-ink/30'}`} />
+        {available && (
+          <span className="absolute h-2.5 w-2.5 animate-ping rounded-full bg-emerald-500/60" />
+        )}
+      </span>
 
-      <button
-        type="button"
-        onClick={toggle}
-        disabled={saving}
-        role="switch"
-        aria-checked={available}
-        aria-label="Toggle online availability"
-        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-70 ${
+      <span
+        className={`text-xs font-semibold ${available ? 'text-emerald-700' : 'text-ink/60'}`}
+      >
+        {available ? 'Online' : 'Offline'}
+      </span>
+
+      <span
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
           available ? 'bg-emerald-500' : 'bg-ink/20'
         }`}
       >
         <span
-          className={`inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow transition-transform ${
-            available ? 'translate-x-6' : 'translate-x-1'
+          className={`inline-flex h-4 w-4 items-center justify-center rounded-full bg-white shadow transition-transform ${
+            available ? 'translate-x-[1.125rem]' : 'translate-x-0.5'
           }`}
         >
-          {saving && <Loader2 className="h-3 w-3 animate-spin text-ink/50" />}
+          {saving && <Loader2 className="h-2.5 w-2.5 animate-spin text-ink/50" />}
         </span>
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

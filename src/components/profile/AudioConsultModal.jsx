@@ -1,30 +1,64 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Video, Loader2, Wallet, Clock, XCircle, WifiOff, RotateCcw } from 'lucide-react';
+import { PhoneCall, Loader2, Wallet, Clock, XCircle, WifiOff, Smartphone, RotateCcw } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
-import VideoCallStage from '@/components/consultation/VideoCallStage';
 import { useIsOnline } from '@/components/consultation/PresenceProvider';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { refreshAuth } from '@/utils/authEvents';
 
 /**
- * VideoConsultModal — the user side of a *video* consultation: pick a video
- * plan → connecting (waiting for the lawyer) → the call connects automatically
- * once they accept → ended. Priced from the lawyer's separate `videoPlans`, so
- * the wallet is charged the video rate, not the chat rate.
+ * AudioConsultModal — the user side of a paid *audio* consultation.
+ *
+ * Pick one of the lawyer's audio plans and the phone network takes it from
+ * there: their handset rings immediately, and the client's phone rings the
+ * moment they answer. There is no accept screen — a lawyer's phone ringing IS
+ * the accept screen, and they need no browser open at all. So this modal's job
+ * after the plan is picked is only to say the call is on its way and show how
+ * much of the paid time is left.
+ *
+ * Priced from the lawyer's own `audioPlans` and charged in full the moment the
+ * call is answered — a declined or unanswered call costs nothing. Hang up early
+ * and the unused minutes come back as a free resume for 24 hours, offered at
+ * the top of this modal before any new plan is.
+ *
+ * A lawyer who hasn't added any audio plan is shown as not offering calls,
+ * rather than the Call button quietly doing nothing.
  */
-/** "8 min 30 sec" · "8 min" · "45 sec" from a whole-second count. */
-function formatLeftover(sec = 0) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m && s) return `${m} min ${s} sec`;
+/** "8 min 30 sec" · "8 min" · "45 sec" — leftover time, from whole seconds. */
+function formatLeftover(seconds = 0) {
+  const s = Math.max(0, Math.floor(Number(seconds) || 0));
+  const m = Math.floor(s / 60);
+  const rest = s % 60;
+  if (m && rest) return `${m} min ${rest} sec`;
   if (m) return `${m} min`;
-  return `${s} sec`;
+  return `${rest} sec`;
 }
 
-export default function VideoConsultModal({
+/** MM:SS left on the booked time, ticking locally. */
+function Countdown({ endsAt }) {
+  const [remaining, setRemaining] = useState(0);
+
+  useEffect(() => {
+    if (!endsAt) return undefined;
+    const end = new Date(endsAt).getTime();
+    const tick = () => setRemaining(Math.max(0, end - Date.now()));
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [endsAt]);
+
+  if (!endsAt) return null;
+  const total = Math.floor(remaining / 1000);
+  return (
+    <span className="font-display text-2xl font-bold tabular-nums text-ink">
+      {String(Math.floor(total / 60)).padStart(2, '0')}:{String(total % 60).padStart(2, '0')}
+    </span>
+  );
+}
+
+export default function AudioConsultModal({
   open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
 }) {
   const [sessionId, setSessionId] = useState(null);
@@ -32,7 +66,7 @@ export default function VideoConsultModal({
   const [error, setError] = useState('');
   const [insufficient, setInsufficient] = useState(false);
   const [offline, setOffline] = useState('');
-  // Unused minutes from an earlier video call, free for 24 hours.
+  // Unused minutes from an earlier call with this lawyer, free for 24 hours.
   const [resumable, setResumable] = useState(null);
 
   const [session, setSession, refresh] = useSessionPoll(sessionId, {
@@ -52,30 +86,30 @@ export default function VideoConsultModal({
     }
   }, [open, setSession]);
 
-  // On opening (before a session exists) check for leftover video time to
-  // offer a free resume. Refetched each open, so a spent leftover disappears.
+  // Ask for leftover phone minutes as soon as the modal opens — a client with
+  // time already paid for should be offered that before being sold more.
   useEffect(() => {
-    if (!open || !advocateId || sessionId) return undefined;
+    if (!open || !advocateId) return undefined;
     let cancelled = false;
-    fetch(`/api/consultations/resumable?advocateId=${advocateId}&type=video`, { cache: 'no-store' })
+    fetch(`/api/consultations/resumable?advocateId=${advocateId}&type=audio`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled) setResumable(d.resumable || null);
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [open, advocateId, sessionId]);
+  }, [open, advocateId]);
 
   const status = session?.status;
 
-  // A lawyer who has switched themselves offline isn't taking video calls, so
+  // A lawyer who has switched themselves offline isn't taking calls at all, so
   // say that instead of showing plans they can't act on. Only before a session
-  // exists — once one is under way it plays out on its own terms.
+  // exists — once a call is under way it plays out on its own terms.
   const isOnline = useIsOnline(advocateId, true);
   const offlineNote =
     offline || (!sessionId && !isOnline ? `${advocateName} is offline right now.` : '');
 
-  // The wallet is charged the moment the lawyer accepts — refresh the navbar.
+  // The wallet is charged the moment the call is answered — refresh the navbar.
   useEffect(() => {
     if (status === 'active') refreshAuth();
   }, [status]);
@@ -83,13 +117,14 @@ export default function VideoConsultModal({
   // Close shortly after it ends (time up or hang-up).
   useEffect(() => {
     if (status === 'ended') {
-      const t = setTimeout(onClose, 1500);
+      const t = setTimeout(onClose, 2500);
       return () => clearTimeout(t);
     }
     return undefined;
   }, [status, onClose]);
 
-  // Give up on a lawyer who never answers the video request.
+  // Backstop only. The server settles a ringing call at 90s from Smartflo's own
+  // answer status, so this just covers a poll that never got there.
   useEffect(() => {
     if (status !== 'pending' || !sessionId) return undefined;
     const t = setTimeout(async () => {
@@ -99,12 +134,16 @@ export default function VideoConsultModal({
         body: JSON.stringify({ action: 'cancel' }),
       }).catch(() => {});
       setSessionId(null);
-      setOffline(`${advocateName} didn't answer the video call. Please try again later.`);
-    }, 45000);
+      setOffline(`${advocateName} didn't answer the call. You were not charged.`);
+    }, 120000);
     return () => clearTimeout(t);
   }, [status, sessionId, advocateName]);
 
-  const book = async (plan) => {
+  /**
+   * Start a call. With a plan, it is a fresh paid one; with `resumeFrom`, it is
+   * the free reconnection of minutes already paid for on an earlier call.
+   */
+  const book = async (plan, resumeFrom) => {
     setError('');
     setInsufficient(false);
     setCreating(true);
@@ -112,7 +151,11 @@ export default function VideoConsultModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, minutes: plan.minutes, type: 'video' }),
+        body: JSON.stringify(
+          resumeFrom
+            ? { advocateId, resumeFrom, type: 'audio' }
+            : { advocateId, minutes: plan.minutes, type: 'audio' }
+        ),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -125,42 +168,8 @@ export default function VideoConsultModal({
         return;
       }
       if (!res.ok) {
-        setError(data.error || 'Could not start the video call.');
-        return;
-      }
-      setSessionId(data.session.id);
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  /** Reconnect leftover video time from an earlier call — free, no plan. */
-  const resume = async () => {
-    if (!resumable) return;
-    setError('');
-    setInsufficient(false);
-    setCreating(true);
-    try {
-      const res = await fetch('/api/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, resumeFrom: resumable.id, type: 'video' }),
-      });
-      const data = await res.json();
-      if (res.status === 409 && data.error === 'offline') {
-        setOffline(data.message || `${advocateName} is offline right now.`);
-        return;
-      }
-      if (res.status === 409 && data.error === 'expired') {
-        // The 24h window closed (or it was already used) — drop the offer.
-        setResumable(null);
-        setError(data.message || 'This leftover time is no longer available.');
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error || 'Could not resume. Please try again.');
+        // Missing phone number / dialler off come back with their own wording.
+        setError(data.message || data.error || 'Could not start the call.');
         return;
       }
       setSessionId(data.session.id);
@@ -182,8 +191,8 @@ export default function VideoConsultModal({
     onClose();
   };
 
-  // Hanging up (or the call otherwise finishing) ends the whole session.
-  const onCallEnded = useCallback(async () => {
+  // End the booked session early (the phone call itself is hung up on the phone).
+  const endNow = async () => {
     if (!sessionId) return;
     await fetch(`/api/consultations/${sessionId}`, {
       method: 'PATCH',
@@ -191,27 +200,15 @@ export default function VideoConsultModal({
       body: JSON.stringify({ action: 'end' }),
     }).catch(() => {});
     refresh();
-  }, [sessionId, refresh]);
-
-  // ── Live video call ──────────────────────────────────────────────────────
-  if (open && sessionId && session && status === 'active' && (session.remainingMs ?? 0) > 0) {
-    return (
-      <VideoCallStage
-        session={session}
-        viewerRole="user"
-        otherName={advocateName}
-        onEnded={onCallEnded}
-      />
-    );
-  }
+  };
 
   return (
     <ConsultationModal
       open={open}
       onClose={status === 'pending' ? cancel : onClose}
       closable={status !== 'pending'}
-      title="Video Consultation"
-      icon={Video}
+      title="Audio Consultation"
+      icon={PhoneCall}
     >
       <div className="p-5">
         {offlineNote ? (
@@ -222,7 +219,7 @@ export default function VideoConsultModal({
             <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer is offline</h4>
             <p className="mt-1 text-sm text-ink/55">{offlineNote}</p>
             <p className="mt-1 text-xs text-ink/45">
-              You can&apos;t start a video call right now. Nothing has been charged.
+              You can&apos;t call them right now. Nothing has been charged.
             </p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
@@ -231,14 +228,17 @@ export default function VideoConsultModal({
         ) : status === 'pending' ? (
           <div className="flex flex-col items-center py-6 text-center">
             <span className="relative grid h-16 w-16 place-items-center">
-              <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-              <span className="grid h-16 w-16 place-items-center rounded-full bg-primary/10 text-primary">
-                <Video className="h-7 w-7" />
+              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
+                <PhoneCall className="h-7 w-7" />
               </span>
             </span>
-            <h4 className="mt-5 font-display text-lg font-semibold text-ink">Ringing {advocateName}…</h4>
+            <h4 className="mt-5 font-display text-lg font-semibold text-ink">
+              Ringing {advocateName}&apos;s phone…
+            </h4>
             <p className="mt-1 text-sm text-ink/55">
-              Your video call will connect as soon as they accept.
+              The moment they pick up, your phone will ring too.{' '}
+              <span className="font-medium text-ink/80">Nothing is charged until they answer.</span>
             </p>
             <button
               type="button"
@@ -248,12 +248,48 @@ export default function VideoConsultModal({
               Cancel
             </button>
           </div>
+        ) : status === 'active' ? (
+          <div className="flex flex-col items-center py-6 text-center">
+            <span className="relative grid h-16 w-16 place-items-center">
+              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
+              <span className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
+                <Smartphone className="h-7 w-7" />
+              </span>
+            </span>
+            <h4 className="mt-5 font-display text-lg font-semibold text-ink">
+              {advocateName} answered
+            </h4>
+            <p className="mt-1 text-sm text-ink/55">
+              You are being connected on the phone — pick up if your handset is still ringing. End
+              early and the minutes you didn&apos;t use stay yours for 24 hours.
+            </p>
+
+            <div className="mt-5 flex items-center gap-2 rounded-xl bg-muted/50 px-4 py-3">
+              <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+              <Countdown endsAt={session?.endsAt} />
+              <span className="text-xs text-ink/50">left</span>
+            </div>
+
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-ink/45">
+              <Smartphone className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+              Keep your phone to hand.
+            </p>
+
+            <button
+              type="button"
+              onClick={endNow}
+              className="mt-6 rounded-xl border border-ink/15 px-5 py-2 text-sm font-medium text-ink/70 transition-colors hover:border-red-300 hover:text-red-600"
+            >
+              End consultation
+            </button>
+          </div>
         ) : status === 'rejected' ? (
           <div className="flex flex-col items-center py-8 text-center">
             <XCircle className="h-12 w-12 text-red-500" />
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Request declined</h4>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Call not answered</h4>
             <p className="mt-1 text-sm text-ink/55">
-              {advocateName} can&apos;t take your video call right now. You were not charged.
+              {advocateName} declined the call or didn&apos;t pick up.{' '}
+              <span className="font-medium text-ink/80">You were not charged.</span>
             </p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
@@ -261,9 +297,20 @@ export default function VideoConsultModal({
           </div>
         ) : status === 'ended' || status === 'cancelled' ? (
           <div className="flex flex-col items-center py-8 text-center">
-            <Video className="h-12 w-12 text-emerald-500" />
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Video call ended</h4>
-            <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            <PhoneCall className="h-12 w-12 text-emerald-500" />
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Call ended</h4>
+            {(session?.remainingMs ?? 0) >= 60000 ? (
+              <p className="mt-1 text-sm text-ink/55">
+                You still have{' '}
+                <span className="font-medium text-ink/80">
+                  {formatLeftover(Math.floor((session?.remainingMs || 0) / 1000))}
+                </span>{' '}
+                left — call {advocateName} back free within 24 hours.
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            )}
+
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
@@ -271,10 +318,12 @@ export default function VideoConsultModal({
         ) : plans.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
-              <Video className="h-7 w-7" />
+              <PhoneCall className="h-7 w-7" />
             </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">No video plans</h4>
-            <p className="mt-1 text-sm text-ink/55">{advocateName} hasn&apos;t set up video calls yet.</p>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">No audio call plans</h4>
+            <p className="mt-1 text-sm text-ink/55">
+              {advocateName} hasn&apos;t set up audio calls yet.
+            </p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
@@ -282,38 +331,35 @@ export default function VideoConsultModal({
         ) : (
           // Plan selection
           <>
-            <p className="text-sm text-ink/60">
-              Choose a video call length. It connects automatically once {advocateName} accepts,
-              and only then is your wallet charged.
-            </p>
-
-            {/* Free resume of leftover time — shown only when the user actually
-                has unused, still-valid video minutes with this lawyer. */}
             {resumable && (
               <button
                 type="button"
                 disabled={creating}
-                onClick={resume}
-                className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-card disabled:opacity-60"
+                onClick={() => book(null, resumable.id)}
+                className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-accent/40 bg-accent/[0.07] p-4 text-left transition-colors hover:border-accent hover:bg-accent/[0.12] disabled:opacity-60"
               >
-                <span className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/25 text-primary-dark">
-                    <RotateCcw className="h-5 w-5" />
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/20 text-primary-dark">
+                  <RotateCcw className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-ink">
+                    Resume your last call — free
                   </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">
-                      Resume your last video call
-                    </span>
-                    <span className="block text-xs text-ink/55">
-                      {formatLeftover(resumable.leftoverSeconds)} left · valid for 24 hours
-                    </span>
+                  <span className="mt-0.5 block text-xs text-ink/55">
+                    {formatLeftover(resumable.leftoverSeconds)} left · valid for 24 hours
                   </span>
                 </span>
-                <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
-                  Free
+                <span className="shrink-0 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600">
+                  ₹0
                 </span>
               </button>
             )}
+
+            <p className="text-sm text-ink/60">
+              Choose how long you want to talk. We ring {advocateName} on their phone straight away,
+              and your own phone rings the moment they answer. Ended early? The unused minutes stay
+              yours to call back on, free, for 24 hours.
+            </p>
 
             <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
               <span className="flex items-center gap-2 text-sm text-ink/60">
@@ -337,7 +383,7 @@ export default function VideoConsultModal({
                       <Clock className="h-4 w-4" />
                       <span className="font-display text-base font-bold text-ink">{plan.label}</span>
                     </span>
-                    <span className="mt-1 text-xs text-ink/50">Video consultation</span>
+                    <span className="mt-1 text-xs text-ink/50">Audio consultation</span>
                     <span className="mt-3 font-display text-xl font-bold text-ink">
                       ₹{Number(plan.price).toLocaleString('en-IN')}
                     </span>
@@ -351,7 +397,7 @@ export default function VideoConsultModal({
 
             {creating && (
               <p className="mt-4 flex items-center justify-center gap-2 text-sm text-ink/55">
-                <Loader2 className="h-4 w-4 animate-spin" /> Sending request…
+                <Loader2 className="h-4 w-4 animate-spin" /> Placing your call…
               </p>
             )}
             {error && (

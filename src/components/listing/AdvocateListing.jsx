@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import AdvocateCard from '@/components/cards/AdvocateCard';
 import ListingFilters from './ListingFilters';
 import { usePresence } from '@/components/consultation/PresenceProvider';
+import { useLocation } from '@/components/location/LocationProvider';
 import { pluralize } from '@/utils/formatters';
 import { distanceKm } from '@/utils/distance';
 
@@ -21,6 +22,9 @@ import { distanceKm } from '@/utils/distance';
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
+/** How far "near me" reaches when a location comes from the header picker. */
+const DEFAULT_RADIUS_KM = 100;
+
 const EMPTY = {
   query: '',
   service: '',
@@ -88,6 +92,25 @@ export default function AdvocateListing({
   const [locationLabel, setLocationLabel] = useState('');
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
+
+  // The location picked in the header carries straight into the distance
+  // filter — having set it once, nobody should be asked for it again here —
+  // and brings a 100 km radius with it, which is what "lawyers near me" means
+  // for a city and its surrounding courts. Only as a starting point: changing
+  // the radius or clearing the location below stays in effect.
+  const { location: pickedLocation } = useLocation();
+  const appliedPickedRef = useRef('');
+
+  useEffect(() => {
+    if (!pickedLocation) return;
+    const key = `${pickedLocation.lat},${pickedLocation.lng}`;
+    if (appliedPickedRef.current === key) return;
+    appliedPickedRef.current = key;
+    setUserLocation({ lat: pickedLocation.lat, lng: pickedLocation.lng });
+    setLocationLabel(pickedLocation.label || 'Your location');
+    setLocationError('');
+    setFilters((prev) => ({ ...prev, radius: prev.radius || DEFAULT_RADIUS_KM }));
+  }, [pickedLocation]);
 
   const onChange = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
   const onReset = () => {

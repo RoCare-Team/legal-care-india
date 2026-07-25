@@ -12,22 +12,20 @@ export default async function FeaturedAdvocates() {
 
   return (
     <Section className="mt-6 bg-surface/55 pt-8 sm:pt-10">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <Heading
-          eyebrow="Verified Advocates"
-          subtitle="Credentials checked against the Bar Council roll before a profile goes live."
-        >
-          Meet the Lawyers on Legal Care India
-        </Heading>
-        {advocates.length > 0 && (
-          <Button href="/lawyers" variant="outline" size="sm" className="shrink-0">
-            Browse all lawyers
-          </Button>
-        )}
-      </div>
+      <Heading eyebrow="Verified Advocates" centered>
+        Meet the Lawyers on Legal Care India
+      </Heading>
 
       {advocates.length > 0 ? (
-        <FeaturedCarousel advocates={advocates} />
+        <>
+          <FeaturedCarousel advocates={advocates} />
+          {/* Below the slider, like the cities and practice-area sections. */}
+          <div className="mt-8 flex justify-center">
+            <Button href="/lawyers" variant="outline" size="sm">
+              Browse all lawyers
+            </Button>
+          </div>
+        </>
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">
           <UserPlus className="h-10 w-10 text-primary/60" aria-hidden="true" />

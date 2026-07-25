@@ -8,8 +8,9 @@ import Advocate from '@/models/Advocate';
  * Consultation data-access + the wallet transfer that happens on connect.
  */
 
-// A lawyer counts as "online" if their listener checked in within this
-// window (the listener polls every 3s).
+// How recently the lawyer's listener checked in. Kept as a record of activity
+// (`lastSeenAt`) — it no longer decides online/offline, which is purely their
+// own availability switch.
 export const ONLINE_WINDOW_MS = 12000;
 
 // A video call that nobody picks up within this window gives up on its own.
@@ -48,14 +49,18 @@ export async function markAdvocateOnline(advocateId) {
 }
 
 /**
- * Is the lawyer online right now? They must have manually switched
- * themselves available AND have a recent heartbeat (site open).
+ * Is the lawyer online right now?
+ *
+ * Their own availability switch is the answer — nothing else. It used to also
+ * require a recent heartbeat, which meant a lawyer who had set themselves
+ * available but closed the tab read as Offline: they are reachable on the
+ * phone whether or not a browser is open, so the site was contradicting them.
+ * Switching to Offline still hides them everywhere, instantly.
  */
 export async function isAdvocateOnline(advocateId) {
   await connectDB();
-  const adv = await Advocate.findById(advocateId).select('lastSeenAt available').lean();
-  if (!adv?.available || !adv?.lastSeenAt) return false;
-  return Date.now() - new Date(adv.lastSeenAt).getTime() < ONLINE_WINDOW_MS;
+  const adv = await Advocate.findById(advocateId).select('available').lean();
+  return Boolean(adv?.available);
 }
 
 /**
@@ -87,12 +92,15 @@ export function serializeSession(doc) {
     advocateName: s.advocateName || '',
     minutes: s.minutes,
     price: s.price,
-    // 'chat' | 'video' — drives which UI the participants open.
+    // 'chat' | 'video' | 'audio' — drives which UI the participants open.
     type: s.type || 'chat',
     // A free reconnection of leftover time (no charge). Lets both sides label
     // the session correctly instead of showing "₹0".
     isResume: Boolean(s.resumedFromId),
     status: s.status,
+    // When the request was made — an audio call needs it to know how long the
+    // lawyer's phone has been ringing.
+    createdAt: s.createdAt || null,
     startedAt: s.startedAt || null,
     endsAt: s.endsAt || null,
     remainingMs,
@@ -229,6 +237,8 @@ function toHistoryRow(r, viewer) {
     advocateName: r.advocateName || 'Lawyer',
     minutes: r.minutes,
     price: r.price,
+    // 'chat' | 'video' | 'audio' — history and the resume board group by it.
+    type: r.type || 'chat',
     status: r.status,
     // Only a connected session cost money / had a conversation.
     charged: ['active', 'ended'].includes(r.status),
@@ -309,12 +319,18 @@ export async function createConsultation({ userId, userName, advocateId, advocat
  * The user's leftover time with a given lawyer, if any is free to reconnect
  * right now — or `null`. Powers the "Resume · Free" button on the profile.
  */
-export async function getResumableSession(userId, advocateId) {
+export async function getResumableSession(userId, advocateId, type) {
   await connectDB();
   // Only a handful of recent ended sessions matter — settle any that just
   // expired so their leftover reads correctly, then take the newest resumable.
+  //
+  // `type` keeps each channel's leftover to itself: unused phone minutes come
+  // back as a phone call, not as a chat window.
   const docs = await Consultation.find({
     userId, advocateId, status: { $in: ['active', 'ended'] }, resumed: false,
+    // Chat is the default, and `$in: [..., null]` also matches the rows saved
+    // before `type` existed — those were all chats.
+    type: type === 'audio' || type === 'video' ? type : { $in: ['chat', null] },
   })
     .sort({ endedAt: -1, createdAt: -1 })
     .limit(5);
@@ -359,6 +375,9 @@ export async function resumeConsultation({ userId, userName, advocateId, advocat
     minutes: leftoverMs(parent) / 60000, // fractional; endsAt math handles it
     price: 0,
     status: 'pending',
+    // Leftover time comes back the way it was bought — phone minutes resume as
+    // a phone call, not as a chat window.
+    type: parent.type || 'chat',
     resumedFromId: parent._id,
   });
   return serializeSession(doc.toObject());

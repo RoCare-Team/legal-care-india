@@ -41,11 +41,16 @@ export default function AdvocateCallListener() {
         const { sessions = [] } = await res.json();
         if (!alive) return;
 
-        const act = sessions.find((s) => s.status === 'active');
+        // Audio consultations are pure phone calls — the lawyer's handset
+        // rings, nothing opens here. Filtering them out keeps this listener
+        // from popping a window over a call they are already taking.
+        const live = sessions.filter((s) => s.type !== 'audio');
+
+        const act = live.find((s) => s.status === 'active');
         if (act) setActiveId((cur) => cur || act.id);
 
         // Show an incoming request only when not already in a live chat.
-        const pend = sessions.find((s) => s.status === 'pending' && !dismissed.current.has(s.id));
+        const pend = live.find((s) => s.status === 'pending' && !dismissed.current.has(s.id));
         if (pend && !act) {
           if (!chimed.current.has(pend.id)) {
             playIncomingChime();
@@ -165,7 +170,8 @@ export default function AdvocateCallListener() {
 
   // ── Live chat (after accepting) ─────────────────────────────────────────
   // Video sessions are handled above and must NOT fall in here — otherwise an
-  // ended video call would drop the lawyer back into a chat window.
+  // ended video call would drop the lawyer back into a chat window. (Audio
+  // never reaches this component at all; it happens on the phone network.)
   if (
     activeId && activeSession &&
     activeSession.type !== 'video' &&
@@ -216,7 +222,11 @@ export default function AdvocateCallListener() {
             </span>
             <h4 className="mt-4 font-display text-lg font-semibold text-ink">{incoming.userName}</h4>
             <p className="text-sm text-ink/55">
-              {incoming.isResume ? 'wants to resume a consultation' : 'wants a consultation'}
+              {incoming.isResume
+                ? 'wants to resume a consultation'
+                : incoming.type === 'video'
+                  ? 'wants a video call'
+                  : 'wants a consultation'}
             </p>
 
             <div className="mt-4 flex items-center gap-4 rounded-xl bg-muted/50 px-4 py-3">

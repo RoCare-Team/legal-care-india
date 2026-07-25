@@ -32,7 +32,9 @@ export default async function CitiesPage() {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Cities' }]}
       />
       <Container className="py-10 sm:py-12">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Compact city tiles — six across on a wide screen, matching the
+            homepage slider rather than the old four large photo panels. */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
           {CITIES.map((city, i) => (
             <SectionReveal key={city.slug} delay={i * 0.04}>
               <CityCard city={city} />

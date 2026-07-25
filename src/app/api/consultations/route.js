@@ -4,9 +4,10 @@ import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { getAdvocatePlan } from '@/constants/consultationPlans';
+import { bridgeAudioCall } from '@/lib/phoneBridge';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
-  markAdvocateOnline, isAdvocateOnline,
+  markAdvocateOnline, isAdvocateOnline, cancelConsultation,
 } from '@/lib/consultations';
 
 /**
@@ -51,18 +52,22 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid booking details.' }, { status: 400 });
   }
 
-  // 'video' bills from the lawyer's separate video plans; anything else is a chat.
-  const type = body?.type === 'video' ? 'video' : 'chat';
+  // 'video' and 'audio' each bill from the lawyer's own separate plan list;
+  // anything else is a chat.
+  const type = ['video', 'audio'].includes(body?.type) ? body.type : 'chat';
 
   await connectDB();
   const [user, advocate] = await Promise.all([
     getUserById(session.id),
-    Advocate.findById(advocateId).select('name consultationPlans videoPlans').lean(),
+    Advocate.findById(advocateId)
+      .select('name consultationPlans videoPlans audioPlans phone contact')
+      .lean(),
   ]);
   if (!advocate) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
 
-  // The lawyer must be online to take a live consultation right now — a resume
-  // still needs them present to accept, so this check applies either way.
+  // A lawyer who has switched themselves offline is not taking anything —
+  // chat, video or phone — and a resume needs them just as much as a fresh
+  // booking does.
   if (!(await isAdvocateOnline(advocateId))) {
     return NextResponse.json(
       { error: 'offline', message: `${advocate.name} is offline right now. Please try again later.` },
@@ -80,6 +85,20 @@ export async function POST(request) {
         advocateName: advocate.name,
         fromId: resumeFrom,
       });
+
+      // Leftover phone minutes come back as a phone call: ring them again, on
+      // the same terms as the paid call this time was bought with.
+      if (resumed?.type === 'audio') {
+        const bridged = await bridgeAudioCall({ userId: session.id, advocateId });
+        if (!bridged.ok) {
+          await cancelConsultation(resumed.id, session.id).catch(() => {});
+          return NextResponse.json(
+            { error: 'call-failed', message: bridged.error },
+            { status: bridged.status }
+          );
+        }
+      }
+
       return NextResponse.json({ ok: true, session: resumed }, { status: 201 });
     } catch (err) {
       if (err.code === 'NOT_FOUND') {
@@ -99,11 +118,15 @@ export async function POST(request) {
   // ── Fresh paid booking (chat or video) ───────────────────────────────────
   // The plan (duration + price) always comes from the lawyer's own list —
   // never from the client — picking the chat or video list by `type`.
-  const planList = type === 'video' ? advocate.videoPlans : advocate.consultationPlans;
+  const planList =
+    type === 'video' ? advocate.videoPlans
+      : type === 'audio' ? advocate.audioPlans
+        : advocate.consultationPlans;
   const plan = getAdvocatePlan(planList, minutes);
   if (!plan) {
+    const label = type === 'video' ? 'video call' : type === 'audio' ? 'audio call' : 'consultation';
     return NextResponse.json(
-      { error: `This lawyer does not offer that ${type === 'video' ? 'video call' : 'consultation'} plan.` },
+      { error: `This lawyer does not offer that ${label} plan.` },
       { status: 400 }
     );
   }
@@ -125,6 +148,22 @@ export async function POST(request) {
     price: plan.price,
     type,
   });
+
+  // ── Audio: dial straight away, no accept step ────────────────────────────
+  // The lawyer's phone is the accept screen — it rings and they either pick up
+  // or they don't. The session stays PENDING and free while it rings: the
+  // wallet is charged only once Smartflo confirms the call was answered, which
+  // the GET route checks on each poll. A declined call must cost nothing.
+  if (type === 'audio') {
+    const bridged = await bridgeAudioCall({ userId: session.id, advocateId });
+    if (!bridged.ok) {
+      await cancelConsultation(created.id, session.id).catch(() => {});
+      return NextResponse.json(
+        { error: 'call-failed', message: bridged.error },
+        { status: bridged.status }
+      );
+    }
+  }
 
   return NextResponse.json({ ok: true, session: created }, { status: 201 });
 }

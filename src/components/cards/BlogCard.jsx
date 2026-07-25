@@ -6,14 +6,22 @@ import { Badge, Card } from '@/components/ui';
  * BlogCard — a single article entry in the blogs grid.
  *
  * @param {object} props
- * @param {import('@/data/blogs').BLOGS[number]} props.post
+ * @param {{slug:string,title:string,excerpt:string,category:string,readMinutes:number,date:string,coverImage?:string}} props.post
  */
 export default function BlogCard({ post }) {
-  const { slug, title, excerpt, category, readMinutes, date } = post;
+  const { slug, title, excerpt, category, readMinutes, date, coverImage } = post;
 
   return (
     <Card as={Link} href={`/blogs/${slug}`} hoverable padding="none" className="group flex h-full flex-col overflow-hidden">
       <div className="relative h-40 bg-gradient-to-br from-primary/15 via-secondary/15 to-accent/15">
+        {coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        )}
         <Badge variant="primary" className="absolute left-4 top-4">{category}</Badge>
       </div>
       <div className="flex flex-1 flex-col p-5">

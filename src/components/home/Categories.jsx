@@ -9,14 +9,9 @@ import { CATEGORIES } from '@/data/categories';
 export default function Categories() {
   return (
     <Section id="legal-services">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <Heading eyebrow="Areas of Practice">
-          Find a Lawyer by Practice Area
-        </Heading>
-        <Button href="/legal-services" variant="outline" size="sm" className="shrink-0">
-          View all services
-        </Button>
-      </div>
+      <Heading eyebrow="Areas of Practice" centered>
+        Find a Lawyer by Practice Area
+      </Heading>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {CATEGORIES.slice(0, 8).map((category, i) => (
@@ -24,6 +19,14 @@ export default function Categories() {
             <CategoryCard category={category} />
           </SectionReveal>
         ))}
+      </div>
+
+      {/* Below the grid, like the cities section — a right-aligned button beside
+          a centred title reads as a mistake. */}
+      <div className="mt-8 flex justify-center">
+        <Button href="/legal-services" variant="outline" size="sm">
+          View all services
+        </Button>
       </div>
     </Section>
   );

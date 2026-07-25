@@ -2,7 +2,7 @@ import { SITE } from '@/constants/site';
 import { CATEGORIES } from '@/data/categories';
 import { getAllCities } from '@/lib/cities';
 import { getAllAdvocateParams } from '@/lib/advocates';
-import { BLOGS } from '@/data/blogs';
+import { getAllBlogs } from '@/lib/blogs';
 
 /**
  * Dynamic sitemap. Next.js serves this at /sitemap.xml.
@@ -64,9 +64,10 @@ export default async function sitemap() {
     priority: 0.6,
   }));
 
-  const blogRoutes = BLOGS.map((p) => ({
+  const blogPosts = await getAllBlogs();
+  const blogRoutes = blogPosts.map((p) => ({
     url: new URL(`/blogs/${p.slug}`, base).toString(),
-    lastModified: now,
+    lastModified: p.publishedAt ? new Date(p.publishedAt) : now,
     changeFrequency: 'monthly',
     priority: 0.5,
   }));

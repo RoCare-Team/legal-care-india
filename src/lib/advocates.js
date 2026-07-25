@@ -171,6 +171,8 @@ export function buildAdvocateProfile(a) {
     consultationPlans: a.consultationPlans || [],
     // Video-call rates, priced separately (empty ⇒ video not offered).
     videoPlans: a.videoPlans || [],
+    // Audio-call rates, priced separately (empty ⇒ audio calls not offered).
+    audioPlans: a.audioPlans || [],
     rating: avgRating,
     reviews: reviewsCount,
     reviewsList,

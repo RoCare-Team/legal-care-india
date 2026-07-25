@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff, RotateCcw } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
 import ChatPanel from '@/components/consultation/ChatPanel';
+import { useIsOnline } from '@/components/consultation/PresenceProvider';
 import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { refreshAuth } from '@/utils/authEvents';
@@ -66,7 +67,7 @@ export default function BookConsultationModal({
   useEffect(() => {
     if (!open || !advocateId || sessionId) return undefined;
     let cancelled = false;
-    fetch(`/api/consultations/resumable?advocateId=${advocateId}`)
+    fetch(`/api/consultations/resumable?advocateId=${advocateId}&type=chat`)
       .then((r) => r.json())
       .then((d) => {
         if (!cancelled) setResumable(d.resumable || null);
@@ -78,6 +79,13 @@ export default function BookConsultationModal({
   }, [open, advocateId, sessionId]);
 
   const status = session?.status;
+
+  // A lawyer who has switched themselves offline isn't taking chats, so say
+  // that instead of showing plans they can't act on. Only before a session
+  // exists — once one is under way it plays out on its own terms.
+  const isOnline = useIsOnline(advocateId, true);
+  const offlineNote =
+    offline || (!sessionId && !isOnline ? `${advocateName} is offline right now.` : '');
 
   // The wallet is charged the moment the lawyer accepts — refresh the navbar
   // balance right away rather than waiting for a page reload.
@@ -257,14 +265,16 @@ export default function BookConsultationModal({
     >
       <div className="p-5">
         {/* Lawyer offline */}
-        {offline ? (
+        {offlineNote ? (
           <div className="flex flex-col items-center py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
               <WifiOff className="h-7 w-7" />
             </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer offline</h4>
-            <p className="mt-1 text-sm text-ink/55">{offline}</p>
-            <p className="mt-1 text-xs text-ink/45">You were not charged.</p>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">Lawyer is offline</h4>
+            <p className="mt-1 text-sm text-ink/55">{offlineNote}</p>
+            <p className="mt-1 text-xs text-ink/45">
+              You can&apos;t chat with them right now. Nothing has been charged.
+            </p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>

@@ -5,7 +5,7 @@ import BlogCard from '@/components/cards/BlogCard';
 import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema } from '@/lib/schema';
-import { BLOGS } from '@/data/blogs';
+import { getAllBlogs } from '@/lib/blogs';
 
 export const metadata = createMetadata({
   title: 'Legal Blogs & Guides',
@@ -14,7 +14,9 @@ export const metadata = createMetadata({
   path: '/blogs',
 });
 
-export default function BlogsPage() {
+export default async function BlogsPage() {
+  const posts = await getAllBlogs();
+
   return (
     <>
       <JsonLd
@@ -30,13 +32,19 @@ export default function BlogsPage() {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Blogs' }]}
       />
       <Container className="py-10 sm:py-12">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {BLOGS.map((post, i) => (
-            <SectionReveal key={post.slug} delay={i * 0.05}>
-              <BlogCard post={post} />
-            </SectionReveal>
-          ))}
-        </div>
+        {posts.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-ink/15 py-16 text-center text-sm text-ink/50">
+            No articles yet — check back soon.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {posts.map((post, i) => (
+              <SectionReveal key={post.slug} delay={i * 0.05}>
+                <BlogCard post={post} />
+              </SectionReveal>
+            ))}
+          </div>
+        )}
       </Container>
     </>
   );

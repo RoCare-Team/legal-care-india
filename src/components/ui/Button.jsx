@@ -16,7 +16,7 @@ import { cn } from '@/utils/cn';
  * @param {import('react').ReactNode} props.children
  */
 const BASE =
-  'group/btn inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-[0.01em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60';
+  'group/btn inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold tracking-[0.01em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60';
 
 /**
  * Filled buttons lift on hover instead of just darkening — a flat colour swap

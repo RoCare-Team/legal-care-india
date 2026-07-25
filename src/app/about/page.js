@@ -4,7 +4,7 @@ import { Container, Section, Heading, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import JsonLd from '@/components/shared/JsonLd';
 import { webPageSchema, breadcrumbSchema } from '@/lib/schema';
-import { PLATFORM_STATS } from '@/data/stats';
+import { getPlatformStats } from '@/lib/stats';
 import { formatCompactNumber } from '@/utils/formatters';
 
 export const metadata = createMetadata({
@@ -21,7 +21,10 @@ const VALUES = [
   { icon: Scale, title: 'Fair for Lawyers', text: 'A premium public profile that helps lawyers reach clients who genuinely need them.' },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  // The same live figures the homepage band counts (see lib/stats).
+  const stats = await getPlatformStats();
+
   return (
     <>
       <JsonLd
@@ -47,7 +50,7 @@ export default function AboutPage() {
 
       <Section spacing="default">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PLATFORM_STATS.map((s) => (
+          {stats.map((s) => (
             <div key={s.id} className="rounded-2xl border border-ink/8 bg-surface p-6 text-center shadow-card">
               <p className="font-display text-3xl font-semibold text-primary">
                 {formatCompactNumber(s.value)}{s.suffix}

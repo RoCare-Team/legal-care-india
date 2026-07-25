@@ -1,4 +1,4 @@
-import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock, Video } from 'lucide-react';
+import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock, Video, PhoneCall } from 'lucide-react';
 import { FormField, Input } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
 import RepeatableList from '../RepeatableList';
@@ -63,6 +63,48 @@ export default function SectionContactFees({ data, set }) {
                   type="number"
                   min="1"
                   placeholder="500"
+                  value={item.price}
+                  onChange={(e) => update({ price: e.target.value })}
+                  leftIcon={<IndianRupee className="h-4 w-4" />}
+                />
+              </FormField>
+            </div>
+          )}
+        />
+      </DashboardSection>
+
+      <DashboardSection
+        id="audio-rates"
+        title="Audio Call Plans"
+        description="What you charge for a voice call. Clients tap Call on your profile and pick one of these. Add none and your Call button tells them you don't take audio calls."
+        icon={PhoneCall}
+      >
+        <RepeatableList
+          items={data.audioPlans || []}
+          onChange={(v) => set('audioPlans', v)}
+          template={{ minutes: '', price: '' }}
+          addLabel="Add audio plan"
+          renderRow={(item, update) => (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                label="Duration (minutes)"
+                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
+              >
+                <Input
+                  type="number"
+                  min="5"
+                  max="480"
+                  placeholder="15"
+                  value={item.minutes}
+                  onChange={(e) => update({ minutes: e.target.value })}
+                  leftIcon={<Clock className="h-4 w-4" />}
+                />
+              </FormField>
+              <FormField label="Price (₹)" hint="What you charge for this audio call.">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="400"
                   value={item.price}
                   onChange={(e) => update({ price: e.target.value })}
                   leftIcon={<IndianRupee className="h-4 w-4" />}

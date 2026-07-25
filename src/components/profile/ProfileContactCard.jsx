@@ -1,4 +1,4 @@
-import { Clock, MessagesSquare } from 'lucide-react';
+import { Clock, MessagesSquare, PhoneCall } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { advocatePlans } from '@/constants/consultationPlans';
 import ProfileContactActions from './ProfileContactActions';
@@ -16,6 +16,8 @@ export default function ProfileContactCard({ advocate }) {
   const advocateId = advocate._id || advocate.id || '';
   // The lawyer's own live-chat rates (only the durations they priced).
   const plans = advocatePlans(advocate.consultationPlans);
+  // The lawyer's own audio-call rates — what "Call" charges.
+  const audioPlans = advocatePlans(advocate.audioPlans);
   // Only keep timing rows that actually have a day + hours filled in.
   const timing = (advocate.timing || []).filter((t) => t && t.day && t.hours);
   const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India and would like a consultation.`);
@@ -45,12 +47,34 @@ export default function ProfileContactCard({ advocate }) {
           </div>
         )}
 
+        {/* Audio-call rates — the same list the Call button opens. */}
+        {audioPlans.length > 0 && (
+          <div className="mb-4 rounded-xl border border-ink/8 bg-muted/40 p-3.5">
+            <p className="mb-2.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/45">
+              <PhoneCall className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              Audio Call Consultation
+            </p>
+            <ul className="space-y-2">
+              {audioPlans.map((p) => (
+                <li key={p.id} className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5 text-ink/70">
+                    <Clock className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />
+                    {p.label}
+                  </span>
+                  <span className="font-display font-bold text-primary">₹{p.price}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <ProfileContactActions
           contact={contact}
           name={name}
           waText={waText}
           advocateId={advocateId}
           plans={plans}
+          audioPlans={audioPlans}
         />
       </div>
 

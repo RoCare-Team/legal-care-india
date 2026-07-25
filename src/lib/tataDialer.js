@@ -83,6 +83,135 @@ async function send({ token, agent, destination, callerId }) {
   }
 }
 
+/** Last 10 digits of a number, for comparing formats that differ (+91, 0, …). */
+function last10(value) {
+  return normalizeIndianMobile(value || '').slice(-10);
+}
+
+/** "YYYY-MM-DD HH:MM:SS" in IST — the format and timezone Smartflo reports in. */
+function istStamp(date) {
+  // 'sv-SE' formats as YYYY-MM-DD HH:MM:SS, which is exactly Smartflo's Y-m-d H:i:s.
+  return new Date(date).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' });
+}
+
+/** The reverse: a Smartflo IST stamp back into a Date, or null if unparseable. */
+function istToDate(stamp) {
+  const s = String(stamp || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}$/.test(s)) return null;
+  const date = new Date(`${s.replace(' ', 'T')}+05:30`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** One authenticated GET to Smartflo. Resolves to parsed JSON, or null. */
+async function get(path, params = {}) {
+  const token = process.env.TATA_SMARTFLO_TOKEN;
+  if (!token) return null;
+
+  const url = new URL(`https://api-smartflo.tatateleservices.com${path}`);
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== '') url.searchParams.set(k, String(v));
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: token },
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    if (!res.ok) {
+      console.error('[dialer] GET', path, 'failed', res.status);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error('[dialer] GET', path, 'failed', err?.name || err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Has this call actually been answered, or was it declined / left to ring?
+ *
+ * Smartflo's click-to-call only reports that a call was *placed* — the number
+ * being rung says nothing back through that API. So the only honest way to know
+ * whether the lawyer picked up is to ask afterwards, which takes two sources:
+ *
+ *   live_calls    — a call in progress right now. This is what "answered" looks
+ *                   like while it is still happening.
+ *   call/records  — the CDR, written once a call is over. `answered_seconds` of
+ *                   0 is a call that rang and was never picked up (declined,
+ *                   busy, or ignored).
+ *
+ * Neither knowing yet is the normal state while the phone is still ringing, so
+ * an unknown answer is 'ringing', never 'declined' — a caller must not be
+ * charged, and must not be told "declined", on a call that may still connect.
+ *
+ * The same two sources tell us when the call is over: it drops out of
+ * live_calls and a CDR appears with time on the clock. That is 'ended', and it
+ * is what stops the consultation the moment either side hangs up their phone.
+ *
+ * @returns {Promise<{state: 'answered'|'ended'|'declined'|'ringing', seconds: number}>}
+ *   answered — connected right now
+ *   ended    — was answered, and the handsets have since hung up
+ *   declined — rang out or was rejected; never connected
+ *   ringing  — nothing known yet; it may still connect
+ *   seconds  — answered seconds, known only once the call is over
+ */
+export async function checkCallOutcome({ agentNumber, clientNumber, since }) {
+  const agent = last10(agentNumber);
+  const client = last10(clientNumber);
+
+  // 1. Connected right now?
+  const live = await get('/v1/live_calls', { agent_number: agent });
+  const liveRows = Array.isArray(live) ? live : (live?.results ?? live?.data ?? []);
+  if (Array.isArray(liveRows)) {
+    const match = liveRows.find((r) => last10(r?.customer_number) === client);
+    if (match) return { state: 'answered', seconds: 0 };
+  }
+
+  // 2. Over already — did it ever get answered?
+  const from = new Date(new Date(since).getTime() - 5 * 60 * 1000);
+  const to = new Date(Date.now() + 5 * 60 * 1000);
+  const cdr = await get('/v1/call/records', {
+    from_date: istStamp(from),
+    to_date: istStamp(to),
+    limit: 50,
+    page: 1,
+  });
+  const rows = cdr?.results ?? cdr?.data ?? (Array.isArray(cdr) ? cdr : []);
+  if (Array.isArray(rows) && rows.length) {
+    // Only records from THIS call. The same two people may well have spoken a
+    // few minutes ago, and an older record would otherwise end the new call the
+    // instant it started.
+    const floor = new Date(since).getTime() - 10 * 1000;
+    const match = rows.find((r) => {
+      const isPair = last10(r?.client_number) === client || last10(r?.destination) === client;
+      if (!isPair) return false;
+      const stamp = istToDate(r?.end_stamp || `${r?.date} ${r?.time}`);
+      return !stamp || stamp.getTime() >= floor;
+    });
+    if (match) {
+      const seconds = Math.max(0, Number(match.answered_seconds) || 0);
+      console.log(`[dialer] call ${seconds > 0 ? 'ended' : 'not answered'}`, {
+        client_number: match.client_number,
+        answered_seconds: match.answered_seconds,
+        status: match.status,
+        description: match.description,
+      });
+      // A record only exists once the call is over, so an answered one means
+      // they talked and have since hung up.
+      return { state: seconds > 0 ? 'ended' : 'declined', seconds };
+    }
+  }
+
+  // Still ringing (or Smartflo hasn't written the record yet).
+  return { state: 'ringing', seconds: 0 };
+}
+
 /**
  * Place a bridged call between two Indian mobile numbers.
  *

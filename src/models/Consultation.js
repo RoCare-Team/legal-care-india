@@ -69,10 +69,11 @@ const ConsultationSchema = new Schema(
     advocateId: { type: Schema.Types.ObjectId, ref: 'Advocate', required: true, index: true },
     advocateName: { type: String, default: '' },
 
-    // Which kind of session: a text live-chat, or a video call (priced from the
-    // lawyer's separate video plans). The video call itself still rides on the
-    // `call` sub-document below — `type` only changes pricing and which UI opens.
-    type: { type: String, enum: ['chat', 'video'], default: 'chat' },
+    // Which kind of session: a text live-chat, a video call, or an audio-only
+    // call — each priced from the lawyer's own separate plan list. Video and
+    // audio both ride on the `call` sub-document below; `type` only changes
+    // pricing and which UI opens (audio just never asks for the camera).
+    type: { type: String, enum: ['chat', 'video', 'audio'], default: 'chat' },
 
     minutes: { type: Number, required: true },
     price: { type: Number, required: true, min: 0 },

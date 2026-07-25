@@ -38,6 +38,7 @@ export default function AdvocateCard({ advocate }) {
     consultationFee,
     consultationPlans = [],
     videoPlans = [],
+    audioPlans = [],
     contact,
     _distance,
   } = advocate;
@@ -152,6 +153,7 @@ export default function AdvocateCard({ advocate }) {
               advocateId={advocate._id}
               plans={advocatePlans(consultationPlans)}
               videoPlans={advocatePlans(videoPlans)}
+              audioPlans={advocatePlans(audioPlans)}
             />
           </div>
 

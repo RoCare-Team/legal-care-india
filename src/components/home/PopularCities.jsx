@@ -1,6 +1,5 @@
 import { Section, Heading, Button } from '@/components/ui';
-import CityCard from '@/components/cards/CityCard';
-import SectionReveal from '@/components/shared/SectionReveal';
+import CitiesCarousel from './CitiesCarousel';
 import { getAllCities } from '@/lib/cities';
 
 /**
@@ -13,24 +12,18 @@ export default async function PopularCities() {
 
   return (
     <Section>
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-        <Heading
-          eyebrow="Courts Across India"
-          subtitle="Local counsel matters — find advocates who appear in the courts of your city."
-        >
-          Lawyers in Your City
-        </Heading>
-        <Button href="/cities" variant="outline" size="sm" className="shrink-0">
+      <Heading eyebrow="Courts Across India" centered>
+        Lawyers in Your City
+      </Heading>
+
+      <CitiesCarousel cities={CITIES} />
+
+      {/* Below the slider once the heading is centred — a right-aligned button
+          beside a centred title reads as a mistake. */}
+      <div className="mt-8 flex justify-center">
+        <Button href="/cities" variant="outline" size="sm">
           View all cities
         </Button>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {CITIES.map((city, i) => (
-          <SectionReveal key={city.slug} delay={i * 0.03}>
-            <CityCard city={city} />
-          </SectionReveal>
-        ))}
       </div>
     </Section>
   );

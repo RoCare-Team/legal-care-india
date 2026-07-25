@@ -114,6 +114,21 @@ const AdvocateSchema = new Schema(
       default: [],
     },
 
+    // Audio-call plans — the lawyer's own rates for a voice consultation,
+    // priced separately again. Empty ⇒ they don't take audio calls.
+    audioPlans: {
+      type: [
+        new Schema(
+          {
+            minutes: { type: Number, required: true, min: 1 },
+            price: { type: Number, required: true, min: 1 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
+
     office: {
       name: { type: String, default: '' },
       address: { type: String, default: '' },

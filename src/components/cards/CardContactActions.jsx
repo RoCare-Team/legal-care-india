@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { Phone, MessageSquare, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useClickToCall } from '@/hooks/useClickToCall';
-import CallStatusModal from '@/components/consultation/CallStatusModal';
 import AuthGateModal from '@/components/profile/AuthGateModal';
 import BookConsultationModal from '@/components/profile/BookConsultationModal';
 import VideoConsultModal from '@/components/profile/VideoConsultModal';
+import AudioConsultModal from '@/components/profile/AudioConsultModal';
 
 /**
  * CardContactActions — the Call / Chat / Email buttons on an AdvocateCard.
@@ -22,20 +21,23 @@ import VideoConsultModal from '@/components/profile/VideoConsultModal';
  * @param {Array} [props.plans]  the lawyer's live-chat plans. When present, a
  *   signed-in client's "Chat" opens the paid consultation booking (same as the
  *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
+ * @param {Array} [props.audioPlans]  the lawyer's paid audio-call plans.
  */
-export default function CardContactActions({ contact = {}, name, advocateId, plans = [], videoPlans = [] }) {
+export default function CardContactActions({
+  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [],
+}) {
   const { role, user, loading } = useAuth();
-  const call = useClickToCall();
   const [gateOpen, setGateOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [audioOpen, setAudioOpen] = useState(false);
   const authed = role !== null;
 
   /**
-   * A signed-in client gets a bridged call — the server rings the lawyer and
-   * joins the client once the lawyer answers. Lawyers, and clients on a
-   * deployment with no dialler configured, fall through to the `tel:` link the
-   * button already carries.
+   * "Call" is a paid audio consultation, priced from the lawyer's own audio
+   * plans — so it opens the booking modal rather than dialling. The modal
+   * itself says so when the lawyer hasn't added any plan, instead of the button
+   * doing nothing. Lawyers keep the plain `tel:` link the button carries.
    */
   const onCall = (e) => {
     if (loading) {
@@ -49,7 +51,7 @@ export default function CardContactActions({ contact = {}, name, advocateId, pla
     }
     if (role !== 'user' || !advocateId) return;
     e.preventDefault();
-    call.start(advocateId, { fallbackTel: contact?.phone || '' });
+    setAudioOpen(true);
   };
 
   /**
@@ -103,7 +105,7 @@ export default function CardContactActions({ contact = {}, name, advocateId, pla
         className={`${base} text-emerald-500 hover:border-emerald-400 hover:bg-emerald-500/10`}
       >
         <Phone className="h-4 w-4" />
-        {call.status === 'dialing' ? '…' : 'Call'}
+        Call
       </a>
 
       <a
@@ -128,11 +130,13 @@ export default function CardContactActions({ contact = {}, name, advocateId, pla
       </button>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
-      <CallStatusModal
-        status={call.status}
-        error={call.error}
+      <AudioConsultModal
+        open={audioOpen}
+        onClose={() => setAudioOpen(false)}
+        advocateId={advocateId}
         advocateName={name}
-        onClose={call.reset}
+        walletBalance={user?.walletBalance || 0}
+        plans={audioPlans}
       />
       <BookConsultationModal
         open={bookOpen}

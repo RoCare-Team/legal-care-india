@@ -50,9 +50,13 @@ function CallTimer({ endsAt }) {
  * @param {string} props.otherName   the other party's name
  * @param {string} [props.endsAt]    the consultation's hard end time
  * @param {boolean} props.minimized
+ * @param {string} [props.dismissLabel]  wording on the "call ended" button. In a
+ *   chat consultation the call is one leg of a session that carries on, so it
+ *   really is "Back to chat"; in a video consultation the call IS the session
+ *   and there is no chat behind it to go back to.
  */
 export default function VideoCallOverlay({
-  call, otherName, endsAt, minimized = false, onMinimize,
+  call, otherName, endsAt, minimized = false, onMinimize, dismissLabel = 'Back to chat',
 }) {
   const {
     phase, endNote, busy, micOn, camOn, remoteLive, reconnecting,
@@ -178,7 +182,7 @@ export default function VideoCallOverlay({
               onClick={dismiss}
               className="mt-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-white/90"
             >
-              Back to chat
+              {dismissLabel}
             </button>
           </div>
         )}

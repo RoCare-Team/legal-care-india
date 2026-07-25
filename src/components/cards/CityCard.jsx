@@ -1,11 +1,16 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, ArrowUpRight } from 'lucide-react';
+import { Landmark, ArrowUpRight } from 'lucide-react';
 import { formatCompactNumber } from '@/utils/formatters';
 
 /**
- * CityCard — image tile for the "Browse by City" grid. Shows a city photo with
- * a dark gradient overlay so the name + lawyer count stay readable.
+ * CityCard — compact tile for the "Browse by City" slider and grid.
+ *
+ * A light card with the city's landmark in a ringed circle and the name under
+ * it. The photos come from a dozen different sources and clash badly at this
+ * size, so each sits inside a gold-to-navy gradient ring with a faint navy wash
+ * over it — that ring is what makes twelve mismatched photographs read as one
+ * set.
  *
  * @param {object} props
  * @param {import('@/data/cities').CITIES[number]} props.city
@@ -16,39 +21,51 @@ export default function CityCard({ city }) {
   return (
     <Link
       href={`/${slug}`}
-      className="group relative block h-36 overflow-hidden rounded-2xl border border-ink/8 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+      title={`${name}, ${state}`}
+      className="group relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-ink/8 bg-surface px-3 pb-4 pt-6 text-center shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-card-hover"
     >
-      {/* City photo — optimized + cached by Next.js so the browser never hits
-          Wikimedia directly (no hotlink/rate-limit issues). */}
-      {image && (
-        <Image
-          src={image}
-          alt={`${name}, ${state}`}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-      )}
+      {/* Soft brand wash that only appears on hover, behind everything. */}
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/[0.07] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden="true"
+      />
 
-      {/* Readability gradient (also the fallback background) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/70 to-primary/30" />
-
-      {/* Hover arrow */}
-      <span className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/15 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100">
-        <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+      {/* Corner arrow — quiet until hover. */}
+      <span
+        className="pointer-events-none absolute right-2.5 top-2.5 text-ink/0 transition-colors duration-300 group-hover:text-primary/45"
+        aria-hidden="true"
+      >
+        <ArrowUpRight className="h-3.5 w-3.5" />
       </span>
 
-      {/* Content */}
-      <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-        <p className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-white/75">
-          <MapPin className="h-3 w-3" aria-hidden="true" />
-          {state}
-        </p>
-        <h3 className="mt-0.5 font-display text-xl font-bold leading-tight">{name}</h3>
-        <p className="mt-1 text-xs font-semibold text-accent">
-          {formatCompactNumber(advocates)}+ lawyers
-        </p>
-      </div>
+      {/* Landmark — the city photo, cropped to a circle inside a gradient ring.
+          Optimized and cached by Next.js so the browser never hits Wikimedia. */}
+      <span className="relative rounded-full bg-gradient-to-br from-accent/70 via-accent/25 to-primary/35 p-[2.5px] transition-transform duration-300 group-hover:scale-105">
+        <span className="relative grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-full bg-muted ring-2 ring-surface">
+          {image ? (
+            <>
+              <Image src={image} alt="" fill sizes="68px" className="object-cover" />
+              {/* Unifies wildly different exposures across the row. */}
+              <span
+                className="absolute inset-0 bg-primary/10 mix-blend-multiply"
+                aria-hidden="true"
+              />
+            </>
+          ) : (
+            <Landmark className="h-7 w-7 text-primary/60" aria-hidden="true" />
+          )}
+        </span>
+      </span>
+
+      <h3 className="mt-3.5 font-display text-[15px] font-bold leading-tight text-ink transition-colors group-hover:text-primary">
+        {name}
+      </h3>
+
+      <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-ink/35">{state}</p>
+
+      <span className="mt-2.5 inline-flex items-center rounded-full bg-primary/[0.06] px-2.5 py-1 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
+        {formatCompactNumber(advocates)}+ lawyers
+      </span>
     </Link>
   );
 }

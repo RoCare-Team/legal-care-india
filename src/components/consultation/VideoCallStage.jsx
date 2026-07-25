@@ -88,6 +88,8 @@ export default function VideoCallStage({ session, viewerRole, otherName, onEnded
         endsAt={session.endsAt}
         minimized={false}
         onMinimize={() => {}}
+        // A video consultation IS the call — there is no chat behind it.
+        dismissLabel="Close"
       />
     );
 

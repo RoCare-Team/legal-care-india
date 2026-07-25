@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Phone, MessageCircle, Mail } from 'lucide-react';
+import { advocatePlans } from '@/constants/consultationPlans';
 import { useAuth } from '@/hooks/useAuth';
-import { useClickToCall } from '@/hooks/useClickToCall';
-import CallStatusModal from '@/components/consultation/CallStatusModal';
 import AuthGateModal from './AuthGateModal';
+import AudioConsultModal from './AudioConsultModal';
 
 /**
  * ProfileMobileBar — fixed bottom action bar (mobile only) giving one-tap
@@ -18,10 +18,12 @@ import AuthGateModal from './AuthGateModal';
 export default function ProfileMobileBar({ advocate }) {
   const { contact = {}, name, _id: advocateId } = advocate;
   const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India.`);
-  const { role, loading } = useAuth();
-  const call = useClickToCall();
+  const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
+  const [audioOpen, setAudioOpen] = useState(false);
   const authed = role !== null;
+  // What "Call" costs — the lawyer's own audio-call plans.
+  const audioPlans = advocatePlans(advocate.audioPlans);
 
   const gate = (e) => {
     if (loading) {
@@ -35,14 +37,14 @@ export default function ProfileMobileBar({ advocate }) {
   };
 
   /**
-   * Bridged call for signed-in clients — the lawyer rings first, the client is
-   * joined on answer. Plain `tel:` for everyone else.
+   * A paid audio consultation for signed-in clients — the plan picker opens
+   * instead of the dialler. Plain `tel:` for everyone else.
    */
   const onCall = (e) => {
     gate(e);
     if (e.defaultPrevented || role !== 'user' || !advocateId) return;
     e.preventDefault();
-    call.start(advocateId, { fallbackTel: (contact.phone || '').replace(/\s/g, '') });
+    setAudioOpen(true);
   };
 
   return (
@@ -55,7 +57,7 @@ export default function ProfileMobileBar({ advocate }) {
             className="flex flex-col items-center gap-1 rounded-xl bg-primary py-2 text-xs font-semibold text-white"
           >
             <Phone className="h-4 w-4" aria-hidden="true" />
-            {call.status === 'dialing' ? 'Connecting…' : 'Call'}
+            Call
           </a>
           <a
             href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
@@ -79,11 +81,13 @@ export default function ProfileMobileBar({ advocate }) {
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
-      <CallStatusModal
-        status={call.status}
-        error={call.error}
+      <AudioConsultModal
+        open={audioOpen}
+        onClose={() => setAudioOpen(false)}
+        advocateId={advocateId}
         advocateName={name}
-        onClose={call.reset}
+        walletBalance={user?.walletBalance || 0}
+        plans={audioPlans}
       />
     </>
   );

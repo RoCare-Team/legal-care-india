@@ -6,15 +6,16 @@ import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
 import JsonLd from '@/components/shared/JsonLd';
 import { articleSchema, breadcrumbSchema } from '@/lib/schema';
-import { BLOGS } from '@/data/blogs';
+import { getAllBlogs, getBlogBySlug } from '@/lib/blogs';
 
-export function generateStaticParams() {
-  return BLOGS.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const posts = await getAllBlogs();
+  return posts.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const post = BLOGS.find((p) => p.slug === slug);
+  const post = await getBlogBySlug(slug);
   if (!post) return createMetadata({ title: 'Article Not Found', path: '/blogs' });
 
   const meta = createMetadata({
@@ -23,11 +24,13 @@ export async function generateMetadata({ params }) {
     path: `/blogs/${post.slug}`,
     keywords: [post.category, `${post.category} india`],
   });
-  let publishedTime;
-  try {
-    publishedTime = post.date ? new Date(post.date).toISOString() : undefined;
-  } catch {
-    publishedTime = undefined;
+  let publishedTime = post.publishedAt || undefined;
+  if (!publishedTime) {
+    try {
+      publishedTime = post.date ? new Date(post.date).toISOString() : undefined;
+    } catch {
+      publishedTime = undefined;
+    }
   }
   return {
     ...meta,
@@ -39,12 +42,31 @@ export async function generateMetadata({ params }) {
   };
 }
 
+/**
+ * Turn the plain text an admin wrote into blocks. A blank line starts a new
+ * paragraph and a leading "## " marks a heading — deliberately the whole
+ * syntax, since the text is rendered as text and never as HTML.
+ */
+function toBlocks(content = '') {
+  return content
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) =>
+      block.startsWith('## ')
+        ? { type: 'heading', text: block.slice(3).trim() }
+        : { type: 'paragraph', text: block }
+    );
+}
+
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
-  const post = BLOGS.find((p) => p.slug === slug);
+  const posts = await getAllBlogs();
+  const post = posts.find((p) => p.slug === slug);
   if (!post) notFound();
 
-  const related = BLOGS.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const related = posts.filter((p) => p.slug !== post.slug).slice(0, 3);
+  const blocks = toBlocks(post.content);
 
   return (
     <>
@@ -66,6 +88,15 @@ export default async function BlogPostPage({ params }) {
       />
 
       <Container size="narrow" className="py-10 sm:py-12">
+        {post.coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.coverImage}
+            alt=""
+            className="mb-6 h-56 w-full rounded-2xl object-cover sm:h-72"
+          />
+        )}
+
         <div className="mb-6 flex items-center gap-2 text-sm text-ink/45">
           <span>{post.date}</span>
           <span aria-hidden="true">·</span>
@@ -76,16 +107,22 @@ export default async function BlogPostPage({ params }) {
         </div>
 
         <article className="space-y-4 text-[15px] leading-relaxed text-ink/75">
-          <p>{post.excerpt}</p>
-          <p>
-            This is a sample article body for <strong>{post.title}</strong>. In production this
-            content would come from your CMS. It walks readers through the topic in clear,
-            practical steps so they know what to expect and how a lawyer can help.
-          </p>
-          <p>
-            When you&apos;re ready, browse verified lawyers who specialise in{' '}
-            {post.category.toLowerCase()} and reach out directly by call, WhatsApp or email.
-          </p>
+          {blocks.length > 0 ? (
+            blocks.map((b, i) =>
+              b.type === 'heading' ? (
+                <h2 key={i} className="pt-2 font-display text-lg font-semibold text-ink">
+                  {b.text}
+                </h2>
+              ) : (
+                <p key={i} className="whitespace-pre-line">
+                  {b.text}
+                </p>
+              )
+            )
+          ) : (
+            // The built-in posts ship with a summary only.
+            <p>{post.excerpt}</p>
+          )}
         </article>
 
         <div className="mt-8 rounded-2xl bg-muted/50 p-6 text-center">

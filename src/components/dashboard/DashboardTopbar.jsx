@@ -1,5 +1,6 @@
 import { BadgeCheck, ExternalLink } from 'lucide-react';
 import { Avatar, Badge, Button } from '@/components/ui';
+import AvailabilityToggle from './AvailabilityToggle';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /**
@@ -29,16 +30,22 @@ export default function DashboardTopbar({ advocate }) {
           </p>
         </div>
       </div>
-      <Button
-        href={`/lawyers/${advocateProfilePath(advocate)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        variant="outline"
-        size="sm"
-        rightIcon={<ExternalLink className="h-4 w-4" />}
-      >
-        View Public Profile
-      </Button>
+
+      <div className="flex flex-wrap items-center gap-2.5">
+        {/* Their online switch lives here, beside their name — it is a status,
+            not a section, and it used to take a full-width band of its own. */}
+        <AvailabilityToggle initialAvailable={advocate.available} />
+        <Button
+          href={`/lawyers/${advocateProfilePath(advocate)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="outline"
+          size="sm"
+          rightIcon={<ExternalLink className="h-4 w-4" />}
+        >
+          View Public Profile
+        </Button>
+      </div>
     </div>
   );
 }

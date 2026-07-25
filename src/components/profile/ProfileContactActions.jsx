@@ -4,15 +4,14 @@ import { useState } from 'react';
 import { Phone, MessageCircle, Mail, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
-import { useClickToCall } from '@/hooks/useClickToCall';
-import CallStatusModal from '@/components/consultation/CallStatusModal';
 import AuthGateModal from './AuthGateModal';
 import BookConsultationModal from './BookConsultationModal';
+import AudioConsultModal from './AudioConsultModal';
 
 /**
  * ProfileContactActions — the Call / WhatsApp / Email / Book Consultation
  * actions on a profile. Signed-out visitors are prompted to create an account
- * before contacting or booking; the paid live-chat booking is user-only.
+ * before contacting or booking; the paid bookings are user-only.
  *
  * @param {object} props
  * @param {{ phone?: string, whatsapp?: string, email?: string }} props.contact
@@ -20,13 +19,15 @@ import BookConsultationModal from './BookConsultationModal';
  * @param {string} props.waText      pre-encoded WhatsApp message
  * @param {string} props.advocateId  lawyer MongoDB _id (for activity + booking)
  * @param {Array}  [props.plans]     the lawyer's own live-chat rates
+ * @param {Array}  [props.audioPlans] the lawyer's own paid audio-call rates
  */
-export default function ProfileContactActions({ contact = {}, name, waText, advocateId, plans = [] }) {
+export default function ProfileContactActions({
+  contact = {}, name, waText, advocateId, plans = [], audioPlans = [],
+}) {
   const { role, user, loading } = useAuth();
-  const call = useClickToCall();
-  const { start } = call;
   const [gateOpen, setGateOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
+  const [audioOpen, setAudioOpen] = useState(false);
   const authed = role !== null;
 
   // Book Consultation: signed-out → gate; lawyer → not applicable; user → book.
@@ -67,10 +68,9 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
 
   /**
    * Call is the one action that does not simply follow its href. For a signed-in
-   * client we bridge the call through the dialler instead: the lawyer's phone
-   * rings first and the client is joined once they answer. Everyone else —
-   * lawyers, and clients on a deployment with no dialler configured — keeps the
-   * plain `tel:` behaviour, which is why the href stays on the button.
+   * client it opens the paid audio-consultation booking, priced from the
+   * lawyer's own audio plans. Lawyers keep the plain `tel:` behaviour, which is
+   * why the href stays on the button.
    */
   const onCall = (e) => {
     if (loading) {
@@ -87,9 +87,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
       return; // let the tel: link through
     }
     e.preventDefault();
-    // The server logs this call as activity itself, so no track() here — a
-    // second entry would show every call twice in the account history.
-    start(advocateId, { fallbackTel: contact.phone.replace(/\s/g, '') });
+    setAudioOpen(true);
   };
 
   return (
@@ -114,7 +112,7 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
             fullWidth
             leftIcon={<Phone className="h-4 w-4" />}
           >
-            {call.status === 'dialing' ? 'Connecting…' : 'Call Now'}
+            Call Now
           </Button>
         )}
         {contact.whatsapp && (
@@ -144,11 +142,13 @@ export default function ProfileContactActions({ contact = {}, name, waText, advo
       </div>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
-      <CallStatusModal
-        status={call.status}
-        error={call.error}
+      <AudioConsultModal
+        open={audioOpen}
+        onClose={() => setAudioOpen(false)}
+        advocateId={advocateId}
         advocateName={name}
-        onClose={call.reset}
+        walletBalance={user?.walletBalance || 0}
+        plans={audioPlans}
       />
       <BookConsultationModal
         open={bookOpen}

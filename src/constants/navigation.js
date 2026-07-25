@@ -6,7 +6,6 @@ export const MAIN_NAV = [
   { label: 'Home', href: '/' },
   { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
-  { label: 'Cities', href: '/cities' },
   { label: 'Blogs', href: '/blogs' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },

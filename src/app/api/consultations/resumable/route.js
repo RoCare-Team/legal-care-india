@@ -17,13 +17,19 @@ export async function GET(request) {
     return NextResponse.json({ resumable: null });
   }
 
-  const advocateId = new URL(request.url).searchParams.get('advocateId');
+  const params = new URL(request.url).searchParams;
+  const advocateId = params.get('advocateId');
   if (!advocateId) {
     return NextResponse.json({ resumable: null });
   }
+  // Each channel only sees its own leftover — phone minutes must not come back
+  // as a free chat, or a video leftover as a phone call. Anything else is a
+  // chat, which is also what the pre-`type` rows were.
+  const asked = params.get('type');
+  const type = ['audio', 'video'].includes(asked) ? asked : 'chat';
 
   try {
-    const resumable = await getResumableSession(session.id, advocateId);
+    const resumable = await getResumableSession(session.id, advocateId, type);
     return NextResponse.json({ resumable }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('resumable check error', err);

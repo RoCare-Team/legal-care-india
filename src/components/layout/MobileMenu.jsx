@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { X, LayoutDashboard, LogOut, UserRound, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui';
 import Logo from '@/components/shared/Logo';
+import LocationPicker from '@/components/location/LocationPicker';
 import { MAIN_NAV, AUTH_NAV } from '@/constants/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { logout } from '@/utils/logout';
@@ -58,6 +59,10 @@ export default function MobileMenu({ isOpen, onClose }) {
               >
                 <X className="h-5 w-5" />
               </button>
+            </div>
+
+            <div className="border-b border-ink/8 px-5 py-3">
+              <LocationPicker fullWidth />
             </div>
 
             <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Mobile primary">
