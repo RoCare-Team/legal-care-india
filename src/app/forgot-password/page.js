@@ -6,22 +6,40 @@ import RegisterAside from '@/components/register/RegisterAside';
 export const metadata = {
   ...createMetadata({
     title: 'Forgot Password',
-    description: 'Reset your Legal Care India lawyer account password.',
+    description: 'Reset your Legal Care India account password.',
     path: '/forgot-password',
   }),
   robots: { index: false, follow: false },
 };
 
-export default function ForgotPasswordPage() {
+/**
+ * `?role=user` resets a client account; anything else resets a lawyer account.
+ * The two live in separate collections and can share an email, so the role has
+ * to travel with the request rather than being guessed from the address.
+ */
+export default async function ForgotPasswordPage({ searchParams }) {
+  const params = await searchParams;
+  const role = params?.role === 'user' ? 'user' : 'advocate';
+
   return (
     <Container className="py-10 sm:py-16">
-      <div className="grid items-start gap-8 lg:grid-cols-2">
+      <div
+        className={
+          role === 'user'
+            ? 'mx-auto w-full max-w-md'
+            : 'grid items-start gap-8 lg:grid-cols-2'
+        }
+      >
         <div className="mx-auto w-full max-w-md lg:mx-0">
-          <ForgotPasswordForm />
+          <ForgotPasswordForm role={role} />
         </div>
-        <div className="hidden lg:block">
-          <RegisterAside />
-        </div>
+        {/* The "grow your practice" pitch is for lawyers — a client resetting
+            their password should not be sold a lawyer listing. */}
+        {role !== 'user' && (
+          <div className="hidden lg:block">
+            <RegisterAside />
+          </div>
+        )}
       </div>
     </Container>
   );

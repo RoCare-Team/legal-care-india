@@ -50,7 +50,6 @@ function pick(list, seed) {
   return list[seed % list.length];
 }
 
-const BAR_COUNCILS = ['D', 'MAH', 'KAR', 'TG', 'TN', 'PB', 'UP', 'RJ', 'GJ', 'WB'];
 
 const OFFICE_AREAS = [
   'Connaught Place', 'Bandra West', 'MG Road', 'Banjara Hills', 'T. Nagar',
@@ -135,7 +134,6 @@ const OFFICE_TIMING = [
 export function buildAdvocateProfile(a) {
   const seed = hash(a.slug);
   const initials = a.name.replace(/^Adv\.?\s*/, '').charAt(0).toUpperCase();
-  const digits = String(1000 + (seed % 8999));
   const area = pick(OFFICE_AREAS, seed);
   const phone = `+91 ${90000 + (seed % 9999)} ${String(10000 + (seed % 89999))}`;
 
@@ -178,8 +176,10 @@ export function buildAdvocateProfile(a) {
     reviewsList,
     initials,
     coverImage: a.coverImage || '',
-    barCouncilNumber:
-      a.barCouncilNumber || `${pick(BAR_COUNCILS, seed)}/${digits}/${2005 + (seed % 15)}`,
+    // Never invented. A bar council number is a real credential a visitor may
+    // check against the roll, so an advocate who has not supplied one shows
+    // nothing rather than a plausible-looking string.
+    barCouncilNumber: a.barCouncilNumber || '',
     about:
       a.about ||
       `${a.name} is a ${a.verified ? 'verified ' : ''}lawyer based in ${a.city}, ${a.state}, with over ${a.experience} years of experience in ${a.specializations?.join(', ') || 'multiple areas of law'}. Known for a client-first approach, ${a.name.split(' ')[1] || 'the lawyer'} combines deep courtroom experience with clear, practical advice — helping individuals and businesses navigate complex legal matters with confidence.`,

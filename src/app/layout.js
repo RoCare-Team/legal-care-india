@@ -13,6 +13,7 @@ import Analytics from '@/components/shared/Analytics';
 import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
 import PresenceProvider from '@/components/consultation/PresenceProvider';
 import LocationProvider from '@/components/location/LocationProvider';
+import LocationGate from '@/components/location/LocationGate';
 
 /** Root metadata for every route (extend per-page with createMetadata). */
 export const metadata = baseMetadata;
@@ -102,6 +103,11 @@ export default function RootLayout({ children }) {
             </main>
             <HideOnAdmin>
               <Footer />
+            </HideOnAdmin>
+            {/* The single location chooser — opened by the header button, and
+                by itself on arrival when no location has been set. */}
+            <HideOnAdmin>
+              <LocationGate />
             </HideOnAdmin>
           </LocationProvider>
         </PresenceProvider>

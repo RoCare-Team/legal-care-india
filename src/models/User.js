@@ -25,6 +25,14 @@ const UserSchema = new Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
+
+    // Password reset via OTP — same scheme as Advocate: only the SHA-256 hash
+    // of the 6-digit code is stored, with an expiry, and `resetOtpAttempts`
+    // guards against brute-forcing it.
+    resetOtpHash: { type: String, default: null, select: false },
+    resetOtpExpires: { type: Date, default: null, select: false },
+    resetOtpAttempts: { type: Number, default: 0, select: false },
+
     phone: { type: String, default: '' },
     photo: { type: String, default: '' },
     city: { type: String, default: '' },

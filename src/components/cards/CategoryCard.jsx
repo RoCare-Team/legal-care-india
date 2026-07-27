@@ -18,7 +18,7 @@ export default function CategoryCard({ category }) {
 
   return (
     <Link
-      href={`/legal-services/${slug}`}
+      href={`/${slug}`}
       className="group relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-ink/8 bg-surface px-4 pb-5 pt-6 text-center shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-card-hover"
     >
       {/* Soft brand wash that only appears on hover, behind everything. */}

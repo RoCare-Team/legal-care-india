@@ -17,19 +17,20 @@ export default function Hero() {
   // clear of the header — with it gone, the section's top padding carries that
   // job on its own.
   return (
-    <section className="relative overflow-hidden bg-[#0F172A] text-white pt-24 pb-14 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-28 border-b border-[#0F172A]">
+    <section className="relative flex min-h-[100svh] items-center overflow-hidden bg-[#0F172A] text-white pt-24 pb-14 sm:pt-28 sm:pb-20 lg:pt-32 lg:pb-28 border-b border-[#0F172A]">
       {/* Banner background image — shown full */}
       <Image
-        src="/banner-3.png"
+        src="/banner-n.png"
         alt=""
         fill
         priority
         sizes="100vw"
-        className="pointer-events-none object-cover object-center brightness-[0.7]"
+        className="pointer-events-none object-cover object-center brightness-[0.88]"
       />
-      {/* Dark, on-theme overlay: deep navy across the whole image (heavier on the
-          left where the text sits) so the hero reads as one dark themed block. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/85 via-[#0F172A]/60 to-[#0F172A]/40" />
+      {/* Navy overlay, weighted to the left where the text sits. Light enough
+          now that the photograph reads as a photograph, but the left third
+          stays dark enough to keep white type legible over it. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/75 via-[#0F172A]/40 to-[#0F172A]/15" />
 
       <Container className="relative z-10">
         <div className="flex max-w-3xl flex-col items-start text-left">
@@ -63,7 +64,7 @@ export default function Hero() {
                 popular.map((c) => (
                   <a
                     key={c.slug}
-                    href={`/legal-services/${c.slug}`}
+                    href={`/${c.slug}`}
                     className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-slate-100 font-medium backdrop-blur-sm transition-all hover:bg-white/10 hover:border-[#D4AF37]/60 hover:text-white shadow-sm"
                   >
                     {c.name}

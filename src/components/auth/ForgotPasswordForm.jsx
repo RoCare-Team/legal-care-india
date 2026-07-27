@@ -7,10 +7,18 @@ import { Button, FormField, Input } from '@/components/ui';
 
 /**
  * ForgotPasswordForm — a 2-step OTP password reset:
- *   1. Enter registered email → a 6-digit code is sent to email + phone.
+ *   1. Enter registered email → a 6-digit code is sent to email or phone.
  *   2. Enter the code + a new password → password is reset.
+ *
+ * `role` says which kind of account is being reset. It is sent with both
+ * requests and decides where the person is sent afterwards. A lawyer and a
+ * client can share an email, so this is never inferred from the address.
+ *
+ * @param {object} props
+ * @param {'advocate'|'user'} [props.role='advocate']
  */
-export default function ForgotPasswordForm() {
+export default function ForgotPasswordForm({ role = 'advocate' }) {
+  const loginHref = role === 'user' ? '/user/login' : '/login';
   const [step, setStep] = useState(1); // 1 = request, 2 = verify, 3 = done
   const [email, setEmail] = useState('');
   const [channel, setChannel] = useState('email'); // 'email' | 'phone'
@@ -37,7 +45,7 @@ export default function ForgotPasswordForm() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, channel }),
+        body: JSON.stringify({ email, channel, role }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -73,7 +81,7 @@ export default function ForgotPasswordForm() {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, password }),
+        body: JSON.stringify({ email, otp, password, role }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -106,7 +114,7 @@ export default function ForgotPasswordForm() {
         <p className="mt-2 text-sm text-ink/60">
           Your password has been updated. You can now log in with your new password.
         </p>
-        <Button href="/login" className="mt-6" leftIcon={<KeyRound className="h-4 w-4" />}>
+        <Button href={loginHref} className="mt-6" leftIcon={<KeyRound className="h-4 w-4" />}>
           Go to login
         </Button>
       </div>
@@ -258,7 +266,7 @@ export default function ForgotPasswordForm() {
       </div>
 
       <Link
-  href="/login"
+  href={loginHref}
   className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
 >
   <ArrowLeft className="h-4 w-4" /> Back to login

@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import Advocate from '@/models/Advocate';
 import { createOtp } from '@/lib/auth';
+import { accountModel, normalizeRole } from '@/lib/passwordReset';
 import { sendEmail, passwordResetEmail } from '@/lib/mailer';
 import { sendOtpSms, normalizeIndianMobile } from '@/lib/sms';
 
 /**
- * POST /api/auth/forgot-password  { email }
- * If an account exists, generates a 6-digit OTP, stores its hash + expiry, and
- * sends it to the lawyer's registered email AND phone. Always returns the same
- * success response so the endpoint can't reveal which emails are registered.
+ * POST /api/auth/forgot-password  { email, channel, role }
+ *
+ * If an account of that role exists, generates a 6-digit OTP, stores its hash +
+ * expiry, and sends it on the chosen channel. Always returns the same success
+ * response so the endpoint can't reveal which emails are registered.
+ *
+ * `role` decides which collection is searched — 'user' or 'advocate'. The same
+ * email can exist as both, so this must never be inferred.
  */
 export async function POST(request) {
   let body;
@@ -22,6 +26,8 @@ export async function POST(request) {
   const email = String(body?.email || '').trim().toLowerCase();
   // Which channel to deliver the OTP on — 'email' (default) or 'phone'.
   const channel = body?.channel === 'phone' ? 'phone' : 'email';
+  // Which account type is being reset. Defaults to the lawyer flow.
+  const role = normalizeRole(body?.role);
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
@@ -36,10 +42,10 @@ export async function POST(request) {
 
   try {
     await connectDB();
-    const advocate = await Advocate.findOne({ email });
+    const account = await accountModel(role).findOne({ email });
 
-    if (advocate) {
-      const phone = advocate.phone || advocate.contact?.phone;
+    if (account) {
+      const phone = account.phone || account.contact?.phone;
       const mobile = normalizeIndianMobile(phone);
 
       // If they asked for SMS but we have no valid mobile on record, stop early.
@@ -51,16 +57,16 @@ export async function POST(request) {
       }
 
       const { otp, otpHash, expires } = createOtp();
-      advocate.resetOtpHash = otpHash;
-      advocate.resetOtpExpires = expires;
-      advocate.resetOtpAttempts = 0;
-      await advocate.save();
+      account.resetOtpHash = otpHash;
+      account.resetOtpExpires = expires;
+      account.resetOtpAttempts = 0;
+      await account.save();
 
       // Send only on the chosen channel.
       if (channel === 'phone') {
         await sendOtpSms({ phone, otp });
       } else {
-        await sendEmail({ to: email, ...passwordResetEmail({ name: advocate.name, otp }) });
+        await sendEmail({ to: email, ...passwordResetEmail({ name: account.name, otp }) });
       }
 
       const sentTo =

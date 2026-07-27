@@ -76,7 +76,7 @@ export default function UserLoginForm() {
         {error && <p className="text-xs text-red-600">{error}</p>}
 
         <div className="flex items-center justify-end text-sm">
-          <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+          <Link href="/forgot-password?role=user" className="font-medium text-primary hover:underline">
             Forgot password?
           </Link>
         </div>

@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useLocation } from './LocationProvider';
-import LocationModal from './LocationModal';
 
 /**
  * LocationPicker — the header control that opens the location chooser and, once
@@ -17,8 +15,7 @@ import LocationModal from './LocationModal';
  * @param {string} [props.className]
  */
 export default function LocationPicker({ onDark = false, fullWidth = false, className }) {
-  const { location, ready } = useLocation();
-  const [open, setOpen] = useState(false);
+  const { location, ready, openPicker } = useLocation();
 
   const label = location?.label || 'Set your location';
 
@@ -26,7 +23,7 @@ export default function LocationPicker({ onDark = false, fullWidth = false, clas
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openPicker}
         title={location ? `${label} — tap to change` : 'Choose your location'}
         className={cn(
           'flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm transition-colors',
@@ -53,8 +50,6 @@ export default function LocationPicker({ onDark = false, fullWidth = false, clas
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-50" aria-hidden="true" />
       </button>
-
-      <LocationModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

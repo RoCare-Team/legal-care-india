@@ -1,5 +1,8 @@
 import { SITE } from '@/constants/site';
-import { CATEGORIES } from '@/data/categories';
+import { CATEGORIES, getSubServiceLinks } from '@/data/categories';
+import {
+  servicePath, matterPath, cityServicePath, cityMatterPath,
+} from '@/lib/serviceRoutes';
 import { getAllCities } from '@/lib/cities';
 import { getAllAdvocateParams } from '@/lib/advocates';
 import { getAllBlogs } from '@/lib/blogs';
@@ -40,10 +43,21 @@ export default async function sitemap() {
   }));
 
   const categoryRoutes = CATEGORIES.map((c) => ({
-    url: new URL(`/legal-services/${c.slug}`, base).toString(),
+    url: new URL(servicePath(c), base).toString(),
     lastModified: now,
     changeFrequency: 'weekly',
     priority: 0.7,
+  }));
+
+  // One entry per specific matter (e.g. /bail-matters-lawyer).
+  const matters = CATEGORIES.flatMap((c) =>
+    getSubServiceLinks(c.name).map((s) => ({ subSlug: s.slug }))
+  );
+  const matterRoutes = matters.map(({ subSlug }) => ({
+    url: new URL(matterPath(subSlug), base).toString(),
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.6,
   }));
 
   // City routes carry their landmark image (image sitemap extension).
@@ -55,6 +69,24 @@ export default async function sitemap() {
     priority: 0.7,
     ...(c.image ? { images: [c.image] } : {}),
   }));
+
+  // The city-scoped long tail: every service and every matter, per city.
+  const cityCategoryRoutes = cities.flatMap((city) =>
+    CATEGORIES.map((c) => ({
+      url: new URL(cityServicePath(c, city), base).toString(),
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    }))
+  );
+  const cityMatterRoutes = cities.flatMap((city) =>
+    matters.map(({ subSlug }) => ({
+      url: new URL(cityMatterPath(subSlug, city), base).toString(),
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    }))
+  );
 
   const advocateParams = await getAllAdvocateParams();
   const advocateRoutes = advocateParams.map((param) => ({
@@ -72,5 +104,14 @@ export default async function sitemap() {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...cityRoutes, ...advocateRoutes, ...blogRoutes];
+  return [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...matterRoutes,
+    ...cityRoutes,
+    ...cityCategoryRoutes,
+    ...cityMatterRoutes,
+    ...advocateRoutes,
+    ...blogRoutes,
+  ];
 }

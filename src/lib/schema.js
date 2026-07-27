@@ -66,7 +66,7 @@ export function serviceSchema(service) {
     description: service.description,
     provider: organizationNode,
     areaServed: { '@type': 'Country', name: 'India' },
-    url: abs(`/legal-services/${service.slug}`),
+    url: abs(`/${service.slug}`),
   };
 }
 

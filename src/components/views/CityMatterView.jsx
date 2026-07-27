@@ -1,9 +1,7 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   ArrowRight, ArrowLeft, ShieldCheck, MessageSquare, BadgeIndianRupee, Users, Scale, MapPin,
 } from 'lucide-react';
-import { createMetadata } from '@/lib/metadata';
 import { Container, Card } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
@@ -11,38 +9,14 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { serviceSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
-import { getAllCities, getCityBySlug } from '@/lib/cities';
-import { getServiceBySlug, getSubServiceBySlug, getSubServiceLinks } from '@/data/categories';
+import { getAllCities } from '@/lib/cities';
+import {
+  cityPath, matterPath, cityServicePath, cityMatterPath,
+} from '@/lib/serviceRoutes';
+import { getSubServiceLinks } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
-// City → service → matter combos render on demand (dynamicParams defaults to
-// true) and cache. Lawyer data is tag-cached so new registrations show at once.
-export const revalidate = 3600;
-
-export async function generateStaticParams() {
-  return [];
-}
-
-export async function generateMetadata({ params }) {
-  const { city: citySlug, category: catSlug, sub } = await params;
-  const city = await getCityBySlug(citySlug);
-  const service = getServiceBySlug(catSlug);
-  const subService = service && getSubServiceBySlug(service.name, sub);
-  if (!city || !service || !subService) {
-    return createMetadata({ title: 'Not Found', path: '/cities' });
-  }
-
-  return createMetadata({
-    title: `${subService} Lawyers in ${city.name}`,
-    description: `Find verified ${subService} lawyers in ${city.name}, ${city.state} (${service.name}). Compare experience, fees and contact them directly.`,
-    path: `/${city.slug}/${service.slug}/${sub}`,
-    keywords: [
-      `${subService} lawyer in ${city.name}`,
-      `${subService} lawyer ${city.name}`,
-      `${service.name} lawyer ${city.name}`,
-    ],
-  });
-}
+/** `/[matter]-lawyer-in-[city]` — one specific matter, scoped to one city. */
 
 const TRUST = [
   { icon: ShieldCheck, label: 'Verified lawyers' },
@@ -50,13 +24,20 @@ const TRUST = [
   { icon: BadgeIndianRupee, label: 'Transparent fees' },
 ];
 
-export default async function CityCategorySubPage({ params }) {
-  const { city: citySlug, category: catSlug, sub } = await params;
-  const city = await getCityBySlug(citySlug);
-  const service = getServiceBySlug(catSlug);
-  const subService = service && getSubServiceBySlug(service.name, sub);
-  if (!city || !service || !subService) notFound();
+export function cityMatterMeta(service, subService, subSlug, city) {
+  return {
+    title: `${subService} Lawyers in ${city.name}`,
+    description: `Find verified ${subService} lawyers in ${city.name}, ${city.state} (${service.name}). Compare experience, fees and contact them directly.`,
+    path: cityMatterPath(subSlug, city),
+    keywords: [
+      `${subService} lawyer in ${city.name}`,
+      `${subService} lawyer ${city.name}`,
+      `${service.name} lawyer ${city.name}`,
+    ],
+  };
+}
 
+export default async function CityMatterView({ city, service, subService, subSlug }) {
   const Icon = service.icon;
 
   // Lawyers who practise this specific matter AND are based in this city.
@@ -67,7 +48,7 @@ export default async function CityCategorySubPage({ params }) {
 
   // Same matter in other cities; other matters in this city.
   const otherCities = (await getAllCities()).filter((c) => c.slug !== city.slug).slice(0, 8);
-  const siblings = getSubServiceLinks(service.name).filter((s) => s.slug !== sub).slice(0, 8);
+  const siblings = getSubServiceLinks(service.name).filter((s) => s.slug !== subSlug).slice(0, 8);
 
   return (
     <>
@@ -75,15 +56,15 @@ export default async function CityCategorySubPage({ params }) {
         data={[
           serviceSchema({
             name: `${subService} in ${city.name}`,
-            slug: `${city.slug}/${service.slug}/${sub}`,
+            slug: `${subSlug}-lawyer-in-${city.slug}`,
             description: `${subService} legal matters in ${city.name}`,
           }),
           breadcrumbSchema([
             { name: 'Home', path: '/' },
             { name: 'Cities', path: '/cities' },
-            { name: city.name, path: `/${city.slug}` },
-            { name: service.name, path: `/${city.slug}/${service.slug}` },
-            { name: subService, path: `/${city.slug}/${service.slug}/${sub}` },
+            { name: city.name, path: cityPath(city) },
+            { name: service.name, path: cityServicePath(service, city) },
+            { name: subService, path: cityMatterPath(subSlug, city) },
           ]),
         ]}
       />
@@ -94,8 +75,8 @@ export default async function CityCategorySubPage({ params }) {
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Cities', href: '/cities' },
-          { label: city.name, href: `/${city.slug}` },
-          { label: service.name, href: `/${city.slug}/${service.slug}` },
+          { label: city.name, href: cityPath(city) },
+          { label: service.name, href: cityServicePath(service, city) },
           { label: subService },
         ]}
       />
@@ -111,7 +92,7 @@ export default async function CityCategorySubPage({ params }) {
                 </span>
                 <div>
                   <Link
-                    href={`/${city.slug}/${service.slug}`}
+                    href={cityServicePath(service, city)}
                     className="text-xs font-semibold uppercase tracking-wider text-accent hover:underline"
                   >
                     {service.name} · {city.name}
@@ -161,7 +142,7 @@ export default async function CityCategorySubPage({ params }) {
                   <div>
                     <dt className="text-xs text-ink/50">City</dt>
                     <dd className="font-semibold text-ink">
-                      <Link href={`/${city.slug}`} className="hover:text-primary">
+                      <Link href={cityPath(city)} className="hover:text-primary">
                         {city.name}, {city.state}
                       </Link>
                     </dd>
@@ -174,7 +155,7 @@ export default async function CityCategorySubPage({ params }) {
                   <div>
                     <dt className="text-xs text-ink/50">Practice area</dt>
                     <dd className="font-semibold text-ink">
-                      <Link href={`/${city.slug}/${service.slug}`} className="hover:text-primary">
+                      <Link href={cityServicePath(service, city)} className="hover:text-primary">
                         {service.name}
                       </Link>
                     </dd>
@@ -194,7 +175,7 @@ export default async function CityCategorySubPage({ params }) {
                 : `${subService} Lawyers in ${city.name}`}
             </h2>
             <Link
-              href={`/legal-services/${service.slug}/${sub}`}
+              href={matterPath(subSlug)}
               className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -211,14 +192,14 @@ export default async function CityCategorySubPage({ params }) {
               emptyAction={
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
-                    href={`/legal-services/${service.slug}/${sub}`}
+                    href={matterPath(subSlug)}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
                   >
                     {subService} · all cities
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                   <Link
-                    href={`/${city.slug}`}
+                    href={cityPath(city)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-primary/30 hover:text-primary"
                   >
                     All lawyers in {city.name}
@@ -240,7 +221,7 @@ export default async function CityCategorySubPage({ params }) {
                 {otherCities.map((c) => (
                   <Link
                     key={c.slug}
-                    href={`/${c.slug}/${service.slug}/${sub}`}
+                    href={cityMatterPath(subSlug, c)}
                     className="group inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-4 py-2 text-sm font-medium text-ink/75 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary"
                   >
                     <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
@@ -263,7 +244,7 @@ export default async function CityCategorySubPage({ params }) {
                 {siblings.map((s) => (
                   <Link
                     key={s.slug}
-                    href={`/${city.slug}/${service.slug}/${s.slug}`}
+                    href={cityMatterPath(s.slug, city)}
                     className="group inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-4 py-2 text-sm font-medium text-ink/75 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary"
                   >
                     {s.name}

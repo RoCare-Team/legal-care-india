@@ -1,10 +1,8 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   ArrowRight, ArrowLeft, ChevronDown, ShieldCheck, MessageSquare, BadgeIndianRupee,
   Users, Layers, MapPin, Sparkles,
 } from 'lucide-react';
-import { createMetadata } from '@/lib/metadata';
 import { Container, Card } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
@@ -12,34 +10,13 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { serviceSchema, breadcrumbSchema, faqSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
-import { getCityBySlug } from '@/lib/cities';
-import { getServiceBySlug, getSubServiceLinks, CATEGORIES } from '@/data/categories';
+import {
+  cityPath, servicePath, cityServicePath, cityMatterPath,
+} from '@/lib/serviceRoutes';
+import { getSubServiceLinks, CATEGORIES } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
-// City + legal-service combos render on demand (dynamicParams defaults to true)
-// and cache. Lawyer data is tag-cached so new registrations appear at once.
-export const revalidate = 3600;
-
-export async function generateStaticParams() {
-  return [];
-}
-
-export async function generateMetadata({ params }) {
-  const { city: citySlug, category: catSlug } = await params;
-  const city = await getCityBySlug(citySlug);
-  const service = getServiceBySlug(catSlug);
-  if (!city || !service) return createMetadata({ title: 'Not Found', path: '/cities' });
-
-  return createMetadata({
-    title: `${service.name} Lawyers in ${city.name}`,
-    description: `Find verified ${service.name} lawyers in ${city.name}, ${city.state}. ${service.description} Compare experience and contact them directly.`,
-    path: `/${city.slug}/${service.slug}`,
-    keywords: [
-      `${service.name} lawyer in ${city.name}`,
-      `${service.name} lawyer ${city.name}`,
-    ],
-  });
-}
+/** `/[service]-in-[city]` — one legal service, scoped to one city. */
 
 const WHY_POINTS = [
   { icon: ShieldCheck, title: 'Verified lawyers', text: 'Every profile is registered and reviewed — you connect only with genuine, practising lawyers.' },
@@ -66,15 +43,21 @@ function buildFaqs(service, city, count) {
   ];
 }
 
-export default async function CityCategoryPage({ params }) {
-  const { city: citySlug, category: catSlug } = await params;
-  const city = await getCityBySlug(citySlug);
-  const service = getServiceBySlug(catSlug);
-  if (!city || !service) notFound();
+export function cityServiceMeta(service, city) {
+  return {
+    title: `${service.name} Lawyers in ${city.name}`,
+    description: `Find verified ${service.name} lawyers in ${city.name}, ${city.state}. ${service.description} Compare experience and contact them directly.`,
+    path: cityServicePath(service, city),
+    keywords: [
+      `${service.name} lawyer in ${city.name}`,
+      `${service.name} lawyer ${city.name}`,
+    ],
+  };
+}
 
+export default async function CityServiceView({ city, service }) {
   const Icon = service.icon;
   const subServices = getSubServiceLinks(service.name);
-  const faqs = buildFaqs(service, city, 0);
 
   // Lawyers practising this service AND based in this city.
   const allAdvocates = await getAllAdvocates();
@@ -82,9 +65,7 @@ export default async function CityCategoryPage({ params }) {
     (a) => a.specializations?.includes(service.name) && a.city === city.name
   );
   const count = advocates.length;
-  faqs[1].a = count > 0
-    ? `There ${count === 1 ? 'is' : 'are'} currently ${pluralize(count, `${service.name} lawyer`)} listed in ${city.name}.`
-    : `${service.name} lawyers are being onboarded in ${city.name}. New verified profiles appear here as they register.`;
+  const faqs = buildFaqs(service, city, count);
 
   // Other legal services in the same city.
   const otherServices = CATEGORIES.filter((c) => c.slug !== service.slug).slice(0, 6);
@@ -95,15 +76,15 @@ export default async function CityCategoryPage({ params }) {
         data={[
           serviceSchema({
             name: `${service.name} in ${city.name}`,
-            slug: `${city.slug}/${service.slug}`,
+            slug: `${service.slug}-in-${city.slug}`,
             description: `${service.name} lawyers in ${city.name}`,
           }),
           faqSchema(faqs),
           breadcrumbSchema([
             { name: 'Home', path: '/' },
             { name: 'Cities', path: '/cities' },
-            { name: city.name, path: `/${city.slug}` },
-            { name: service.name, path: `/${city.slug}/${service.slug}` },
+            { name: city.name, path: cityPath(city) },
+            { name: service.name, path: cityServicePath(service, city) },
           ]),
         ]}
       />
@@ -114,7 +95,7 @@ export default async function CityCategoryPage({ params }) {
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Cities', href: '/cities' },
-          { label: city.name, href: `/${city.slug}` },
+          { label: city.name, href: cityPath(city) },
           { label: service.name },
         ]}
       />
@@ -130,7 +111,7 @@ export default async function CityCategoryPage({ params }) {
                 </span>
                 <div>
                   <Link
-                    href={`/${city.slug}`}
+                    href={cityPath(city)}
                     className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-accent hover:underline"
                   >
                     <MapPin className="h-3 w-3" aria-hidden="true" />
@@ -168,7 +149,7 @@ export default async function CityCategoryPage({ params }) {
                   <div>
                     <dt className="text-xs text-ink/50">City</dt>
                     <dd className="font-semibold text-ink">
-                      <Link href={`/${city.slug}`} className="hover:text-primary">
+                      <Link href={cityPath(city)} className="hover:text-primary">
                         {city.name}, {city.state}
                       </Link>
                     </dd>
@@ -206,7 +187,7 @@ export default async function CityCategoryPage({ params }) {
                   <Card
                     key={item.slug}
                     as={Link}
-                    href={`/${city.slug}/${service.slug}/${item.slug}`}
+                    href={cityMatterPath(item.slug, city)}
                     hoverable
                     padding="none"
                     className="group flex items-center justify-between gap-3 p-4 transition-all duration-300 hover:-translate-y-0.5"
@@ -234,7 +215,7 @@ export default async function CityCategoryPage({ params }) {
                 : `${service.name} Lawyers in ${city.name}`}
             </h2>
             <Link
-              href={`/legal-services/${service.slug}`}
+              href={servicePath(service)}
               className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -250,14 +231,14 @@ export default async function CityCategoryPage({ params }) {
               emptyAction={
                 <div className="flex flex-wrap justify-center gap-3">
                   <Link
-                    href={`/legal-services/${service.slug}`}
+                    href={servicePath(service)}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
                   >
                     {service.name} · all cities
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                   <Link
-                    href={`/${city.slug}`}
+                    href={cityPath(city)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-primary/30 hover:text-primary"
                   >
                     All lawyers in {city.name}
@@ -326,7 +307,7 @@ export default async function CityCategoryPage({ params }) {
                   <Card
                     key={c.slug}
                     as={Link}
-                    href={`/${city.slug}/${c.slug}`}
+                    href={cityServicePath(c, city)}
                     hoverable
                     padding="none"
                     className="group flex flex-col items-center gap-2 p-4 text-center transition-all duration-300 hover:-translate-y-1"

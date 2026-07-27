@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import Advocate from '@/models/Advocate';
 import { hashOtp, hashPassword, RESET_OTP_MAX_ATTEMPTS } from '@/lib/auth';
+import { accountModel, normalizeRole } from '@/lib/passwordReset';
 
 /**
- * POST /api/auth/reset-password  { email, otp, password }
+ * POST /api/auth/reset-password  { email, otp, password, role }
+ *
  * Verifies the OTP (hash + not expired + within attempt limit) and sets a new
- * password.
+ * password. `role` must match the one the code was requested with, otherwise
+ * the OTP simply will not be found — a code issued to a user account cannot be
+ * spent against a lawyer account of the same email.
  */
 export async function POST(request) {
   let body;
@@ -19,6 +22,7 @@ export async function POST(request) {
   const email = String(body?.email || '').trim().toLowerCase();
   const otp = String(body?.otp || '').trim();
   const password = String(body?.password || '');
+  const role = normalizeRole(body?.role);
 
   if (!email || !otp) {
     return NextResponse.json({ error: 'Enter the 6-digit code sent to you.' }, { status: 400 });
@@ -36,12 +40,12 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    const advocate = await Advocate.findOne({ email }).select(
+    const account = await accountModel(role).findOne({ email }).select(
       '+resetOtpHash +resetOtpExpires +resetOtpAttempts'
     );
 
-    const hasOtp = advocate?.resetOtpHash && advocate?.resetOtpExpires;
-    const expired = hasOtp && advocate.resetOtpExpires.getTime() < Date.now();
+    const hasOtp = account?.resetOtpHash && account?.resetOtpExpires;
+    const expired = hasOtp && account.resetOtpExpires.getTime() < Date.now();
 
     if (!hasOtp || expired) {
       return NextResponse.json(
@@ -50,22 +54,22 @@ export async function POST(request) {
       );
     }
 
-    if (advocate.resetOtpAttempts >= RESET_OTP_MAX_ATTEMPTS) {
+    if (account.resetOtpAttempts >= RESET_OTP_MAX_ATTEMPTS) {
       // Too many wrong tries — invalidate the code entirely.
-      advocate.resetOtpHash = null;
-      advocate.resetOtpExpires = null;
-      advocate.resetOtpAttempts = 0;
-      await advocate.save();
+      account.resetOtpHash = null;
+      account.resetOtpExpires = null;
+      account.resetOtpAttempts = 0;
+      await account.save();
       return NextResponse.json(
         { error: 'Too many incorrect attempts. Please request a new code.' },
         { status: 429 }
       );
     }
 
-    if (advocate.resetOtpHash !== hashOtp(otp)) {
-      advocate.resetOtpAttempts += 1;
-      await advocate.save();
-      const left = RESET_OTP_MAX_ATTEMPTS - advocate.resetOtpAttempts;
+    if (account.resetOtpHash !== hashOtp(otp)) {
+      account.resetOtpAttempts += 1;
+      await account.save();
+      const left = RESET_OTP_MAX_ATTEMPTS - account.resetOtpAttempts;
       return NextResponse.json(
         { error: `Incorrect code. ${left > 0 ? `${left} attempt(s) left.` : 'Please request a new code.'}` },
         { status: 400 }
@@ -73,11 +77,11 @@ export async function POST(request) {
     }
 
     // Success — set the new password and clear the OTP.
-    advocate.passwordHash = await hashPassword(password);
-    advocate.resetOtpHash = null;
-    advocate.resetOtpExpires = null;
-    advocate.resetOtpAttempts = 0;
-    await advocate.save();
+    account.passwordHash = await hashPassword(password);
+    account.resetOtpHash = null;
+    account.resetOtpExpires = null;
+    account.resetOtpAttempts = 0;
+    await account.save();
 
     return NextResponse.json({ ok: true, message: 'Your password has been reset. You can now log in.' });
   } catch (err) {

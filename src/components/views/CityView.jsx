@@ -1,10 +1,8 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   ArrowRight, ChevronDown, ShieldCheck, MessageSquare, BadgeIndianRupee,
   Users, MapPin, Building2,
 } from 'lucide-react';
-import { createMetadata } from '@/lib/metadata';
 import { Container, Card } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import AdvocateListing from '@/components/listing/AdvocateListing';
@@ -12,32 +10,12 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema, faqSchema, webPageSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
-import { getAllCities, getCityBySlug } from '@/lib/cities';
+import { getAllCities } from '@/lib/cities';
+import { cityPath, cityServicePath } from '@/lib/serviceRoutes';
 import { CATEGORIES } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
 
-// Prerender the curated/known cities; any other real city renders on demand
-// (dynamicParams defaults to true) and is cached. Lawyer data is tag-cached
-// so new registrations appear immediately (see lib/lawyers).
-export const revalidate = 3600;
-
-export async function generateStaticParams() {
-  const cities = await getAllCities();
-  return cities.map((c) => ({ city: c.slug }));
-}
-
-export async function generateMetadata({ params }) {
-  const { city: slug } = await params;
-  const city = await getCityBySlug(slug);
-  if (!city) return createMetadata({ title: 'City Not Found', path: '/cities' });
-
-  return createMetadata({
-    title: `Lawyers in ${city.name}`,
-    description: `Find and connect with verified lawyers in ${city.name}, ${city.state}. Search by legal service, compare experience and contact them directly.`,
-    path: `/${city.slug}`,
-    keywords: [`lawyers in ${city.name}`, `lawyers in ${city.name}`, `${city.name} lawyer`],
-  });
-}
+/** `/[city]` — every lawyer in one city, plus the services on offer there. */
 
 const WHY_POINTS = [
   {
@@ -76,11 +54,16 @@ function buildFaqs(city, count) {
   ];
 }
 
-export default async function CityPage({ params }) {
-  const { city: slug } = await params;
-  const city = await getCityBySlug(slug);
-  if (!city) notFound();
+export function cityMeta(city) {
+  return {
+    title: `Lawyers in ${city.name}`,
+    description: `Find and connect with verified lawyers in ${city.name}, ${city.state}. Search by legal service, compare experience and contact them directly.`,
+    path: cityPath(city),
+    keywords: [`lawyers in ${city.name}`, `${city.name} lawyer`, `advocate in ${city.name}`],
+  };
+}
 
+export default async function CityView({ city }) {
   const allAdvocates = await getAllAdvocates();
   const inCity = allAdvocates.filter((a) => a.city === city.name);
   const count = inCity.length;
@@ -96,13 +79,13 @@ export default async function CityPage({ params }) {
           webPageSchema({
             name: `Lawyers in ${city.name}`,
             description: `Verified lawyers in ${city.name}, ${city.state}.`,
-            path: `/${city.slug}`,
+            path: cityPath(city),
           }),
           faqSchema(faqs),
           breadcrumbSchema([
             { name: 'Home', path: '/' },
             { name: 'Cities', path: '/cities' },
-            { name: city.name, path: `/${city.slug}` },
+            { name: city.name, path: cityPath(city) },
           ]),
         ]}
       />
@@ -195,7 +178,7 @@ export default async function CityPage({ params }) {
                   <Card
                     key={c.slug}
                     as={Link}
-                    href={`/${city.slug}/${c.slug}`}
+                    href={cityServicePath(c, city)}
                     hoverable
                     padding="none"
                     className="group flex items-center justify-between gap-3 p-4 transition-all duration-300 hover:-translate-y-0.5"
@@ -295,7 +278,7 @@ export default async function CityPage({ params }) {
                 {otherCities.map((c) => (
                   <Link
                     key={c.slug}
-                    href={`/${c.slug}`}
+                    href={cityPath(c)}
                     className="group inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-4 py-2 text-sm font-medium text-ink/75 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary"
                   >
                     <MapPin className="h-3.5 w-3.5 text-primary" aria-hidden="true" />

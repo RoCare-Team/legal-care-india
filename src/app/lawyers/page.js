@@ -5,7 +5,7 @@ import AdvocateListing from '@/components/listing/AdvocateListing';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema, collectionSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
-import { getServiceBySlug, getSubServiceBySlug } from '@/data/categories';
+import { getServiceByAnySlug, getSubServiceByAnySlug } from '@/data/categories';
 import { getAllCities } from '@/lib/cities';
 
 export const metadata = createMetadata({
@@ -33,13 +33,13 @@ function resolveInitial(params = {}, cities = []) {
   const initial = {};
   if (params.q) initial.query = String(params.q);
   if (params.service) {
-    const svc = getServiceBySlug(String(params.service));
+    const svc = getServiceByAnySlug(String(params.service));
     if (svc) {
       initial.service = svc.name;
       // A sub-category only means anything inside its parent service, so it is
       // resolved against the service we just matched.
       if (params.sub) {
-        const sub = getSubServiceBySlug(svc.name, String(params.sub));
+        const sub = getSubServiceByAnySlug(svc.name, String(params.sub));
         if (sub) initial.subService = sub;
       }
     }
