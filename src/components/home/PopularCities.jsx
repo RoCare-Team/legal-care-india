@@ -1,30 +1,28 @@
 import { Section, Heading, Button } from '@/components/ui';
-import CitiesCarousel from './CitiesCarousel';
+import CityTileRail from './CityTileRail';
 import { getAllCities } from '@/lib/cities';
 
 /**
  * PopularCities — quick access to lawyer listings by major city.
  */
 export default async function PopularCities() {
-  // Homepage shows only the first 12 cities; the rest live on the /cities page
-  // ("View all cities").
-  const CITIES = (await getAllCities()).slice(0, 12);
+  // Everything goes into the rail; it scrolls, so there is no reason to hide
+  // cities here the way the old fixed grid had to.
+  const CITIES = await getAllCities();
 
   return (
-    <Section>
-      <Heading eyebrow="Courts Across India" centered>
-        Lawyers in Your City
-      </Heading>
+    <Section spacing="sm">
+      {/* <Heading eyebrow="Courts Across India" centered>/  */}
+        {/* Lawyers in Your City */}
+      {/* </Heading> */}
 
-      <CitiesCarousel cities={CITIES} />
-
-      {/* Below the slider once the heading is centred — a right-aligned button
-          beside a centred title reads as a mistake. */}
-      <div className="mt-8 flex justify-center">
+      <div className="flex justify-end">
         <Button href="/cities" variant="outline" size="sm">
           View all cities
         </Button>
       </div>
+
+      <CityTileRail cities={CITIES} />
     </Section>
   );
 }

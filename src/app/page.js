@@ -1,9 +1,9 @@
 import { createMetadata } from '@/lib/metadata';
 import Hero from '@/components/home/Hero';
-import QuickActions from '@/components/home/QuickActions';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
+import LawyerBanner from '@/components/home/LawyerBanner';
 import HowItWorks from '@/components/home/HowItWorks';
 import PopularCities from '@/components/home/PopularCities';
 import Testimonials from '@/components/home/Testimonials';
@@ -21,11 +21,11 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <QuickActions />
+      <PopularCities />
       <FeaturedAdvocates />
+      <LawyerBanner />
       <Categories />
       <Stats />
-      <PopularCities />
       <HowItWorks />
       <Testimonials />
       <CTA />

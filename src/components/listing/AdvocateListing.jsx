@@ -293,7 +293,8 @@ export default function AdvocateListing({
 
       {results.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {/* Two across at most — these are listing rows, not tiles. */}
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {pageResults.map((advocate) => (
               <AdvocateCard key={advocate.id || advocate._id || advocate.slug} advocate={advocate} />
             ))}

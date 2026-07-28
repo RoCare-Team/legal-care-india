@@ -3,6 +3,7 @@
 import { Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils/cn';
+import Container from '@/components/ui/Container';
 import Logo from '@/components/shared/Logo';
 import Navbar from './Navbar';
 import MobileMenu from './MobileMenu';
@@ -42,10 +43,14 @@ export default function Header() {
             : 'border-ink/8 bg-surface'
       )}
     >
-      {/* Roomier than the usual 64px bar: with nav links, a location, a wallet
+      {/* The same Container every page uses, so the logo lines up with the
+          headings below it — the bar was 86rem wide against the content's 80rem,
+          which left it hanging 48px further out on each side.
+
+          Roomier than the usual 64px bar: with nav links, a location, a wallet
           and two account actions all on one line, the extra height and the gaps
           are what keep it from reading as a wall of controls. */}
-      <div className="mx-auto flex h-[72px] w-full max-w-[86rem] items-center gap-4 px-4 sm:px-6 lg:gap-6 lg:px-8">
+      <Container className="flex h-[72px] items-center gap-4 lg:gap-6">
         <Logo onDark={onDark} />
 
         <Navbar className="hidden flex-1 justify-center lg:flex" onDark={onDark} />
@@ -69,7 +74,7 @@ export default function Header() {
         >
           <Menu className="h-6 w-6" />
         </button>
-      </div>
+      </Container>
     </header>
 
     {/* Rendered OUTSIDE the header so the header's backdrop-blur (a containing

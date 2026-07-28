@@ -20,7 +20,7 @@ export default function RelatedAdvocates({ advocates = [] }) {
           Related Lawyers
         </span>
       </Heading>
-      <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2">
         {advocates.map((advocate) => (
           <AdvocateCard key={advocate.id || advocate._id || advocate.slug} advocate={advocate} />
         ))}

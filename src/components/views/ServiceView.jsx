@@ -115,31 +115,6 @@ export default async function ServiceView({ service }) {
                   ))}
                 </div>
 
-                {/* What this area covers, as jump links into the matters below. */}
-                {matters.length > 0 && (
-                  <div className="mt-7">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-ink/40">
-                      Covers
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {matters.slice(0, 10).map((m) => (
-                        <Link
-                          key={m.slug}
-                          href={matterPath(m.slug)}
-                          className="rounded-full border border-accent/30 bg-accent/[0.07] px-3 py-1.5 text-xs font-medium text-ink/75 transition-colors hover:border-accent hover:bg-accent/15 hover:text-primary"
-                        >
-                          {m.name}
-                        </Link>
-                      ))}
-                      {matters.length > 10 && (
-                        <span className="rounded-full px-3 py-1.5 text-xs font-medium text-ink/40">
-                          +{matters.length - 10} more
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 <div className="mt-7 flex flex-wrap gap-2.5">
                   {TRUST.map(({ icon: TrustIcon, label }) => (
                     <span

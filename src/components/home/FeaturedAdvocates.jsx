@@ -1,5 +1,5 @@
 import { UserPlus } from 'lucide-react';
-import { Section, Heading, Button } from '@/components/ui';
+import { Section, Button } from '@/components/ui';
 import FeaturedCarousel from './FeaturedCarousel';
 import { getAllAdvocates } from '@/lib/advocates';
 
@@ -11,20 +11,22 @@ export default async function FeaturedAdvocates() {
   const advocates = (await getAllAdvocates()).slice(0, 12);
 
   return (
-    <Section className="mt-6 bg-surface/55 pt-8 sm:pt-10">
-      <Heading eyebrow="Verified Advocates" centered>
-        Meet the Lawyers on Legal Care India
-      </Heading>
-
+    <Section spacing="sm" className="bg-surface/55">
       {advocates.length > 0 ? (
         <>
-          <FeaturedCarousel advocates={advocates} />
-          {/* Below the slider, like the cities and practice-area sections. */}
-          <div className="mt-8 flex justify-center">
+          {/* One line saying whose listing this is, with the way out to the
+              full directory beside it — the cards below carry no title of
+              their own. */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-ink/70 sm:text-base">
+              Verified lawyers on Legal Care India
+              <span className="ml-2 font-normal text-ink/45">newest first</span>
+            </p>
             <Button href="/lawyers" variant="outline" size="sm">
               Browse all lawyers
             </Button>
           </div>
+          <FeaturedCarousel advocates={advocates} />
         </>
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">

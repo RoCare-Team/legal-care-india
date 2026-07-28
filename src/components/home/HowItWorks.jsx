@@ -28,7 +28,7 @@ const STEPS = [
  */
 export default function HowItWorks() {
   return (
-    <Section id="how-it-works" className="pb-8 sm:pb-10">
+    <Section id="how-it-works" spacing="sm">
       <Heading centered eyebrow="How It Works">
         From Your Problem to a Lawyer, in Three Steps
       </Heading>

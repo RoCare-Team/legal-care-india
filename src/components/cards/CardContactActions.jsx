@@ -93,8 +93,15 @@ export default function CardContactActions({
     }
   };
 
+  // One filled action, two quiet ones. Three filled buttons in three different
+  // colours competed with each other and with the card; giving Chat the single
+  // accent makes the intended next step obvious at a glance.
   const base =
-    'flex items-center justify-center gap-1.5 rounded-xl border border-ink/10 bg-surface py-2.5 text-sm font-medium transition-colors';
+    'flex h-12 items-center justify-center gap-2 rounded-[14px] text-sm font-semibold transition-all duration-200';
+  // Tinted rather than white: on a white card a white button with a pale border
+  // barely registers as a button at all.
+  const outline =
+    'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10';
 
   return (
     <>
@@ -102,7 +109,7 @@ export default function CardContactActions({
         href={`tel:${contact?.phone || ''}`}
         onClick={onCall}
         aria-label={`Call ${name}`}
-        className={`${base} text-emerald-500 hover:border-emerald-400 hover:bg-emerald-500/10`}
+        className={`${base} ${outline}`}
       >
         <Phone className="h-4 w-4" />
         Call
@@ -114,7 +121,7 @@ export default function CardContactActions({
         rel="noopener noreferrer"
         onClick={onChat}
         aria-label={`Chat with ${name}`}
-        className={`${base} text-blue-500 hover:border-blue-400 hover:bg-blue-500/10`}
+        className={`${base} bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow`}
       >
         <MessageSquare className="h-4 w-4" />
         Chat
@@ -123,7 +130,7 @@ export default function CardContactActions({
         type="button"
         onClick={onVideo}
         aria-label={`Video call ${name}`}
-        className={`${base} text-violet-500 hover:border-violet-400 hover:bg-violet-500/10`}
+        className={`${base} ${outline}`}
       >
         <Video className="h-4 w-4" />
         Video

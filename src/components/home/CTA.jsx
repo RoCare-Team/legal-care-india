@@ -6,7 +6,7 @@ import { Container, Button } from '@/components/ui';
  */
 export default function CTA() {
   return (
-    <section className="py-12 sm:py-16">
+    <section className="py-8 sm:py-10">
       <Container>
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-primary-dark to-primary px-6 py-14 text-center shadow-card-hover sm:px-12">
           <div

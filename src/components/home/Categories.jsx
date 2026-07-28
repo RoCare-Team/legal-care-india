@@ -8,7 +8,7 @@ import { CATEGORIES } from '@/data/categories';
  */
 export default function Categories() {
   return (
-    <Section id="legal-services">
+    <Section id="legal-services" spacing="sm">
       <Heading centered>Find a Lawyer by Practice Area</Heading>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
