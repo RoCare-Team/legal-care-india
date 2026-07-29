@@ -85,12 +85,18 @@ export default function AdvocateCard({ advocate }) {
 
   return (
     <article className="group flex h-full flex-col rounded-3xl border-2 border-ink/15 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06),0_24px_48px_-20px_rgba(15,23,42,0.18)] sm:p-6">
-      {/* ── Portrait + identity ─────────────────────────────────────── */}
-      <div className="flex gap-4 sm:gap-6">
+      {/* ── Portrait, identity, facts ───────────────────────────────────
+          A two-column grid rather than nested flex rows. The portrait spans
+          both rows from `sm`, so the facts sit directly under the name instead
+          of waiting for the 120px portrait to end — which had left a band of
+          empty card between the practice areas and the city. On a phone the
+          portrait spans one row and the facts drop below it across the full
+          width, where they have room to read. */}
+      <div className="grid grid-cols-[88px_1fr] gap-x-4 sm:grid-cols-[120px_1fr] sm:gap-x-6">
         <Link
           href={profileHref}
           aria-label={`View ${name}'s profile`}
-          className="relative h-[88px] w-[88px] shrink-0 overflow-hidden rounded-2xl bg-slate-100 sm:h-[120px] sm:w-[120px]"
+          className="relative h-[88px] w-[88px] shrink-0 self-start overflow-hidden rounded-2xl bg-slate-100 sm:row-span-2 sm:h-[120px] sm:w-[120px]"
         >
           <Avatar
             src={photo}
@@ -100,7 +106,7 @@ export default function AdvocateCard({ advocate }) {
           />
         </Link>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col justify-center sm:justify-start">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <Link href={profileHref}>
@@ -109,7 +115,7 @@ export default function AdvocateCard({ advocate }) {
                 </h3>
               </Link>
               {practiceArea && (
-                <p className="mt-1 truncate text-sm font-semibold text-slate-500 sm:text-[15px]">
+                <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-500 sm:truncate sm:text-[15px]">
                   {practiceArea}
                 </p>
               )}
@@ -124,9 +130,14 @@ export default function AdvocateCard({ advocate }) {
               className="hidden sm:block"
             />
           </div>
+        </div>
 
-          {/* Facts, in muted grey so the name keeps the weight. */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-slate-600 sm:mt-4 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
+        {/* Facts and status. Full width under the portrait on a phone — in the
+            right-hand column they had about 150px to live in, so the city, the
+            years and the languages each took a cramped line and half of them
+            ended in an ellipsis. From `sm` they return beside the portrait. */}
+        <div className="col-span-2 sm:col-span-1 sm:col-start-2">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-slate-600 sm:mt-4 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
             <span className="inline-flex min-w-0 items-center gap-1.5">
               <MapPin className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
               <span className="truncate">
@@ -172,7 +183,7 @@ export default function AdvocateCard({ advocate }) {
         </div>
       </div>
 
-      {/* ── Through to the full profile ─────────────────────────────── */}
+      {/* ── Through to the full profile ────────────────────────────────── */}
       <Link
         href={profileHref}
         className="group/link mt-5 inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary-dark sm:mt-6"

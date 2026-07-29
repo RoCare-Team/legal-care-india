@@ -18,8 +18,8 @@ const LAW_BG =
  * straight through the numbers. It reads as texture behind the band now, which
  * is all it was ever there to be.
  */
-export default async function Stats() {
-  const stats = await getPlatformStats();
+export default async function Stats({ city }) {
+  const stats = await getPlatformStats(city);
 
   return (
     <section className="relative overflow-hidden bg-primary-dark py-10 sm:py-12">

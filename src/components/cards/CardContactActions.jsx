@@ -22,9 +22,12 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   signed-in client's "Chat" opens the paid consultation booking (same as the
  *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
  * @param {Array} [props.audioPlans]  the lawyer's paid audio-call plans.
+ * @param {'md'|'sm'} [props.size='md']  'sm' for the condensed rail card, whose
+ *   whole row is about the height of one full-size button — at 'md' the three
+ *   actions dominated a card meant to be a summary.
  */
 export default function CardContactActions({
-  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [],
+  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [], size = 'md',
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -99,7 +102,10 @@ export default function CardContactActions({
   // Slightly tighter below `sm`: at three to a row on a phone each button gets
   // about 85px, and the desktop sizing pushed "Video" against its own icon.
   const base =
-    'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm';
+    size === 'sm'
+      ? 'flex h-8 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-all duration-200'
+      : 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm';
+  const icon = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   // Tinted rather than white: on a white card a white button with a pale border
   // barely registers as a button at all.
   const outline =
@@ -113,7 +119,7 @@ export default function CardContactActions({
         aria-label={`Call ${name}`}
         className={`${base} ${outline}`}
       >
-        <Phone className="h-4 w-4" />
+        <Phone className={icon} />
         Call
       </a>
 
@@ -125,7 +131,7 @@ export default function CardContactActions({
         aria-label={`Chat with ${name}`}
         className={`${base} bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow`}
       >
-        <MessageSquare className="h-4 w-4" />
+        <MessageSquare className={icon} />
         Chat
       </a>
       <button
@@ -134,7 +140,7 @@ export default function CardContactActions({
         aria-label={`Video call ${name}`}
         className={`${base} ${outline}`}
       >
-        <Video className="h-4 w-4" />
+        <Video className={icon} />
         Video
       </button>
 

@@ -140,8 +140,11 @@ function CompactLawyer({ advocate }) {
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-1.5 border-t border-ink/8 pt-3">
+      {/* The compact size — this whole card is about the height of three
+          full-size buttons, so the actions have to be scaled to it. */}
+      <div className="mt-2.5 grid grid-cols-3 gap-1.5 border-t border-ink/8 pt-2.5">
         <CardContactActions
+          size="sm"
           contact={contact}
           name={name}
           advocateId={advocate._id}
@@ -153,10 +156,10 @@ function CompactLawyer({ advocate }) {
 
       <Link
         href={`/lawyers/${advocateProfilePath(advocate)}`}
-        className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
+        className="mt-1.5 flex h-8 items-center justify-center gap-1 rounded-lg bg-primary px-3 text-[11px] font-semibold text-white transition-colors hover:bg-primary-dark"
       >
         View Profile
-        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        <ArrowRight className="h-3 w-3" aria-hidden="true" />
       </Link>
     </div>
   );

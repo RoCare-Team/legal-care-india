@@ -6,6 +6,7 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { breadcrumbSchema } from '@/lib/schema';
 import { getAllCities } from '@/lib/cities';
+import { getLawyerCountsByCity } from '@/lib/stats';
 
 export const metadata = createMetadata({
   title: 'Find Lawyers by City',
@@ -15,7 +16,7 @@ export const metadata = createMetadata({
 });
 
 export default async function CitiesPage() {
-  const CITIES = await getAllCities();
+  const [CITIES, counts] = await Promise.all([getAllCities(), getLawyerCountsByCity()]);
 
   return (
     <>
@@ -38,7 +39,7 @@ export default async function CitiesPage() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
           {CITIES.map((city, i) => (
             <SectionReveal key={city.slug} delay={i * 0.04}>
-              <CityCard city={city} />
+              <CityCard city={city} count={counts[city.name] || 0} />
             </SectionReveal>
           ))}
         </div>

@@ -1,6 +1,7 @@
-import { Section, Heading, Button } from '@/components/ui';
+import { Section, Button } from '@/components/ui';
 import CityTileRail from './CityTileRail';
 import { getAllCities } from '@/lib/cities';
+import { getLawyerCountsByCity } from '@/lib/stats';
 
 /**
  * How many city tiles the homepage rail carries. `getAllCities` returns the
@@ -20,21 +21,18 @@ const RAIL_LIMIT = 20;
  * PopularCities — quick access to lawyer listings by major city.
  */
 export default async function PopularCities() {
-  const CITIES = (await getAllCities()).slice(0, RAIL_LIMIT);
+  const [cities, counts] = await Promise.all([getAllCities(), getLawyerCountsByCity()]);
 
   return (
     <Section spacing="sm">
-      {/* <Heading eyebrow="Courts Across India" centered>/  */}
-        {/* Lawyers in Your City */}
-      {/* </Heading> */}
-
       <div className="flex justify-end">
         <Button href="/cities" variant="outline" size="sm">
           View all cities
         </Button>
       </div>
 
-      <CityTileRail cities={CITIES} />
+      {/* The rail's own heading and arrows live inside it, beside each other. */}
+      <CityTileRail cities={cities.slice(0, RAIL_LIMIT)} counts={counts} />
     </Section>
   );
 }

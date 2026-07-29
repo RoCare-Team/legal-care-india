@@ -29,40 +29,46 @@ export default function CitySlider({ items = [], subject }) {
   };
 
   if (!items.length) return null;
-  const showArrows = items.length > 3;
+  const showArrows = items.length > 2;
 
   return (
-    <div className="relative mt-6">
+    <div className="mt-6">
+      {/* Arrows above the track and visible at every width, matching the other
+          rails — floating them over the sides hid them below `lg`, so a phone
+          got no sign the row scrolled at all. */}
       {showArrows && (
-        <>
+        <div className="mb-3 flex justify-end gap-2">
           <button
             type="button"
             onClick={() => scroll(-1)}
             aria-label={`Previous cities for ${subject}`}
-            className="absolute -left-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-dark lg:grid"
+            className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 bg-surface text-primary shadow-sm transition-colors hover:border-primary/30 hover:bg-primary hover:text-white"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4.5 w-4.5" />
           </button>
           <button
             type="button"
             onClick={() => scroll(1)}
             aria-label={`More cities for ${subject}`}
-            className="absolute -right-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-dark lg:grid"
+            className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 bg-surface text-primary shadow-sm transition-colors hover:border-primary/30 hover:bg-primary hover:text-white"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4.5 w-4.5" />
           </button>
-        </>
+        </div>
       )}
 
+      {/* Bled to the page gutter and padded back by it, with `scroll-px` to
+          match — without that, snapping measures from the border box and pins
+          the leading card flush against the edge of the screen. */}
       <div
         ref={trackRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth scroll-px-4 px-4 py-2 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8 [&::-webkit-scrollbar]:hidden"
       >
         {items.map((city) => (
           <div
             key={city.slug}
             data-card
-            className="w-[64%] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]"
+            className="w-[72%] shrink-0 snap-start sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)] xl:w-[calc((100%-3rem)/4)]"
           >
             <Link
               href={city.href}

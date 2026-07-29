@@ -36,9 +36,11 @@ export function createMetadata({
     : undefined;
 
   return {
-    // Browser tab always shows the fixed brand name; the descriptive per-page
-    // title is still used for social sharing (Open Graph / Twitter) below.
-    title: SITE.name,
+    // Each page carries its own title. It used to be pinned to the brand name
+    // everywhere, which meant a hundred city pages and every practice area all
+    // shared one <title> — the single strongest on-page signal a search engine
+    // reads, and the label on every browser tab and bookmark.
+    title: pageTitle,
     description,
     keywords: [...SITE.keywords, ...keywords],
     alternates: {

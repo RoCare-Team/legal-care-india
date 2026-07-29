@@ -16,8 +16,9 @@ import CityCard from '@/components/cards/CityCard';
  *
  * @param {object} props
  * @param {Array} props.cities
+ * @param {Record<string, number>} [props.counts]  lawyers per city name
  */
-export default function CityTileRail({ cities = [] }) {
+export default function CityTileRail({ cities = [], counts = {} }) {
   const trackRef = useRef(null);
 
   const scroll = (dir) => {
@@ -34,35 +35,55 @@ export default function CityTileRail({ cities = [] }) {
   const showArrows = cities.length > 8;
 
   return (
-    <div className="relative mt-8">
-      {showArrows && (
-        <>
-          <button
-            type="button"
-            onClick={() => scroll(-1)}
-            aria-label="Previous cities"
-            className="absolute -left-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-dark lg:grid"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => scroll(1)}
-            aria-label="More cities"
-            className="absolute -right-4 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-primary text-white shadow-card transition-colors hover:bg-primary-dark lg:grid"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </>
-      )}
+    <div className="mt-6">
+      {/* Heading and arrows share one row above the rail. The arrows used to
+          float over the tiles at the sides and were hidden below `lg`, so on a
+          phone nothing signalled that the row scrolled. */}
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h2 className="font-display text-lg font-bold text-ink sm:text-xl">
+          Browse lawyers by city
+        </h2>
+        {showArrows && (
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scroll(-1)}
+              aria-label="Previous cities"
+              className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 bg-surface text-primary shadow-sm transition-colors hover:border-primary/30 hover:bg-primary hover:text-white"
+            >
+              <ChevronLeft className="h-4.5 w-4.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll(1)}
+              aria-label="More cities"
+              className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 bg-surface text-primary shadow-sm transition-colors hover:border-primary/30 hover:bg-primary hover:text-white"
+            >
+              <ChevronRight className="h-4.5 w-4.5" />
+            </button>
+          </div>
+        )}
+      </div>
 
+      {/* Bled to the page gutter and given that gutter back as the track's own
+          padding, so the tiles' shadow and their lift on hover are not sliced
+          off flat by the scroll container at either edge.
+
+          `scroll-px` has to match that padding. Snap alignment is measured from
+          the scrollport's *border* box unless scroll-padding says otherwise, so
+          without it every snap pulled the leading tile flush against the screen
+          edge — the padding only showed until the first scroll.
+
+          Two tiles to a phone screen, sized as a share of the track rather than
+          a fixed width: at 8.5rem a third tile was left half-cut at the edge,
+          which reads as the row being broken rather than scrollable. */}
       <div
         ref={trackRef}
-        className="grid snap-x snap-mandatory auto-cols-[8rem] grid-flow-col grid-rows-1 gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] sm:auto-cols-[9.5rem] [&::-webkit-scrollbar]:hidden"
+        className="-mx-4 grid snap-x snap-mandatory auto-cols-[calc((100%-3rem)/2)] grid-flow-col grid-rows-1 gap-4 overflow-x-auto scroll-smooth scroll-px-4 px-4 py-2 [scrollbar-width:none] sm:-mx-6 sm:auto-cols-[10rem] sm:scroll-px-6 sm:px-6 lg:-mx-8 lg:scroll-px-8 lg:px-8 [&::-webkit-scrollbar]:hidden"
       >
         {cities.map((city) => (
           <div key={city.slug} data-tile className="snap-start">
-            <CityCard city={city} />
+            <CityCard city={city} count={counts[city.name] || 0} />
           </div>
         ))}
       </div>

@@ -12,13 +12,21 @@ import { formatCompactNumber } from '@/utils/formatters';
  *
  * @param {object} props
  * @param {import('@/data/categories').CATEGORIES[number]} props.category
+ * @param {string} [props.href]  where the card leads. Defaults to the practice
+ *   area across all of India; a city page passes its own city-scoped path so
+ *   the visitor stays inside the city they arrived in.
+ * @param {number} [props.count] lawyers registered in this practice area,
+ *   counted from the database. Zero hides the pill rather than advertising
+ *   "0 lawyers" eight times over. There is deliberately no fallback to the
+ *   `advocates` figure on the category — those are placeholders from before
+ *   the database existed, and a made-up count is worse than none.
  */
-export default function CategoryCard({ category }) {
-  const { slug, name, icon: Icon, advocates, description } = category;
+export default function CategoryCard({ category, href, count = 0 }) {
+  const { slug, name, icon: Icon, description } = category;
 
   return (
     <Link
-      href={`/${slug}`}
+      href={href || `/${slug}`}
       className="group relative flex h-full flex-col items-center overflow-hidden rounded-2xl border border-ink/8 bg-surface px-4 pb-5 pt-6 text-center shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-card-hover"
     >
       {/* Soft brand wash that only appears on hover, behind everything. */}
@@ -50,12 +58,14 @@ export default function CategoryCard({ category }) {
         <p className="mt-1.5 text-[13px] leading-relaxed text-ink/50">{description}</p>
       )}
 
-      <span className="mt-auto pt-3.5">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/[0.06] px-2.5 py-1 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
-          <Users className="h-3 w-3 text-accent" aria-hidden="true" />
-          {formatCompactNumber(advocates)}+ lawyers
+      {count > 0 && (
+        <span className="mt-auto pt-3.5">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/[0.06] px-2.5 py-1 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/10 transition-colors group-hover:bg-primary/10">
+            <Users className="h-3 w-3 text-accent" aria-hidden="true" />
+            {formatCompactNumber(count)} {count === 1 ? 'lawyer' : 'lawyers'}
+          </span>
         </span>
-      </span>
+      )}
     </Link>
   );
 }

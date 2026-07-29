@@ -6,37 +6,48 @@ import { getAllAdvocates } from '@/lib/advocates';
 /**
  * FeaturedAdvocates — the most recently registered verified lawyers,
  * shown as a horizontal slider. Reads live from the database.
+ *
+ * On a city page it lists that city's lawyers and nothing else. If none have
+ * registered there, the band says so rather than filling the gap with lawyers
+ * from other cities — someone reading /bengaluru is looking for Bengaluru, and
+ * a Delhi card under a Bengaluru heading is the wrong answer however it is
+ * labelled.
+ *
+ * @param {object} props
+ * @param {object} [props.city]  the city this page is scoped to, if any
  */
-export default async function FeaturedAdvocates() {
-  const advocates = (await getAllAdvocates()).slice(0, 12);
+export default async function FeaturedAdvocates({ city }) {
+  const all = await getAllAdvocates();
+  const advocates = (city ? all.filter((a) => a.city === city.name) : all).slice(0, 12);
 
   return (
     <Section spacing="sm" className="bg-surface/55">
       {advocates.length > 0 ? (
         <>
-          {/* One line saying whose listing this is, with the way out to the
-              full directory beside it — the cards below carry no title of
-              their own. */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-ink/70 sm:text-base">
-              Verified lawyers on Legal Care India
-              <span className="ml-2 font-normal text-ink/45">newest first</span>
-            </p>
-            <Button href="/lawyers" variant="outline" size="sm">
-              Browse all lawyers
-            </Button>
-          </div>
-          <FeaturedCarousel advocates={advocates} />
+          {/* The heading, the way out to the full listing and the row's arrows
+              are all laid out by the carousel on one line — the button and the
+              arrows used to sit on two rows with dead space between them. */}
+          <FeaturedCarousel
+            advocates={advocates}
+            eyebrow="Advocate listing"
+            title={
+              city ? `Verified lawyers in ${city.name}` : 'Verified lawyers on Legal Care India'
+            }
+            note="newest first"
+            actionHref="/lawyers"
+            actionLabel="Browse all lawyers"
+          />
         </>
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">
           <UserPlus className="h-10 w-10 text-primary/60" aria-hidden="true" />
           <h3 className="mt-4 font-display text-lg font-semibold text-ink">
-            Be the first advocate listed here
+            {city ? `No lawyer listed in ${city.name} yet` : 'Be the first advocate listed here'}
           </h3>
           <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink/55">
-            No practice has been listed yet. Add your Bar Council details, set your
-            consultation fee and start taking clients from across India.
+            {city
+              ? `No verified lawyer has registered in ${city.name} so far. Practising here? Add your Bar Council details and be the first.`
+              : 'No practice has been listed yet. Add your Bar Council details, set your consultation fee and start taking clients from across India.'}
           </p>
           <Button href="/register" size="sm" className="mt-5">
             Register Your Practice
