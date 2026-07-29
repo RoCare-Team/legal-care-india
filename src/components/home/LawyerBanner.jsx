@@ -28,10 +28,19 @@ export default function LawyerBanner() {
         sizes="100vw"
         className="pointer-events-none -z-10 object-cover object-center"
       />
-      {/* The middle of the artwork is pale at the top and deep blue lower down;
-          this keeps the contrast behind white type even on the light part. */}
+      {/* The artwork ships in a bright royal blue that is not the brand navy,
+          so the band read as a different site's section. Rather than commission
+          a new asset, this layer repaints it: `mix-blend-color` keeps the
+          photograph's own light and shade but takes its hue straight from
+          --color-primary, so the band follows the theme wherever the theme goes. */}
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-[#1E3A5F]/25 via-[#1E3A5F]/35 to-[#1E3A5F]/45"
+        className="pointer-events-none absolute inset-0 -z-10 bg-primary mix-blend-color"
+        aria-hidden="true"
+      />
+      {/* Then darken. The artwork is pale at the top and deep lower down; this
+          holds the contrast behind white type across both halves. */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-primary-dark/35 via-primary-dark/45 to-primary-dark/60"
         aria-hidden="true"
       />
 

@@ -6,15 +6,21 @@ import {
 import { getAllCities } from '@/lib/cities';
 import { getAllAdvocateParams } from '@/lib/advocates';
 import { getAllBlogs } from '@/lib/blogs';
+import { NOINDEX } from '@/lib/noindex';
 
 /**
  * Dynamic sitemap. Next.js serves this at /sitemap.xml.
  * Extend the source arrays (or swap for API calls) and the sitemap scales
  * automatically as the directory grows.
  *
+ * While SITE_NOINDEX is on the sitemap is served empty — handing crawlers a
+ * list of every URL is the opposite of what the switch is for.
+ *
  * @returns {import('next').MetadataRoute.Sitemap}
  */
 export default async function sitemap() {
+  if (NOINDEX) return [];
+
   const now = new Date('2026-07-06');
   const base = SITE.url;
 

@@ -1,4 +1,5 @@
 import { SITE } from '@/constants/site';
+import { NOINDEX } from '@/lib/noindex';
 
 /**
  * Centralized SEO metadata factory.
@@ -11,7 +12,8 @@ import { SITE } from '@/constants/site';
  * @param {string} [options.path]         Route path, e.g. "/lawyers"
  * @param {string[]} [options.keywords]   Extra keywords
  * @param {string} [options.image]        OG image URL (absolute or root-relative)
- * @param {boolean} [options.noindex]     Exclude the page from search indexes
+ * @param {boolean} [options.noindex]     Exclude the page from search indexes.
+ *   The site-wide SITE_NOINDEX switch forces this on for every page.
  * @returns {import('next').Metadata}
  */
 export function createMetadata({
@@ -43,7 +45,7 @@ export function createMetadata({
       canonical,
       languages: { [SITE.language]: canonical, 'x-default': canonical },
     },
-    ...(noindex
+    ...(noindex || NOINDEX
       ? { robots: { index: false, follow: false } }
       : {}),
     openGraph: {
@@ -84,17 +86,27 @@ export const baseMetadata = {
     title: SITE.shortName,
     statusBarStyle: 'default',
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-      'max-video-preview': -1,
-    },
-  },
+  // This key overrides whatever createMetadata() produced above, so the
+  // site-wide switch has to be honoured here too — otherwise every page would
+  // go back to INDEX, FOLLOW at the root layout.
+  robots: NOINDEX
+    ? {
+        index: false,
+        follow: false,
+        nocache: true,
+        googleBot: { index: false, follow: false },
+      }
+    : {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          'max-image-preview': 'large',
+          'max-snippet': -1,
+          'max-video-preview': -1,
+        },
+      },
   verification: {
     ...(process.env.GOOGLE_SITE_VERIFICATION
       ? { google: process.env.GOOGLE_SITE_VERIFICATION }

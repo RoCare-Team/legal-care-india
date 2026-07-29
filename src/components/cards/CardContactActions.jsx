@@ -96,8 +96,10 @@ export default function CardContactActions({
   // One filled action, two quiet ones. Three filled buttons in three different
   // colours competed with each other and with the card; giving Chat the single
   // accent makes the intended next step obvious at a glance.
+  // Slightly tighter below `sm`: at three to a row on a phone each button gets
+  // about 85px, and the desktop sizing pushed "Video" against its own icon.
   const base =
-    'flex h-12 items-center justify-center gap-2 rounded-[14px] text-sm font-semibold transition-all duration-200';
+    'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm';
   // Tinted rather than white: on a white card a white button with a pale border
   // barely registers as a button at all.
   const outline =
