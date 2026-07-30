@@ -66,7 +66,7 @@ export default function SearchBar({ className }) {
 
       <form
         onSubmit={onSubmit}
-        className={`flex flex-col gap-2.5 rounded-2xl border border-ink/8 bg-surface p-2.5 shadow-card transition-colors focus-within:border-primary/40 sm:flex-row sm:gap-2 sm:p-1.5 ${className || ''}`}
+        className={`flex flex-col gap-2 rounded-2xl border border-ink/8 bg-surface p-2 shadow-card transition-colors focus-within:border-primary/40 sm:flex-row sm:gap-2 sm:p-1.5 ${className || ''}`}
       >
         <label className="flex flex-1 items-center gap-2 rounded-lg border border-ink/10 bg-muted/30 px-3 py-2 transition-colors focus-within:border-primary/50 focus-within:[&_svg]:text-primary sm:border-transparent sm:bg-transparent sm:py-1 sm:focus-within:bg-ink/[0.035]">
           <Search className="h-5 w-5 shrink-0 text-ink/40" aria-hidden="true" />

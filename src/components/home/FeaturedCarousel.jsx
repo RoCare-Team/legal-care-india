@@ -57,31 +57,40 @@ export default function FeaturedCarousel({
   const showArrows = advocates.length > 2;
 
   return (
-    <div className="mt-6">
+    // No top margin of its own: this is the first child of a Section that
+    // already pads the band, and the two together left a dead strip above the
+    // heading.
+    <div>
       {(title || actionHref || showArrows) && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             {eyebrow && (
-              <p className="text-xs font-semibold uppercase tracking-wider text-accent">
+              <p className="text-[24px] font-bold uppercase tracking-wider text-accent">
                 {eyebrow}
               </p>
             )}
             {title && (
-              <p className="mt-1 text-sm font-semibold text-ink/70 sm:text-base">
+              <p className="mt-1 text-[15px] font-semibold text-ink/70 sm:text-lg">
                 {title}
-                {note && <span className="ml-2 font-normal text-ink/45">{note}</span>}
+                {note && <span className="ml-2 text-sm font-normal text-ink/45">{note}</span>}
               </p>
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          {/* On a phone this group takes a line of its own, so it spreads across
+              it — the way out to the full listing on the left, the arrows on the
+              right. From `sm` it shrinks back to sitting beside the heading. */}
+          <div className="ml-auto flex w-full shrink-0 items-center justify-between gap-2 sm:w-auto sm:justify-end">
             {actionHref && actionLabel && (
               <Button href={actionHref} variant="outline" size="sm">
                 {actionLabel}
               </Button>
             )}
+            {/* The pair is one group, not two loose children — `justify-between`
+                on the row above would otherwise spread the two arrows apart as
+                well as pushing them away from the button. */}
             {showArrows && (
-              <>
+              <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() => scroll(-1)}
@@ -98,7 +107,7 @@ export default function FeaturedCarousel({
                 >
                   <ChevronRight className="h-4.5 w-4.5" />
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

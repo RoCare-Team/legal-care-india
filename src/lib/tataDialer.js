@@ -69,7 +69,7 @@ async function send({ token, agent, destination, callerId }) {
       };
     }
 
-    console.log('[dialer] Smartflo accepted the call', data);
+    if (process.env.NODE_ENV !== 'production') console.log('[dialer] Smartflo accepted the call', data);
     return { ok: true, data };
   } catch (err) {
     if (err?.name === 'AbortError') {
@@ -196,7 +196,7 @@ export async function checkCallOutcome({ agentNumber, clientNumber, since }) {
     });
     if (match) {
       const seconds = Math.max(0, Number(match.answered_seconds) || 0);
-      console.log(`[dialer] call ${seconds > 0 ? 'ended' : 'not answered'}`, {
+      if (process.env.NODE_ENV !== 'production') console.log(`[dialer] call ${seconds > 0 ? 'ended' : 'not answered'}`, {
         client_number: match.client_number,
         answered_seconds: match.answered_seconds,
         status: match.status,

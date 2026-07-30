@@ -96,7 +96,10 @@ export default async function MatterView({ service, subService, subSlug }) {
       <Container className="py-10 sm:py-14">
         {/* Content on the left; the lawyer rail pinned alongside it. */}
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_26rem]">
-          <div className="min-w-0">
+          {/* The lawyer rail leads on a narrow screen. Stacked in source order
+              it landed below every word of the page, so the one thing the
+              visitor came for was the last thing they could reach. */}
+          <div className="order-2 min-w-0 lg:order-1">
             <SectionReveal>
               <section>
                 <div className="flex items-center gap-3.5">
@@ -185,6 +188,7 @@ export default async function MatterView({ service, subService, subSlug }) {
           </div>
 
           <LawyerSidebar
+            className="order-1 lg:order-2"
             advocates={advocates}
             label={subService}
             allHref={`/lawyers?service=${service.slug}&sub=${subSlug}`}

@@ -22,12 +22,16 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   signed-in client's "Chat" opens the paid consultation booking (same as the
  *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
  * @param {Array} [props.audioPlans]  the lawyer's paid audio-call plans.
- * @param {'md'|'sm'} [props.size='md']  'sm' for the condensed rail card, whose
- *   whole row is about the height of one full-size button — at 'md' the three
- *   actions dominated a card meant to be a summary.
+ * @param {'default'|'compact'|'mobile'} [props.variant='default']
+ *   'compact' for the condensed rail card, whose whole row is about the height
+ *   of one full-size button — at the default size the three actions dominated a
+ *   card meant to be a summary. 'mobile' is the taller, 44px tap target the
+ *   phone listing card uses, with Video on a grey fill rather than a tint so
+ *   the three read as three distinct weights at a glance.
  */
 export default function CardContactActions({
-  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [], size = 'md',
+  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [],
+  variant = 'default',
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -99,17 +103,39 @@ export default function CardContactActions({
   // One filled action, two quiet ones. Three filled buttons in three different
   // colours competed with each other and with the card; giving Chat the single
   // accent makes the intended next step obvious at a glance.
-  // Slightly tighter below `sm`: at three to a row on a phone each button gets
-  // about 85px, and the desktop sizing pushed "Video" against its own icon.
-  const base =
-    size === 'sm'
-      ? 'flex h-8 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-all duration-200'
-      : 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm';
-  const icon = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
-  // Tinted rather than white: on a white card a white button with a pale border
-  // barely registers as a button at all.
-  const outline =
-    'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10';
+  //
+  // The quiet pair is tinted rather than white: on a white card a white button
+  // with a pale border barely registers as a button at all. 'mobile' is the
+  // exception — there Call keeps a white face with a visible border and Video
+  // sits on grey, three distinct weights, which separates faster at arm's
+  // length than two identical tints either side of the filled one.
+  const SETS = {
+    default: {
+      base: 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm',
+      icon: 'h-4 w-4',
+      call: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
+      video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
+      chat: 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow',
+    },
+    compact: {
+      base: 'flex h-8 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-all duration-200',
+      icon: 'h-3.5 w-3.5',
+      call: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
+      video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
+      chat: 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow',
+    },
+    // 44px tall — the minimum comfortable tap target, so the row never needs a
+    // second attempt on a 360px phone.
+    mobile: {
+      base: 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-colors duration-200',
+      icon: 'h-4 w-4',
+      call: 'border border-primary/30 bg-white text-primary active:bg-primary/[0.06]',
+      video: 'bg-slate-100 text-slate-700 active:bg-slate-200',
+      chat: 'bg-primary text-white shadow-sm active:bg-primary-dark',
+    },
+  };
+  const set = SETS[variant] || SETS.default;
+  const { base, icon } = set;
 
   return (
     <>
@@ -117,7 +143,7 @@ export default function CardContactActions({
         href={`tel:${contact?.phone || ''}`}
         onClick={onCall}
         aria-label={`Call ${name}`}
-        className={`${base} ${outline}`}
+        className={`${base} ${set.call}`}
       >
         <Phone className={icon} />
         Call
@@ -129,7 +155,7 @@ export default function CardContactActions({
         rel="noopener noreferrer"
         onClick={onChat}
         aria-label={`Chat with ${name}`}
-        className={`${base} bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow`}
+        className={`${base} ${set.chat}`}
       >
         <MessageSquare className={icon} />
         Chat
@@ -138,7 +164,7 @@ export default function CardContactActions({
         type="button"
         onClick={onVideo}
         aria-label={`Video call ${name}`}
-        className={`${base} ${outline}`}
+        className={`${base} ${set.video}`}
       >
         <Video className={icon} />
         Video

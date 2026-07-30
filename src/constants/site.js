@@ -28,7 +28,12 @@ export const SITE = {
 
 export const CONTACT = {
   email: 'support@legalcareindia.com',
+  // PLACEHOLDER — replace both with the real support line before launch. These
+  // drive the floating Call and WhatsApp buttons on every public page, so a
+  // wrong number here is a wrong number sitewide.
   phone: '+91 90000 00000',
+  // Digits only, with the country code and no '+' — the format wa.me expects.
+  whatsapp: '919000000000',
   address: 'India',
 };
 

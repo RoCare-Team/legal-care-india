@@ -4,6 +4,9 @@ import { FormField, Input } from '@/components/ui';
 /**
  * StepAccount — basic account credentials (step 1 of registration).
  *
+ * The profile photograph is asked for on the review step, not here — see
+ * StepReview.
+ *
  * @param {object} props
  * @param {object} props.data
  * @param {(field:string,value:any)=>void} props.set

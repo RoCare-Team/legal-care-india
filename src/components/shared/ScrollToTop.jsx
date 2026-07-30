@@ -21,7 +21,10 @@ export default function ScrollToTop() {
       aria-label="Scroll back to top"
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      className={`fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-primary text-white shadow-card-hover transition-all duration-200 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ${
+      // Bottom LEFT, not right: the right corner belongs to the WhatsApp and
+      // Call buttons (see FloatingContact), and stacking a third control under
+      // them put the lowest one behind the profile pages' mobile action bar.
+      className={`fixed bottom-6 left-5 z-40 grid h-11 w-11 place-items-center rounded-full bg-primary/90 text-white shadow-card-hover backdrop-blur-sm transition-all duration-200 hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 sm:left-6 ${
         visible ? 'opacity-100 translate-y-0 scale-100' : 'pointer-events-none translate-y-3 scale-90 opacity-0'
       }`}
     >

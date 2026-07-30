@@ -8,43 +8,68 @@ import { advocatePlans } from '@/constants/consultationPlans';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
+/** Hairline used for the card edge and the rules inside it. */
+const HAIRLINE = 'border-[#E8ECF2]';
+
 /**
- * The consultation rate. Rendered twice at different breakpoints — beside the
- * name on a wide card, down with the status badges on a narrow one — so it is
- * a component rather than two drifting copies of the same markup.
+ * The consultation rate as a pill, for the desktop card's top corner.
+ * `amount` is already formatted; `quoted` is false when the lawyer has neither
+ * a plan nor a flat fee set, in which case the pill says so rather than
+ * advertising a free consultation with "₹0".
  */
-function FeePill({ plan, fee, className = '' }) {
+function FeePill({ amount, minutes, quoted, className = '' }) {
   return (
     <div
       className={`shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-center sm:rounded-2xl sm:px-4 sm:py-2 ${className}`}
     >
       <p className="text-base font-bold leading-tight text-slate-900 sm:text-lg">
-        ₹{plan ? plan.price : fee}
+        {quoted ? `₹${amount}` : 'On request'}
       </p>
       <p className="mt-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">
-        {plan ? `${plan.minutes} min` : 'per consult'}
+        {minutes ? `${minutes} min` : quoted ? 'per consult' : 'ask the lawyer'}
       </p>
     </div>
+  );
+}
+
+/** One fact with its icon, in the muted grey the facts share. */
+function Fact({ icon: Icon, children, className = '' }) {
+  return (
+    <span className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
+      <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+/** The "Verified" pill — a blue check on a blue tint, matching the Online pill. */
+function VerifiedChip() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-semibold text-primary">
+      <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+      Verified Lawyer
+    </span>
   );
 }
 
 /**
  * AdvocateCard — the directory listing card for a single lawyer.
  *
- * Built to read as a product card rather than a directory row: a 120px portrait
- * on the left, the identity and facts beside it, the rate as a quiet pill in
- * the corner, and the three ways to make contact along the foot. Only one thing
- * is filled in the accent colour at a time, so the eye always knows where the
- * next step is.
+ * Two layouts, one component, because a phone and a desktop want genuinely
+ * different cards here and squeezing one into the other is what made the phone
+ * version feel cramped:
  *
- * Everything is on an 8px rhythm — 24px padding, 24px between the portrait and
- * the text, 8px inside groups.
+ *   below `sm`  a stacked card — portrait and identity, status chips, the facts
+ *               one per line, the fee given a block of its own, then the three
+ *               actions and the profile link, each group separated by a rule.
+ *               Nothing competes for horizontal room, so nothing is truncated
+ *               to fit and every tap target clears 44px.
  *
- * On a phone that layout collapses: the card is barely 280px of usable width,
- * and a 120px portrait plus a rate pill in the corner left the name about 40px
- * to live in — "Manoj Sharma" came out as "m.". So below `sm` the portrait
- * shrinks to 88px and the rate drops out of the corner into the badge row,
- * which hands the whole remaining width back to the name.
+ *   from `sm`   the media card — portrait as a full-height tile down the left,
+ *               everything else in the column beside it.
+ *
+ * Only one is ever displayed; the other is `display:none`, so it is also hidden
+ * from assistive technology rather than read out twice.
  *
  * Presentational: receives a single `advocate` record.
  *
@@ -83,129 +108,214 @@ export default function AdvocateCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const practiceArea = specializations.slice(0, 2).join(' · ');
 
+  // Grouped with the Indian digit separators — ₹2,000 rather than ₹2000, which
+  // is how a price is written everywhere else in India. A lawyer who has set
+  // neither a plan nor a flat fee has no figure to show: "₹0" would read as a
+  // free consultation, so both layouts fall back to "On request".
+  const feeAmount = cheapestPlan ? cheapestPlan.price : consultationFee;
+  const feeQuoted = Number(feeAmount) > 0;
+  const feeText = Number(feeAmount || 0).toLocaleString('en-IN');
+
+  const actions = (
+    <CardContactActions
+      contact={contact}
+      name={name}
+      advocateId={advocate._id}
+      plans={advocatePlans(consultationPlans)}
+      videoPlans={advocatePlans(videoPlans)}
+      audioPlans={advocatePlans(audioPlans)}
+    />
+  );
+
   return (
-    <article className="group flex h-full flex-col rounded-3xl border-2 border-ink/15 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06),0_24px_48px_-20px_rgba(15,23,42,0.18)] sm:p-6">
-      {/* ── Portrait, identity, facts ───────────────────────────────────
-          A two-column grid rather than nested flex rows. The portrait spans
-          both rows from `sm`, so the facts sit directly under the name instead
-          of waiting for the 120px portrait to end — which had left a band of
-          empty card between the practice areas and the city. On a phone the
-          portrait spans one row and the facts drop below it across the full
-          width, where they have room to read. */}
-      <div className="grid grid-cols-[88px_1fr] gap-x-4 sm:grid-cols-[120px_1fr] sm:gap-x-6">
-        <Link
-          href={profileHref}
-          aria-label={`View ${name}'s profile`}
-          className="relative h-[88px] w-[88px] shrink-0 self-start overflow-hidden rounded-2xl bg-slate-100 sm:row-span-2 sm:h-[120px] sm:w-[120px]"
-        >
-          <Avatar
-            src={photo}
-            name={name}
-            size="xl"
-            className="!h-full !w-full !rounded-2xl !bg-slate-100 !text-3xl !text-slate-400 transition-transform duration-500 group-hover:scale-[1.06] sm:!text-4xl"
-          />
-        </Link>
-
-        <div className="flex min-w-0 flex-1 flex-col justify-center sm:justify-start">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <Link href={profileHref}>
-                <h3 className="truncate text-xl font-bold leading-tight text-slate-900 transition-colors hover:text-primary sm:text-2xl">
-                  {name}
-                </h3>
-              </Link>
-              {practiceArea && (
-                <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-500 sm:truncate sm:text-[15px]">
-                  {practiceArea}
-                </p>
-              )}
-            </div>
-
-            {/* The rate, stacked so the figure reads first and the duration
-                qualifies it — a single inline string buried the number. Hidden
-                on a phone, where it reappears in the badge row below. */}
-            <FeePill
-              plan={cheapestPlan}
-              fee={consultationFee}
-              className="hidden sm:block"
+    <>
+      {/* ══ Phone ══════════════════════════════════════════════════════ */}
+      <article
+        className={`flex h-full flex-col rounded-[18px] border ${HAIRLINE} bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-16px_rgba(16,24,40,0.16)] sm:hidden`}
+      >
+        {/* Portrait and identity side by side. Only the name and practice area
+            sit in the narrow column beside the photo; everything after it takes
+            the full width of the card, where it has room to read. */}
+        <div className="flex items-start gap-4">
+          <Link
+            href={profileHref}
+            aria-label={`View ${name}'s profile`}
+            className="relative h-[80px] w-[80px] shrink-0 overflow-hidden rounded-2xl bg-slate-100"
+          >
+            <Avatar
+              src={photo}
+              name={name}
+              size="xl"
+              className="!h-full !w-full !rounded-none !bg-slate-100 !text-3xl !text-slate-400"
             />
+          </Link>
+
+          <div className="min-w-0 flex-1">
+            <Link href={profileHref} className="flex min-w-0 items-center gap-1.5">
+              <h3 className="truncate text-[18px] font-bold leading-snug text-slate-900">
+                {name}
+              </h3>
+              {verified && (
+                <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified" />
+              )}
+            </Link>
+            {practiceArea && (
+              <p className="mt-1 text-sm font-medium leading-snug text-slate-500">
+                {practiceArea}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Facts and status. Full width under the portrait on a phone — in the
-            right-hand column they had about 150px to live in, so the city, the
-            years and the languages each took a cramped line and half of them
-            ended in an ellipsis. From `sm` they return beside the portrait. */}
-        <div className="col-span-2 sm:col-span-1 sm:col-start-2">
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-slate-600 sm:mt-4 sm:gap-x-5 sm:gap-y-2 sm:text-sm">
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <MapPin className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+        {/* Facts across the full card. City and years pair on one line where
+            they fit; languages take their own. */}
+        <div className="mt-3.5 space-y-2 text-[13.5px] text-slate-600">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Fact icon={MapPin}>
               <span className="truncate">
                 {city}, {state}
               </span>
               {distanceLabel && (
                 <span className="shrink-0 font-semibold text-primary">· {distanceLabel}</span>
               )}
+            </Fact>
+            <Fact icon={Briefcase}>{formatExperience(experience)}</Fact>
+          </div>
+          {languages.length > 0 && (
+            <Fact icon={Languages} className="w-full">
+              <span className="truncate">{languages.join(', ')}</span>
+            </Fact>
+          )}
+        </div>
+
+        {/* Rate, and whether the advocate can be reached right now — the two
+            things the visitor is actually deciding on, side by side. Rating joins
+            them once earned; a lawyer with no reviews gets nothing rather than
+            "0.0 (0)", which reads as a poor score instead of a new profile. */}
+        <div className="mt-3.5 flex flex-wrap items-center gap-3">
+          <FeePill amount={feeText} minutes={cheapestPlan?.minutes} quoted={feeQuoted} />
+          <PresenceIndicator id={advocate._id} variant="profile" />
+          {verified && <VerifiedChip />}
+          {rating > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-[13px]">
+              <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
+              <span className="font-bold text-slate-900">{rating.toFixed(1)}</span>
+              <span className="text-slate-500">({reviews})</span>
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Briefcase className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-              {formatExperience(experience)}
-            </span>
-            {languages.length > 0 && (
-              <span className="inline-flex min-w-0 items-center gap-1.5">
-                <Languages className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                <span className="truncate">{languages.join(', ')}</span>
-              </span>
+          )}
+        </div>
+
+        <Link
+          href={profileHref}
+          className="mt-3.5 inline-flex w-fit items-center gap-1.5 text-[15px] font-semibold text-primary active:text-primary-dark"
+        >
+          View Full Profile
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+
+        {/* Actions — 44px tall, three to a row, never wrapping */}
+        <div className={`mt-auto grid grid-cols-3 gap-2.5 border-t ${HAIRLINE} pt-3.5 [&>*]:min-w-0`}>
+          <CardContactActions
+            variant="mobile"
+            contact={contact}
+            name={name}
+            advocateId={advocate._id}
+            plans={advocatePlans(consultationPlans)}
+            videoPlans={advocatePlans(videoPlans)}
+            audioPlans={advocatePlans(audioPlans)}
+          />
+        </div>
+      </article>
+
+      {/* ══ Tablet and desktop ═════════════════════════════════════════ */}
+      <article className="group hidden h-full grid-cols-[148px_minmax(0,1fr)] grid-rows-[auto_1fr] gap-x-5 rounded-3xl border-2 border-ink/15 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06),0_24px_48px_-20px_rgba(15,23,42,0.18)] sm:grid lg:grid-cols-[162px_minmax(0,1fr)]">
+        {/* Portrait — a full-height tile, inset by the card's own padding so it
+            reads as a framed photograph rather than artwork bled to the edge.
+            The width is set against that height: the card runs a little over
+            200px tall inside its padding, so 162px keeps the tile near the 3:4
+            a portrait wants rather than the strip it became at 124px. */}
+        <Link
+          href={profileHref}
+          aria-label={`View ${name}'s profile`}
+          className="relative row-span-2 h-full w-full overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-ink/[0.06]"
+        >
+          <Avatar
+            src={photo}
+            name={name}
+            size="xl"
+            className="!h-full !w-full !rounded-none !bg-slate-100 !text-5xl !text-slate-400 transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        </Link>
+
+        {/* Identity */}
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <Link href={profileHref}>
+              <h3 className="truncate text-xl font-bold leading-tight text-slate-900 transition-colors hover:text-primary">
+                {name}
+              </h3>
+            </Link>
+            {practiceArea && (
+              <p className="mt-1 truncate text-sm font-semibold text-slate-500">
+                {practiceArea}
+              </p>
             )}
-            {/* Shown only once earned — a lawyer with no reviews gets nothing
-                rather than a "New" badge that reads as a warning. */}
-            {rating > 0 && (
-              <span className="inline-flex items-center gap-1.5">
-                <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
-                <span className="font-semibold text-slate-900">{rating.toFixed(1)}</span>
-                <span className="text-slate-400">({reviews})</span>
-              </span>
+          </div>
+          <FeePill
+            amount={feeText}
+            minutes={cheapestPlan?.minutes}
+            quoted={feeQuoted}
+          />
+        </div>
+
+        {/* Facts, status and actions */}
+        <div className="mt-3.5 flex min-w-0 flex-col">
+          <div className="space-y-2 text-sm text-slate-600">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+              <Fact icon={MapPin}>
+                <span className="truncate">
+                  {city}, {state}
+                </span>
+                {distanceLabel && (
+                  <span className="shrink-0 font-semibold text-primary">· {distanceLabel}</span>
+                )}
+              </Fact>
+              <Fact icon={Briefcase}>{formatExperience(experience)}</Fact>
+              {rating > 0 && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
+                  <span className="font-semibold text-slate-900">{rating.toFixed(1)}</span>
+                  <span className="text-slate-400">({reviews})</span>
+                </span>
+              )}
+            </div>
+            {languages.length > 0 && (
+              <Fact icon={Languages}>
+                <span className="truncate">{languages.join(', ')}</span>
+              </Fact>
             )}
           </div>
 
-          {/* Status only — never decoration. The rate joins this row on a
-              phone, where the corner it normally sits in belongs to the name. */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <FeePill plan={cheapestPlan} fee={consultationFee} className="sm:hidden" />
-            {verified && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                Verified
-              </span>
-            )}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {verified && <VerifiedChip />}
             <PresenceIndicator id={advocate._id} variant="profile" />
+            <Link
+              href={profileHref}
+              className="group/link ml-auto inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-primary transition-colors hover:text-primary-dark"
+            >
+              View Full Profile
+              <ArrowRight
+                className="h-3.5 w-3.5 transition-transform duration-200 group-hover/link:translate-x-1"
+                aria-hidden="true"
+              />
+            </Link>
+          </div>
+
+          <div className="mt-auto grid grid-cols-3 gap-2.5 border-t border-slate-100 pt-5 [&>*]:min-w-0">
+            {actions}
           </div>
         </div>
-      </div>
-
-      {/* ── Through to the full profile ────────────────────────────────── */}
-      <Link
-        href={profileHref}
-        className="group/link mt-5 inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary-dark sm:mt-6"
-      >
-        View Full Profile
-        <ArrowRight
-          className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1"
-          aria-hidden="true"
-        />
-      </Link>
-
-      {/* ── Contact ─────────────────────────────────────────────────── */}
-      <div className="mt-auto grid grid-cols-3 gap-2 border-t border-slate-100 pt-5 [&>*]:min-w-0 sm:gap-3 sm:pt-6">
-        <CardContactActions
-          contact={contact}
-          name={name}
-          advocateId={advocate._id}
-          plans={advocatePlans(consultationPlans)}
-          videoPlans={advocatePlans(videoPlans)}
-          audioPlans={advocatePlans(audioPlans)}
-        />
-      </div>
-    </article>
+      </article>
+    </>
   );
 }

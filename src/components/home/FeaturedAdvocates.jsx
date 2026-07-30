@@ -21,7 +21,7 @@ export default async function FeaturedAdvocates({ city }) {
   const advocates = (city ? all.filter((a) => a.city === city.name) : all).slice(0, 12);
 
   return (
-    <Section spacing="sm" className="bg-surface/55">
+    <Section spacing="sm" className="bg-surface/55 pt-8 sm:pt-10">
       {advocates.length > 0 ? (
         <>
           {/* The heading, the way out to the full listing and the row's arrows

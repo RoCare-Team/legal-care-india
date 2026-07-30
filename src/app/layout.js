@@ -9,6 +9,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
+import FloatingContact from '@/components/shared/FloatingContact';
 import Analytics from '@/components/shared/Analytics';
 import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
 import PresenceProvider from '@/components/consultation/PresenceProvider';
@@ -112,6 +113,8 @@ export default function RootLayout({ children }) {
           </LocationProvider>
         </PresenceProvider>
         <ScrollToTop />
+        {/* Decides for itself which routes it belongs on — see FloatingContact. */}
+        <FloatingContact />
         <AdvocateCallListener />
         <Analytics />
       </body>

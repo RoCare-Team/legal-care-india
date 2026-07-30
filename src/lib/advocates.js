@@ -111,7 +111,12 @@ function buildFaqs(a) {
     },
     {
       q: 'What is the consultation fee?',
-      a: `The standard consultation fee is ₹${a.consultationFee}. Fees for representation vary by the complexity of your ${service.toLowerCase()} matter.`,
+      // A lawyer who has not set a fee has no figure to quote. "₹0" read as a
+      // free consultation — on the profile and, worse, inside the FAQ structured
+      // data this page hands to search engines.
+      a: a.consultationFee > 0
+        ? `The standard consultation fee is ₹${Number(a.consultationFee).toLocaleString('en-IN')}. Fees for representation vary by the complexity of your ${service.toLowerCase()} matter.`
+        : `${a.name} has not published a standard consultation fee. Ask directly using the contact options on this profile — fees for representation vary by the complexity of your ${service.toLowerCase()} matter.`,
     },
     {
       q: 'Which languages can I communicate in?',

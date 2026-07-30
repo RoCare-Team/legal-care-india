@@ -41,6 +41,10 @@ export function validateStep(step, data) {
 }
 
 export const INITIAL_REGISTER_DATA = {
+  // Optional at registration — a lawyer should not be blocked from creating an
+  // account because they have no photograph to hand. It can be added later from
+  // the dashboard, and the card falls back to their initial until then.
+  photo: '',
   fullName: '', email: '', phone: '', password: '', confirm: '',
   barCouncil: '', experience: '', city: '', state: '',
   courts: [], practiceCities: [], services: [], subServices: [], languages: [],

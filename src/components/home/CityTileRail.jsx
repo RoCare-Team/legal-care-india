@@ -39,12 +39,14 @@ export default function CityTileRail({ cities = [], counts = {} }) {
       {/* Heading and arrows share one row above the rail. The arrows used to
           float over the tiles at the sides and were hidden below `lg`, so on a
           phone nothing signalled that the row scrolled. */}
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-lg font-bold text-ink sm:text-xl">
           Browse lawyers by city
         </h2>
         {showArrows && (
-          <div className="flex shrink-0 items-center gap-2">
+          // `ml-auto` holds the arrows hard right even if the heading pushes
+          // them onto a line of their own on a narrow screen.
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => scroll(-1)}

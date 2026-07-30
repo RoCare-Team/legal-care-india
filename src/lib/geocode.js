@@ -195,7 +195,7 @@ export async function geocodeAddress(parts = {}) {
     // eslint-disable-next-line no-await-in-loop
     const loc = await geocodeQuery(`${query}, India`);
     if (loc) {
-      console.log(`[geocode] ✓ "${query}" →`, loc);
+      if (process.env.NODE_ENV !== 'production') console.log(`[geocode] ✓ "${query}" →`, loc);
       return loc;
     }
   }

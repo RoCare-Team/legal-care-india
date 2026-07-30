@@ -16,6 +16,26 @@ function cleanList(raw) {
   return [...new Set(raw.map((s) => String(s || '').trim()).filter(Boolean))];
 }
 
+/**
+ * The registration photograph, or '' if it is not one we produced.
+ *
+ * The wizard downscales the file in the browser and posts a JPEG data URL, so
+ * that is the only shape accepted here. Anything else — a remote URL, a
+ * `javascript:` string, an oversized blob — is dropped rather than written to
+ * the document and then rendered on every card that lawyer appears on.
+ *
+ * The cap is on the encoded length: 512px at the wizard's quality lands well
+ * under 200KB, so a megabyte is generous and still bounds the document.
+ */
+const MAX_PHOTO_CHARS = 1_000_000;
+
+function safePhoto(raw) {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  if (!value) return '';
+  if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value)) return '';
+  return value.length <= MAX_PHOTO_CHARS ? value : '';
+}
+
 /** Generate a Legal Care India ID that isn't already taken (retries on clash). */
 async function uniqueLegalCareId() {
   for (let i = 0; i < 12; i += 1) {
@@ -41,6 +61,7 @@ export async function POST(request) {
   }
 
   const {
+    photo,
     fullName, email, phone, password,
     barCouncil, experience, city, state,
     courts = [], practiceCities = [],
@@ -88,6 +109,9 @@ export async function POST(request) {
       email: normalizedEmail,
       passwordHash,
       name: fullName.trim(),
+      // Optional, and only ever the data URL the wizard produced — anything
+      // that is not one is dropped rather than trusted into the document.
+      photo: safePhoto(photo),
       slug,
       legalCareId,
       phone: phone.trim(),

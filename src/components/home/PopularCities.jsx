@@ -24,7 +24,7 @@ export default async function PopularCities() {
   const [cities, counts] = await Promise.all([getAllCities(), getLawyerCountsByCity()]);
 
   return (
-    <Section spacing="sm">
+    <Section spacing="sm" className="pb-6 sm:pb-8">
       <div className="flex justify-end">
         <Button href="/cities" variant="outline" size="sm">
           View all cities

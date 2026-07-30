@@ -15,8 +15,39 @@ import { COURTS } from '@/data/courts';
  * @param {Array<{slug:string,name:string}>} [props.cities]  built-in + admin-added
  */
 export default function StepProfessional({ data, set, errors, cities = CITIES }) {
-  const cityNames = cities.map((c) => c.name);
   const subServices = data.subServices || [];
+
+  // The cities the chosen state actually contains. Empty until a state is
+  // picked, which is what keeps the city select closed rather than offering
+  // every city in India next to a blank state.
+  const citiesInState = data.state ? cities.filter((c) => c.state === data.state) : [];
+
+  // The same list drives "Cities you work in", minus the base city — it is
+  // already counted as one the lawyer serves, so offering it again invites a
+  // duplicate. Every city in India was listed here before, which put Port Blair
+  // and Silvassa in front of a lawyer who had just said Andhra Pradesh.
+  const practiceCityOptions = citiesInState
+    .map((c) => c.name)
+    .filter((name) => name !== data.city);
+
+  /**
+   * Changing state clears anything tied to the old one — the base city and any
+   * practice cities that do not belong to the new state. Left alone the profile
+   * would claim cities in a state it is not in, and the stale chips would stay
+   * selected while no longer being offered.
+   */
+  const onStateChange = (nextState) => {
+    set('state', nextState);
+
+    const inNextState = new Set(
+      cities.filter((c) => c.state === nextState).map((c) => c.name)
+    );
+
+    if (data.city && !inNextState.has(data.city)) set('city', '');
+
+    const kept = (data.practiceCities || []).filter((name) => inNextState.has(name));
+    if (kept.length !== (data.practiceCities || []).length) set('practiceCities', kept);
+  };
 
   // Pick main services; drop any sub-types whose parent service was removed.
   const onServicesChange = (nextServices) => {
@@ -59,30 +90,42 @@ export default function StepProfessional({ data, set, errors, cities = CITIES })
         />
       </FormField>
 
-      <FormField label="City" htmlFor="city" required error={errors.city}>
+      {/* State before city, and the city list narrowed to it. Asked the other
+          way round the two could disagree — a lawyer could pick Karaikal and
+          leave the state blank, or set it to somewhere Karaikal is not. */}
+      <FormField label="State" htmlFor="state" required error={errors.state}>
+        <Select
+          id="state"
+          value={data.state}
+          onChange={(e) => onStateChange(e.target.value)}
+          options={STATES}
+          placeholder="Select state"
+          invalid={Boolean(errors.state)}
+        />
+      </FormField>
+
+      <FormField
+        label="City"
+        htmlFor="city"
+        required
+        error={errors.city}
+        hint={data.state ? undefined : 'Choose your state first.'}
+      >
         <Select
           id="city"
           value={data.city}
           onChange={(e) => set('city', e.target.value)}
           placeholder="Select city"
+          disabled={!data.state}
           invalid={Boolean(errors.city)}
         >
-          <option value="">Select city</option>
-          {cities.map((c) => (
+          <option value="">
+            {data.state ? 'Select city' : 'Select state first'}
+          </option>
+          {citiesInState.map((c) => (
             <option key={c.slug} value={c.name}>{c.name}</option>
           ))}
         </Select>
-      </FormField>
-
-      <FormField label="State" htmlFor="state" required error={errors.state}>
-        <Select
-          id="state"
-          value={data.state}
-          onChange={(e) => set('state', e.target.value)}
-          options={STATES}
-          placeholder="Select state"
-          invalid={Boolean(errors.state)}
-        />
       </FormField>
 
       <FormField
@@ -102,11 +145,15 @@ export default function StepProfessional({ data, set, errors, cities = CITIES })
       <FormField
         label="Cities You Work In"
         error={errors.practiceCities}
-        hint="All the cities you take cases in (besides your base city)."
+        hint={
+          data.state
+            ? `Other cities in ${data.state} you take cases in, besides your base city.`
+            : 'Choose your state first.'
+        }
         className="sm:col-span-2"
       >
         <ChipMultiSelect
-          options={cityNames}
+          options={practiceCityOptions}
           value={data.practiceCities || []}
           onChange={(next) => set('practiceCities', next)}
           max={8}

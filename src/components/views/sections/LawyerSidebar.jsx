@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui';
 import Rating from '@/components/shared/Rating';
 import CardContactActions from '@/components/cards/CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import { cn } from '@/utils/cn';
 import { formatExperience, pluralize } from '@/utils/formatters';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocatePlans } from '@/constants/consultationPlans';
@@ -17,12 +18,19 @@ import { advocatePlans } from '@/constants/consultationPlans';
  * a third of the height. Anyone who wants the full, filterable grid follows
  * "View all" through to /lawyers.
  *
+ * Two shapes, one component. From `lg` it is a sticky column of stacked rows
+ * beside the reading content. Below that there is no column to sit in, and a
+ * vertical stack of six put the lawyers below every word of the page — so it
+ * becomes a horizontal rail instead, and the page places it above the copy.
+ *
  * @param {object} props
  * @param {Array}  props.advocates    already filtered to this page's subject
  * @param {string} props.label        e.g. "Cyber Crime" — used in the heading
  * @param {string} props.allHref      link to the full filterable listing
  * @param {string} props.emptyMessage shown when nobody practises this yet
  * @param {number} [props.max=6]      how many to show before linking out
+ * @param {string} [props.className]  applied to the <aside>; the page uses it
+ *   to order the rail ahead of the content on a narrow screen.
  */
 export default function LawyerSidebar({
   advocates = [],
@@ -30,12 +38,18 @@ export default function LawyerSidebar({
   allHref,
   emptyMessage,
   max = 6,
+  className,
 }) {
   const shown = advocates.slice(0, max);
   const remaining = advocates.length - shown.length;
 
   return (
-    <aside className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pr-1">
+    <aside
+      className={cn(
+        'lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pr-1',
+        className
+      )}
+    >
       <div className="rounded-3xl border border-ink/8 bg-muted/30 p-4 sm:p-5">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-display text-lg font-bold text-ink">
@@ -64,9 +78,16 @@ export default function LawyerSidebar({
             </Link>
           </div>
         ) : (
-          <ul className="mt-4 space-y-3">
+          // A swipeable rail below `lg`, a stacked column from it. The track is
+          // bled out to the panel's padding and given it back as its own, with
+          // `scroll-px` to match — snapping measures from the border box, so
+          // without that the leading card sits flush against the panel edge.
+          <ul className="-mx-4 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-1 [scrollbar-width:none] sm:-mx-5 sm:scroll-px-5 sm:px-5 lg:mx-0 lg:block lg:space-y-3 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {shown.map((advocate) => (
-              <li key={advocate._id}>
+              <li
+                key={advocate._id}
+                className="w-[82%] shrink-0 snap-start sm:w-[46%] lg:w-auto"
+              >
                 <CompactLawyer advocate={advocate} />
               </li>
             ))}
@@ -144,7 +165,7 @@ function CompactLawyer({ advocate }) {
           full-size buttons, so the actions have to be scaled to it. */}
       <div className="mt-2.5 grid grid-cols-3 gap-1.5 border-t border-ink/8 pt-2.5">
         <CardContactActions
-          size="sm"
+          variant="compact"
           contact={contact}
           name={name}
           advocateId={advocate._id}

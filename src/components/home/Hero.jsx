@@ -40,25 +40,43 @@ export default function Hero({ city, intro }) {
     // it stays a tall band but no longer a full viewport — with the copy
     // centred in `min-h-screen` there was a dead stretch above the heading and
     // another below the trust strip, and the first lawyer sat off-screen.
-    <section className="relative flex items-center overflow-hidden pb-12 pt-24 sm:pb-16 sm:pt-28 md:min-h-[34rem] md:pb-16 md:pt-28 lg:min-h-[38rem]">
-      {/* Banner background image — shown full */}
+    <section className="relative flex items-start overflow-hidden bg-[#0F172A] pb-10 pt-20 sm:items-center sm:pb-16 sm:pt-28 md:min-h-[34rem] md:pb-16 md:pt-28 lg:min-h-[38rem]">
+      {/* The banner. On a phone it is `contain`ed and pinned to the top so the
+          whole photograph is visible: the artwork is 1376×768, and behind a
+          390px screen `cover` had to scale it until only a narrow vertical
+          slice showed, with no subject left in frame.
+
+          From `sm` there is width enough for `cover` to crop sensibly, so it
+          fills the band as before. */}
       <Image
         src="/banner-n.png"
         alt=""
         fill
         priority
         sizes="100vw"
-        className="pointer-events-none object-cover object-center brightness-[0.88]"
+        className="pointer-events-none object-contain object-top brightness-[0.88] sm:object-cover sm:object-center"
       />
       {/* Navy overlay, weighted to the left where the text sits. Light enough
           now that the photograph reads as a photograph, but the left third
           stays dark enough to keep white type legible over it. */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/75 via-[#0F172A]/40 to-[#0F172A]/15" />
+      {/* A phone has no left third to hide the type in — the copy runs the full
+          width — so it gets a vertical wash as well, and this also fades the
+          contained picture's lower edge into the navy below it. */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0F172A]/25 via-[#0F172A]/50 to-[#0F172A] sm:hidden" />
 
       <Container className="relative z-10">
         <div className="flex max-w-3xl flex-col items-start text-left">
-          {/* Heading — LCP element, renders instantly */}
-          <h1 className="font-display text-[1.55rem] sm:text-[2.3rem] lg:text-[2.9rem] font-extrabold tracking-tight leading-[1.12] text-white drop-shadow-lg">
+          {/* The heading and lead sit on the picture; the search box must clear
+              it, rather than straddling its lower edge.
+
+              The contained banner is exactly `100vw ÷ (1376/768)` tall — 55.81vw
+              — and the section's own `pt-20` (5rem) already eats into that. So
+              this block is held to whatever height is left, and the search block
+              after it therefore starts at the picture's bottom edge on any
+              screen width, without a hard pixel figure to go stale. */}
+          <div className="flex min-h-[calc(55.81vw-5rem)] flex-col justify-start sm:min-h-0">
+          <h1 className="font-display text-[1.4rem] sm:text-[2.3rem] lg:text-[2.9rem] font-extrabold tracking-tight leading-[1.12] text-white drop-shadow-lg">
             {city ? (
               <>
                 <span className="sm:whitespace-nowrap">Get Anonymous Legal Help </span>{' '}
@@ -78,16 +96,37 @@ export default function Hero({ city, intro }) {
             )}
           </h1>
 
-          {/* Secondary Paragraph — the city's own opening line where there is
+          {/* Secondary paragraph — the city's own opening line where there is
               one, so a city page says something about that city rather than
-              repeating the national pitch under a changed heading. */}
+              repeating the national pitch under a changed heading.
+
+              The closing sentence is held back on a phone. It ran the paragraph
+              onto a fourth line, which pushed the last word off the bottom of
+              the picture; shrinking the type to win that one line would have
+              cost legibility across the whole block for the sake of one word.
+              The first sentence carries the offer on its own. */}
           <p
-            className="animate-fade-up mt-2.5 max-w-xl text-[13px] sm:text-base text-slate-200 leading-relaxed font-normal drop-shadow"
+            className="animate-fade-up mt-2 max-w-xl text-[12.5px] font-normal leading-[1.5] text-slate-200 drop-shadow sm:text-base sm:leading-relaxed"
             style={{ animationDelay: '0.1s' }}
           >
-            {city
-              ? `Book a verified lawyer in ${city.name}, ${city.state} within 10 minutes — 100% anonymous, private and secure. Compare experience and fees, then speak to the one you choose.`
-              : 'Book a verified lawyer consultation within 10 minutes—100% anonymous, private, and secure. Get expert legal advice without revealing your identity.'}
+            {city ? (
+              <>
+                {`Book a verified lawyer in ${city.name}, ${city.state} within 10 minutes — 100% anonymous, private and secure.`}
+                <span className="hidden sm:inline">
+                  {' '}
+                  Compare experience and fees, then speak to the one you choose.
+                </span>
+              </>
+            ) : (
+              <>
+                Book a verified lawyer consultation within 10 minutes — 100% anonymous,
+                private and secure.
+                <span className="hidden sm:inline">
+                  {' '}
+                  Get expert legal advice without revealing your identity.
+                </span>
+              </>
+            )}
           </p>
 
           {/* The written introduction to this city's legal setting — which
@@ -100,10 +139,14 @@ export default function Hero({ city, intro }) {
               {intro}
             </p>
           )}
+          </div>
 
-          {/* Search Bar */}
-          <div className="animate-fade-up w-full max-w-2xl mt-3 sm:mt-5" style={{ animationDelay: '0.15s' }}>
-            <div className="rounded-2xl border border-white/15 bg-white/5 p-1 shadow-2xl backdrop-blur-md">
+          {/* Search Bar — begins where the picture ends, never across its edge */}
+          <div className="animate-fade-up w-full max-w-2xl sm:mt-5" style={{ animationDelay: '0.15s' }}>
+            {/* The glass frame is a desktop flourish. On a phone it drew a
+                second outline a few pixels outside the white card's own, which
+                read as a rendering fault and cost height the hero cannot spare. */}
+            <div className="sm:rounded-2xl sm:border sm:border-white/15 sm:bg-white/5 sm:p-1 sm:shadow-2xl sm:backdrop-blur-md">
               <SearchBar />
             </div>
 
