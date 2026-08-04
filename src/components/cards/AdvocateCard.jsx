@@ -13,21 +13,31 @@ const HAIRLINE = 'border-[#E8ECF2]';
 
 /**
  * The consultation rate as a pill, for the desktop card's top corner.
+ *
+ * One line — "₹24/min" — rather than the amount stacked over its unit. A rate
+ * is read as a single quantity, and splitting it across two lines made the
+ * pill twice as tall to say the same thing.
+ *
  * `amount` is already formatted; `quoted` is false when the lawyer has neither
- * a plan nor a flat fee set, in which case the pill says so rather than
+ * a live rate nor a flat fee set, in which case the pill says so rather than
  * advertising a free consultation with "₹0".
  */
-function FeePill({ amount, subtitle, quoted, className = '' }) {
+function FeePill({ amount, unit, quoted, className = '' }) {
   return (
     <div
       className={`shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-center sm:rounded-2xl sm:px-4 sm:py-2 ${className}`}
     >
-      <p className="text-base font-bold leading-tight text-slate-900 sm:text-lg">
-        {quoted ? `₹${amount}` : 'On request'}
-      </p>
-      <p className="mt-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">
-        {quoted ? subtitle : 'ask the lawyer'}
-      </p>
+      {quoted ? (
+        <p className="whitespace-nowrap text-base font-bold leading-tight text-slate-900 sm:text-lg">
+          ₹{amount}
+          <span className="text-[11px] font-semibold text-slate-500 sm:text-xs">/{unit}</span>
+        </p>
+      ) : (
+        <>
+          <p className="text-base font-bold leading-tight text-slate-900 sm:text-lg">On request</p>
+          <p className="mt-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">ask the lawyer</p>
+        </>
+      )}
     </div>
   );
 }
@@ -102,17 +112,16 @@ export default function AdvocateCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const practiceArea = specializations.slice(0, 2).join(' · ');
 
-  // Grouped with the Indian digit separators — ₹2,000 rather than ₹2000, which
-  // is how a price is written everywhere else in India. A lawyer who has set
-  // neither a live rate nor a flat fee has no figure to show: "₹0" would read
-  // as a free consultation, so both layouts fall back to "On request".
-  // The headline figure is the cheapest live rate the lawyer offers, since
-  // that is what a client actually pays to reach them. Only a lawyer with no
-  // live channel at all falls back to their flat office fee.
+  // The headline figure is the cheapest live rate the lawyer offers, since that
+  // is what a client actually pays to reach them; only a lawyer with no live
+  // channel at all falls back to their flat office fee, and one with neither
+  // has no figure to show — "₹0" would read as a free consultation, so both
+  // layouts fall back to "On request". Grouped with the Indian digit
+  // separators, ₹2,000 rather than ₹2000.
   const liveRates = [chatRate, audioRate, videoRate].filter((r) => r > 0);
   const cheapestRate = liveRates.length ? Math.min(...liveRates) : 0;
   const feeAmount = cheapestRate || consultationFee;
-  const feeSubtitle = cheapestRate ? 'per minute' : 'per consult';
+  const feeUnit = cheapestRate ? 'min' : 'consult';
   const feeQuoted = Number(feeAmount) > 0;
   const feeText = Number(feeAmount || 0).toLocaleString('en-IN');
 
@@ -193,7 +202,7 @@ export default function AdvocateCard({ advocate }) {
             them once earned; a lawyer with no reviews gets nothing rather than
             "0.0 (0)", which reads as a poor score instead of a new profile. */}
         <div className="mt-3.5 flex flex-wrap items-center gap-3">
-          <FeePill amount={feeText} subtitle={feeSubtitle} quoted={feeQuoted} />
+          <FeePill amount={feeText} unit={feeUnit} quoted={feeQuoted} />
           <PresenceIndicator id={advocate._id} variant="profile" />
           {verified && <VerifiedChip />}
           {rating > 0 && (
@@ -263,7 +272,7 @@ export default function AdvocateCard({ advocate }) {
           </div>
           <FeePill
             amount={feeText}
-            subtitle={feeSubtitle}
+            unit={feeUnit}
             quoted={feeQuoted}
           />
         </div>
