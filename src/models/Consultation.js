@@ -53,12 +53,22 @@ const CallSchema = new Schema(
 );
 
 /**
- * Consultation — a paid, time-boxed chat session a user books with a lawyer.
+ * Consultation — a live session a user books with a lawyer, billed by the
+ * minute.
+ *
+ * Nothing is charged up front. The lawyer's per-minute `rate` is snapshotted
+ * when the session is created (so a rate change mid-call can't move the
+ * price), the clock starts when they accept, and the wallet transfer happens
+ * once — at the end, for the minutes actually used.
+ *
+ * `maxMinutes` is the ceiling the user's wallet could afford at booking time.
+ * It is what `endsAt` is built from, so a session cuts off rather than running
+ * up a bill nobody can pay.
  *
  * Lifecycle:
- *   pending   → user booked, waiting for the lawyer to accept
- *   active    → lawyer accepted; wallet charged; chat open until `endsAt`
- *   ended     → time up or ended early
+ *   pending   → user booked, waiting for the lawyer to accept (no charge)
+ *   active    → lawyer accepted; clock running until `endsAt`
+ *   ended     → hung up or ran out of affordable time; wallet settled here
  *   rejected  → lawyer declined (no charge)
  *   cancelled → user backed out while still pending (no charge)
  */
@@ -75,8 +85,21 @@ const ConsultationSchema = new Schema(
     // pricing and which UI opens (audio just never asks for the camera).
     type: { type: String, enum: ['chat', 'video', 'audio'], default: 'chat' },
 
-    minutes: { type: Number, required: true },
-    price: { type: Number, required: true, min: 0 },
+    // ₹ per minute, copied from the lawyer's profile when the session is
+    // created. The session bills at this rate for its whole life even if the
+    // lawyer edits their profile halfway through.
+    rate: { type: Number, default: 0, min: 0 },
+    // The most minutes the user's wallet could cover at that rate when they
+    // booked — the hard cap `endsAt` is derived from.
+    maxMinutes: { type: Number, default: 0, min: 0 },
+
+    // What was actually billed. Both stay 0 until the session ends and
+    // `settleCharges` runs; `settled` makes that transfer exactly-once, since
+    // a session can be finalised by either party hanging up or by expiring on
+    // a poll, and those can race.
+    minutes: { type: Number, default: 0 },
+    price: { type: Number, default: 0, min: 0 },
+    settled: { type: Boolean, default: false },
 
     status: {
       type: String,

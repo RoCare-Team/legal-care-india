@@ -7,6 +7,8 @@ import Enquiry from '@/models/Enquiry';
 import Testimonial from '@/models/Testimonial';
 import Consultation from '@/models/Consultation';
 import Activity from '@/models/Activity';
+import ContactMessage from '@/models/ContactMessage';
+import { advocateRates } from '@/constants/callRates';
 
 /**
  * Admin access + read-only data for the /admin panel.
@@ -198,7 +200,8 @@ export async function adminGetAdvocateById(id) {
     subSpecializations: adv.subSpecializations || [],
     languages: adv.languages || [],
     consultationFee: adv.consultationFee || 0,
-    consultationPlans: (adv.consultationPlans || []).map((p) => ({ minutes: p.minutes, price: p.price })),
+    // Per-minute rates, converted from any legacy plans the lawyer still has.
+    rates: advocateRates(adv),
     office: {
       name: adv.office?.name || '',
       address: adv.office?.address || '',
@@ -249,6 +252,27 @@ export async function adminGetAdvocateById(id) {
 }
 
 /** Every platform testimonial, newest first. */
+/**
+ * Messages sent through the public contact form, newest first.
+ *
+ * Distinct from enquiries: an enquiry goes to one lawyer and lives in that
+ * lawyer's dashboard, whereas these are written to Legal Care India itself and
+ * only the admin ever sees them.
+ */
+export async function adminGetContactMessages() {
+  await connectDB();
+  const rows = await ContactMessage.find({}).sort({ createdAt: -1 }).limit(500).lean();
+  return rows.map((r) => ({
+    id: String(r._id),
+    name: r.name || '',
+    email: r.email || '',
+    subject: r.subject || '',
+    message: r.message || '',
+    status: r.status || 'new',
+    createdAt: iso(r.createdAt),
+  }));
+}
+
 export async function adminGetTestimonials() {
   await connectDB();
   const rows = await Testimonial.find({}).sort({ createdAt: -1 }).lean();

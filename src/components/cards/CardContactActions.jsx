@@ -18,10 +18,10 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  * @param {string} props.name
  * @param {string} [props.advocateId]  lawyer MongoDB _id. Without it Call falls
  *   back to a plain `tel:` link, so older call sites keep working unchanged.
- * @param {Array} [props.plans]  the lawyer's live-chat plans. When present, a
+ * @param {number} [props.chatRate]  the lawyer's ₹/min for live chat. When set, a
  *   signed-in client's "Chat" opens the paid consultation booking (same as the
  *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
- * @param {Array} [props.audioPlans]  the lawyer's paid audio-call plans.
+ * @param {number} [props.audioRate]  the lawyer's ₹/min for audio calls.
  * @param {'default'|'compact'|'mobile'} [props.variant='default']
  *   'compact' for the condensed rail card, whose whole row is about the height
  *   of one full-size button — at the default size the three actions dominated a
@@ -30,7 +30,7 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   the three read as three distinct weights at a glance.
  */
 export default function CardContactActions({
-  contact = {}, name, advocateId, plans = [], videoPlans = [], audioPlans = [],
+  contact = {}, name, advocateId, chatRate = 0, videoRate = 0, audioRate = 0,
   variant = 'default',
 }) {
   const { role, user, loading } = useAuth();
@@ -76,7 +76,7 @@ export default function CardContactActions({
       setGateOpen(true);
       return;
     }
-    if (role === 'user' && advocateId && plans.length > 0) {
+    if (role === 'user' && advocateId && chatRate > 0) {
       e.preventDefault();
       setBookOpen(true);
     }
@@ -85,7 +85,7 @@ export default function CardContactActions({
 
   /**
    * "Video" opens the video-consultation booking — its own flow, priced from
-   * the lawyer's separate video plans. Signed-out visitors are gated first.
+   * the lawyer's separate video rate. Signed-out visitors are gated first.
    */
   const onVideo = () => {
     if (loading) return;
@@ -94,7 +94,7 @@ export default function CardContactActions({
       return;
     }
     // Open for any signed-in client — the modal itself explains it if the lawyer
-    // hasn't set up video plans yet, rather than the button doing nothing.
+    // hasn't set a video rate yet, rather than the button doing nothing.
     if (role === 'user' && advocateId) {
       setVideoOpen(true);
     }
@@ -177,7 +177,7 @@ export default function CardContactActions({
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={audioPlans}
+        rate={audioRate}
       />
       <BookConsultationModal
         open={bookOpen}
@@ -185,7 +185,7 @@ export default function CardContactActions({
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={plans}
+        rate={chatRate}
       />
       <VideoConsultModal
         open={videoOpen}
@@ -193,7 +193,7 @@ export default function CardContactActions({
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={videoPlans}
+        rate={videoRate}
       />
     </>
   );

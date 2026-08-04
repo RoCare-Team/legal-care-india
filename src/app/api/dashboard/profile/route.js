@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
 import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
-import { normalizePlans } from '@/constants/consultationPlans';
+import { normalizeRate } from '@/constants/callRates';
 import { slugify } from '@/utils/slugify';
 import { geocodeAddress } from '@/lib/geocode';
 
@@ -42,7 +42,7 @@ export async function PUT(request) {
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
-    phone, whatsapp, email, fee, social, consultationPlans, videoPlans, audioPlans,
+    phone, whatsapp, email, fee, social, chatRate, audioRate, videoRate,
   } = body || {};
 
   const update = {};
@@ -83,18 +83,23 @@ export async function PUT(request) {
   if (Array.isArray(timing)) update.timing = timing;
   if (fee !== undefined) update.consultationFee = Number(fee) || 0;
 
-  // Live-chat plans: the lawyer's own duration + price rows (validated,
-  // deduped by duration and sorted shortest-first).
-  if (Array.isArray(consultationPlans)) {
-    update.consultationPlans = normalizePlans(consultationPlans);
+  // Per-minute rates, one per live channel. Anything blank or out of bounds
+  // normalizes to 0, which is how a lawyer says they don't offer that channel.
+  //
+  // Saving a rate also clears that channel's legacy fixed plans: they are only
+  // read as a fallback, and leaving them behind would let a stale package
+  // outlive the rate that replaced it.
+  if (chatRate !== undefined) {
+    update.chatRate = normalizeRate(chatRate);
+    update.consultationPlans = [];
   }
-  // Video-call plans — same shape, priced separately.
-  if (Array.isArray(videoPlans)) {
-    update.videoPlans = normalizePlans(videoPlans);
+  if (audioRate !== undefined) {
+    update.audioRate = normalizeRate(audioRate);
+    update.audioPlans = [];
   }
-  // Audio-call plans — same shape again, priced separately from both.
-  if (Array.isArray(audioPlans)) {
-    update.audioPlans = normalizePlans(audioPlans);
+  if (videoRate !== undefined) {
+    update.videoRate = normalizeRate(videoRate);
+    update.videoPlans = [];
   }
 
   if (officeName !== undefined) update['office.name'] = officeName;

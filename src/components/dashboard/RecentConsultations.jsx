@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui';
 import { formatDate } from '@/utils/formatters';
 import RemoveConsultationButton from './RemoveConsultationButton';
 import ViewConversationButton from '@/components/consultation/ViewConversationButton';
+import { formatRate } from '@/constants/callRates';
 
 const STATUS_META = {
   ended: { label: 'Completed', tone: 'bg-emerald-500/10 text-emerald-700' },
@@ -65,14 +66,16 @@ export default function RecentConsultations({ consultations = [] }) {
                       )}
                     </div>
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/55">
-                      <span className="flex items-center gap-1">
-                        <CalendarCheck className="h-3 w-3" aria-hidden="true" />
-                        {Math.round(c.minutes)} min booked
-                      </span>
+                      {c.rate > 0 && (
+                        <span className="flex items-center gap-1">
+                          <CalendarCheck className="h-3 w-3" aria-hidden="true" />
+                          {formatRate(c.rate)}
+                        </span>
+                      )}
                       {c.charged && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" aria-hidden="true" />
-                          {c.talkedMinutes} min talked
+                          {c.minutes} min billed
                         </span>
                       )}
                     </p>

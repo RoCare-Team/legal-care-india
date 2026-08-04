@@ -2,38 +2,34 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Video, Loader2, Wallet, Clock, XCircle, WifiOff, RotateCcw } from 'lucide-react';
+import { Video, Loader2, Wallet, Timer, XCircle, WifiOff } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
 import VideoCallStage from '@/components/consultation/VideoCallStage';
 import { useIsOnline } from '@/components/consultation/PresenceProvider';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
+import { affordableMinutes, formatRate } from '@/constants/callRates';
 import { refreshAuth } from '@/utils/authEvents';
 
 /**
- * VideoConsultModal — the user side of a *video* consultation: pick a video
- * plan → connecting (waiting for the lawyer) → the call connects automatically
- * once they accept → ended. Priced from the lawyer's separate `videoPlans`, so
- * the wallet is charged the video rate, not the chat rate.
+ * VideoConsultModal — the user side of a *video* consultation: start →
+ * connecting (waiting for the lawyer) → the call connects automatically once
+ * they accept → ended.
+ *
+ * Billed by the minute at the lawyer's own video rate, which is separate from
+ * their chat rate, and settled when the call ends. Nothing is charged for a
+ * call that is declined or never answered.
+ *
+ * @param {object} props
+ * @param {number} props.rate  the lawyer's ₹/min for video; 0 ⇒ not offered
  */
-/** "8 min 30 sec" · "8 min" · "45 sec" from a whole-second count. */
-function formatLeftover(sec = 0) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m && s) return `${m} min ${s} sec`;
-  if (m) return `${m} min`;
-  return `${s} sec`;
-}
-
 export default function VideoConsultModal({
-  open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
+  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0,
 }) {
   const [sessionId, setSessionId] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [insufficient, setInsufficient] = useState(false);
   const [offline, setOffline] = useState('');
-  // Unused minutes from an earlier video call, free for 24 hours.
-  const [resumable, setResumable] = useState(null);
 
   const [session, setSession, refresh] = useSessionPoll(sessionId, {
     enabled: open && Boolean(sessionId),
@@ -48,42 +44,28 @@ export default function VideoConsultModal({
       setInsufficient(false);
       setOffline('');
       setCreating(false);
-      setResumable(null);
     }
   }, [open, setSession]);
 
-  // On opening (before a session exists) check for leftover video time to
-  // offer a free resume. Refetched each open, so a spent leftover disappears.
-  useEffect(() => {
-    if (!open || !advocateId || sessionId) return undefined;
-    let cancelled = false;
-    fetch(`/api/consultations/resumable?advocateId=${advocateId}&type=video`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setResumable(d.resumable || null);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [open, advocateId, sessionId]);
-
   const status = session?.status;
+  const budgetMinutes = affordableMinutes(walletBalance, rate);
 
   // A lawyer who has switched themselves offline isn't taking video calls, so
-  // say that instead of showing plans they can't act on. Only before a session
-  // exists — once one is under way it plays out on its own terms.
+  // say that instead of offering a button they can't act on. Only before a
+  // session exists — once one is under way it plays out on its own terms.
   const isOnline = useIsOnline(advocateId, true);
   const offlineNote =
     offline || (!sessionId && !isOnline ? `${advocateName} is offline right now.` : '');
 
-  // The wallet is charged the moment the lawyer accepts — refresh the navbar.
+  // The wallet moves when the call ends, not when it starts — refresh then.
   useEffect(() => {
-    if (status === 'active') refreshAuth();
+    if (status === 'ended') refreshAuth();
   }, [status]);
 
-  // Close shortly after it ends (time up or hang-up).
+  // Close shortly after it ends (budget spent or hung up).
   useEffect(() => {
     if (status === 'ended') {
-      const t = setTimeout(onClose, 1500);
+      const t = setTimeout(onClose, 2400);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -104,7 +86,7 @@ export default function VideoConsultModal({
     return () => clearTimeout(t);
   }, [status, sessionId, advocateName]);
 
-  const book = async (plan) => {
+  const book = async () => {
     setError('');
     setInsufficient(false);
     setCreating(true);
@@ -112,7 +94,7 @@ export default function VideoConsultModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, minutes: plan.minutes, type: 'video' }),
+        body: JSON.stringify({ advocateId, type: 'video' }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -126,41 +108,6 @@ export default function VideoConsultModal({
       }
       if (!res.ok) {
         setError(data.error || 'Could not start the video call.');
-        return;
-      }
-      setSessionId(data.session.id);
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  /** Reconnect leftover video time from an earlier call — free, no plan. */
-  const resume = async () => {
-    if (!resumable) return;
-    setError('');
-    setInsufficient(false);
-    setCreating(true);
-    try {
-      const res = await fetch('/api/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, resumeFrom: resumable.id, type: 'video' }),
-      });
-      const data = await res.json();
-      if (res.status === 409 && data.error === 'offline') {
-        setOffline(data.message || `${advocateName} is offline right now.`);
-        return;
-      }
-      if (res.status === 409 && data.error === 'expired') {
-        // The 24h window closed (or it was already used) — drop the offer.
-        setResumable(null);
-        setError(data.message || 'This leftover time is no longer available.');
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error || 'Could not resume. Please try again.');
         return;
       }
       setSessionId(data.session.id);
@@ -263,97 +210,76 @@ export default function VideoConsultModal({
           <div className="flex flex-col items-center py-8 text-center">
             <Video className="h-12 w-12 text-emerald-500" />
             <h4 className="mt-4 font-display text-lg font-semibold text-ink">Video call ended</h4>
-            <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            {session?.price > 0 ? (
+              <p className="mt-1 text-sm text-ink/55">
+                Charged{' '}
+                <strong className="font-semibold text-ink">
+                  ₹{Number(session.price).toLocaleString('en-IN')}
+                </strong>{' '}
+                for {session.minutes} minute{session.minutes === 1 ? '' : 's'}.
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            )}
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
           </div>
-        ) : plans.length === 0 ? (
+        ) : !rate ? (
           <div className="flex flex-col items-center py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-ink/5 text-ink/40">
               <Video className="h-7 w-7" />
             </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">No video plans</h4>
+            <h4 className="mt-4 font-display text-lg font-semibold text-ink">No video calls</h4>
             <p className="mt-1 text-sm text-ink/55">{advocateName} hasn&apos;t set up video calls yet.</p>
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
           </div>
         ) : (
-          // Plan selection
+          // ── Start the call ───────────────────────────────────────────────
           <>
             <p className="text-sm text-ink/60">
-              Choose a video call length. It connects automatically once {advocateName} accepts,
-              and only then is your wallet charged.
+              The call connects automatically once {advocateName} accepts. You pay only for the
+              minutes it actually runs — hang up whenever you like.
             </p>
 
-            {/* Free resume of leftover time — shown only when the user actually
-                has unused, still-valid video minutes with this lawyer. */}
-            {resumable && (
-              <button
-                type="button"
-                disabled={creating}
-                onClick={resume}
-                className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-card disabled:opacity-60"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/25 text-primary-dark">
-                    <RotateCcw className="h-5 w-5" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">
-                      Resume your last video call
-                    </span>
-                    <span className="block text-xs text-ink/55">
-                      {formatLeftover(resumable.leftoverSeconds)} left · valid for 24 hours
-                    </span>
-                  </span>
+            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm text-ink/60">
+                  <Timer className="h-4 w-4 text-primary" /> Video rate
                 </span>
-                <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
-                  Free
-                </span>
-              </button>
-            )}
+                <span className="font-display text-xl font-bold text-ink">{formatRate(rate)}</span>
+              </div>
+              {budgetMinutes > 0 && (
+                <p className="mt-2 border-t border-primary/15 pt-2 text-xs text-ink/55">
+                  Your balance covers about{' '}
+                  <strong className="font-semibold text-ink/75">{budgetMinutes} minutes</strong> —
+                  the call ends on its own at that point.
+                </p>
+              )}
+            </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
               <span className="flex items-center gap-2 text-sm text-ink/60">
                 <Wallet className="h-4 w-4 text-primary" /> Wallet balance
               </span>
               <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {plans.map((plan) => {
-                const affordable = walletBalance >= plan.price;
-                return (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    disabled={creating}
-                    onClick={() => book(plan)}
-                    className="group flex flex-col rounded-2xl border border-ink/10 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card disabled:opacity-60"
-                  >
-                    <span className="flex items-center gap-1.5 text-primary">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-display text-base font-bold text-ink">{plan.label}</span>
-                    </span>
-                    <span className="mt-1 text-xs text-ink/50">Video consultation</span>
-                    <span className="mt-3 font-display text-xl font-bold text-ink">
-                      ₹{Number(plan.price).toLocaleString('en-IN')}
-                    </span>
-                    {!affordable && (
-                      <span className="mt-1 text-[11px] font-medium text-amber-600">Add money to book</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              disabled={creating}
+              onClick={book}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
+            >
+              {creating ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Sending request…</>
+              ) : (
+                <><Video className="h-4 w-4" /> Start video call</>
+              )}
+            </button>
 
-            {creating && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-sm text-ink/55">
-                <Loader2 className="h-4 w-4 animate-spin" /> Sending request…
-              </p>
-            )}
             {error && (
               <div className="mt-4 rounded-xl bg-red-500/5 px-3.5 py-2.5 text-sm text-red-600">
                 {error}

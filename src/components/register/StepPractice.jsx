@@ -1,118 +1,124 @@
-import { IndianRupee, Clock, MessagesSquare } from 'lucide-react';
-import { FormField, Input, Textarea } from '@/components/ui';
-import RepeatableList from '@/components/dashboard/RepeatableList';
-import { formatDuration } from '@/constants/consultationPlans';
+'use client';
+
+import { FormField } from '@/components/ui';
+import ChipMultiSelect from '@/components/shared/ChipMultiSelect';
+import { LEGAL_SERVICE_NAMES, getSubServices } from '@/data/categories';
+import { CITIES } from '@/data/cities';
+import { allCitiesForState } from '@/data/indiaLocations';
+import { COURTS } from '@/data/courts';
+import FormSection from './FormSection';
 
 /**
- * StepPractice — office details, fee and about (step 3 of registration).
+ * StepPractice — the courts, areas and matters an advocate takes (step 3 of 5).
+ *
+ * Everything here is a chip rather than a select. These are multi-answer
+ * questions where the options are worth reading — an advocate scanning "Motor
+ * Accident Claims Tribunal" among fifteen courts is doing something a dropdown
+ * makes harder, not easier.
+ *
+ * Languages are asked on step 1 with the rest of the personal details, so they
+ * are not repeated here.
  *
  * @param {object} props
  * @param {object} props.data
  * @param {(field:string,value:any)=>void} props.set
  * @param {Record<string,string>} props.errors
+ * @param {Array<{slug:string,name:string,state:string}>} [props.cities]
  */
-export default function StepPractice({ data, set, errors }) {
+export default function StepPractice({ data, set, errors, cities = CITIES }) {
+  const subServices = data.subServices || [];
+
+  // Picking main areas prunes any expertise whose parent area was removed —
+  // otherwise a lawyer could drop "Criminal Law" and still be listed under
+  // "Bail Matters".
+  const onServicesChange = (nextServices) => {
+    set('services', nextServices);
+    const allowed = new Set(nextServices.flatMap((s) => getSubServices(s)));
+    const pruned = subServices.filter((s) => allowed.has(s));
+    if (pruned.length !== subServices.length) set('subServices', pruned);
+  };
+
+  // Merge one area's expertise selection back into the flat list.
+  const onSubChange = (options, nextForArea) => {
+    const others = subServices.filter((s) => !options.includes(s));
+    set('subServices', [...others, ...nextForArea]);
+  };
+
+  // Selected areas that actually have matters to offer.
+  const areasWithExpertise = (data.services || []).filter((s) => getSubServices(s).length > 0);
+
+  // Practice cities stay within the chosen state, and exclude the base city —
+  // it already counts as one the advocate serves.
+  const practiceCityOptions = allCitiesForState(data.state, cities)
+    .filter((name) => name !== data.city);
+
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
-      <FormField label="Office / Chamber Name" htmlFor="officeName" required error={errors.officeName} className="sm:col-span-2">
-        <Input
-          id="officeName"
-          value={data.officeName}
-          onChange={(e) => set('officeName', e.target.value)}
-          placeholder="e.g. Sharma Legal Chambers"
-          invalid={Boolean(errors.officeName)}
-        />
-      </FormField>
-
-      <FormField label="Office Address" htmlFor="officeAddress" required error={errors.officeAddress} className="sm:col-span-2">
-        <Textarea
-          id="officeAddress"
-          rows={2}
-          value={data.officeAddress}
-          onChange={(e) => set('officeAddress', e.target.value)}
-          placeholder="Building, street, area, city, pincode"
-          invalid={Boolean(errors.officeAddress)}
-        />
-      </FormField>
-
-      {/* Live-chat booking plans — the lawyer sets duration + price per plan. */}
-      <div className="sm:col-span-2">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
-            <MessagesSquare className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-ink">Live Chat Consultation Plans</p>
-            <p className="text-xs text-ink/50">
-              Set your own plans — you choose the duration and price. Clients book exactly these. Optional.
-            </p>
-          </div>
-        </div>
-        {errors.consultationPlans && (
-          <p className="mb-2 text-xs text-red-600">{errors.consultationPlans}</p>
-        )}
-        <RepeatableList
-          items={data.consultationPlans || []}
-          onChange={(v) => set('consultationPlans', v)}
-          template={{ minutes: '', price: '' }}
-          addLabel="Add plan"
-          renderRow={(item, update) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField
-                label="Duration (minutes)"
-                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
-              >
-                <Input
-                  type="number"
-                  min="5"
-                  max="480"
-                  placeholder="15"
-                  value={item.minutes}
-                  onChange={(e) => update({ minutes: e.target.value })}
-                  leftIcon={<Clock className="h-4 w-4" />}
-                />
-              </FormField>
-              <FormField label="Price (₹)" hint="What you charge for this plan.">
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="500"
-                  value={item.price}
-                  onChange={(e) => update({ price: e.target.value })}
-                  leftIcon={<IndianRupee className="h-4 w-4" />}
-                />
-              </FormField>
-            </div>
-          )}
-        />
-      </div>
-
-      <FormField label="Headline / Tagline" htmlFor="tagline" hint="One line clients see first." className="sm:col-span-2">
-        <Input
-          id="tagline"
-          value={data.tagline}
-          onChange={(e) => set('tagline', e.target.value)}
-          placeholder="e.g. Trusted family & civil dispute expert"
-        />
-      </FormField>
-
-      <FormField
-        label="About You"
-        htmlFor="about"
-        required
-        error={errors.about}
-        hint="Describe your experience and approach (min 40 characters)."
-        className="sm:col-span-2"
+    <div className="space-y-6">
+      <FormSection
+        title="Courts you practise in"
+        description="Where do you appear? Select all that apply."
       >
-        <Textarea
-          id="about"
-          rows={5}
-          value={data.about}
-          onChange={(e) => set('about', e.target.value)}
-          placeholder="Tell clients about your practice, notable areas of expertise and how you help..."
-          invalid={Boolean(errors.about)}
-        />
-      </FormField>
+        <FormField required error={errors.courts}>
+          <ChipMultiSelect
+            options={COURTS}
+            value={data.courts || []}
+            onChange={(next) => set('courts', next)}
+          />
+        </FormField>
+      </FormSection>
+
+      <FormSection
+        title="Practice areas"
+        description="These decide which listings you appear on."
+      >
+        <FormField required error={errors.services}>
+          <ChipMultiSelect
+            options={LEGAL_SERVICE_NAMES}
+            value={data.services || []}
+            onChange={onServicesChange}
+          />
+        </FormField>
+      </FormSection>
+
+      {areasWithExpertise.length > 0 && (
+        <FormSection
+          title="Special expertise"
+          description="Clients search by these — pick the ones you genuinely take."
+        >
+          <div className="space-y-4">
+            {areasWithExpertise.map((service) => {
+              const options = getSubServices(service);
+              return (
+                <div key={service}>
+                  <p className="mb-2.5 text-[13px] font-semibold text-ink/70">{service}</p>
+                  <ChipMultiSelect
+                    options={options}
+                    value={subServices.filter((s) => options.includes(s))}
+                    onChange={(next) => onSubChange(options, next)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </FormSection>
+      )}
+
+      <FormSection
+        title="Cities you work in"
+        description={
+          data.state
+            ? `Other cities in ${data.state} you take cases in, besides ${data.city || 'your base city'}.`
+            : 'Choose your state on the first step to see the cities here.'
+        }
+      >
+        <FormField error={errors.practiceCities}>
+          <ChipMultiSelect
+            options={practiceCityOptions}
+            value={data.practiceCities || []}
+            onChange={(next) => set('practiceCities', next)}
+          />
+        </FormField>
+      </FormSection>
     </div>
   );
 }

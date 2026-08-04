@@ -4,7 +4,7 @@ import { Avatar } from '@/components/ui';
 import { formatExperience } from '@/utils/formatters';
 import { formatDistance } from '@/utils/distance';
 import { advocateProfilePath } from '@/utils/advocateUrl';
-import { advocatePlans } from '@/constants/consultationPlans';
+import { advocateRates } from '@/constants/callRates';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -17,7 +17,7 @@ const HAIRLINE = 'border-[#E8ECF2]';
  * a plan nor a flat fee set, in which case the pill says so rather than
  * advertising a free consultation with "₹0".
  */
-function FeePill({ amount, minutes, quoted, className = '' }) {
+function FeePill({ amount, subtitle, quoted, className = '' }) {
   return (
     <div
       className={`shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-center sm:rounded-2xl sm:px-4 sm:py-2 ${className}`}
@@ -26,7 +26,7 @@ function FeePill({ amount, minutes, quoted, className = '' }) {
         {quoted ? `₹${amount}` : 'On request'}
       </p>
       <p className="mt-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">
-        {minutes ? `${minutes} min` : quoted ? 'per consult' : 'ask the lawyer'}
+        {quoted ? subtitle : 'ask the lawyer'}
       </p>
     </div>
   );
@@ -89,9 +89,6 @@ export default function AdvocateCard({ advocate }) {
     specializations = [],
     languages = [],
     consultationFee,
-    consultationPlans = [],
-    videoPlans = [],
-    audioPlans = [],
     contact,
     _distance,
   } = advocate;
@@ -99,20 +96,23 @@ export default function AdvocateCard({ advocate }) {
   // Present only during a "near me" search — how far this office is from the user.
   const distanceLabel = typeof _distance === 'number' ? formatDistance(_distance) : '';
 
-  // Headline rate = the lawyer's cheapest live-chat plan. Lawyers who haven't
-  // set any plan fall back to their flat consultation fee.
-  const cheapestPlan = consultationPlans.length
-    ? consultationPlans.reduce((lo, p) => (p.price < lo.price ? p : lo))
-    : null;
+  // The lawyer's per-minute rates, for the buttons this card offers.
+  const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const practiceArea = specializations.slice(0, 2).join(' · ');
 
   // Grouped with the Indian digit separators — ₹2,000 rather than ₹2000, which
   // is how a price is written everywhere else in India. A lawyer who has set
-  // neither a plan nor a flat fee has no figure to show: "₹0" would read as a
-  // free consultation, so both layouts fall back to "On request".
-  const feeAmount = cheapestPlan ? cheapestPlan.price : consultationFee;
+  // neither a live rate nor a flat fee has no figure to show: "₹0" would read
+  // as a free consultation, so both layouts fall back to "On request".
+  // The headline figure is the cheapest live rate the lawyer offers, since
+  // that is what a client actually pays to reach them. Only a lawyer with no
+  // live channel at all falls back to their flat office fee.
+  const liveRates = [chatRate, audioRate, videoRate].filter((r) => r > 0);
+  const cheapestRate = liveRates.length ? Math.min(...liveRates) : 0;
+  const feeAmount = cheapestRate || consultationFee;
+  const feeSubtitle = cheapestRate ? 'per minute' : 'per consult';
   const feeQuoted = Number(feeAmount) > 0;
   const feeText = Number(feeAmount || 0).toLocaleString('en-IN');
 
@@ -121,9 +121,9 @@ export default function AdvocateCard({ advocate }) {
       contact={contact}
       name={name}
       advocateId={advocate._id}
-      plans={advocatePlans(consultationPlans)}
-      videoPlans={advocatePlans(videoPlans)}
-      audioPlans={advocatePlans(audioPlans)}
+      chatRate={chatRate}
+      videoRate={videoRate}
+      audioRate={audioRate}
     />
   );
 
@@ -193,7 +193,7 @@ export default function AdvocateCard({ advocate }) {
             them once earned; a lawyer with no reviews gets nothing rather than
             "0.0 (0)", which reads as a poor score instead of a new profile. */}
         <div className="mt-3.5 flex flex-wrap items-center gap-3">
-          <FeePill amount={feeText} minutes={cheapestPlan?.minutes} quoted={feeQuoted} />
+          <FeePill amount={feeText} subtitle={feeSubtitle} quoted={feeQuoted} />
           <PresenceIndicator id={advocate._id} variant="profile" />
           {verified && <VerifiedChip />}
           {rating > 0 && (
@@ -220,9 +220,9 @@ export default function AdvocateCard({ advocate }) {
             contact={contact}
             name={name}
             advocateId={advocate._id}
-            plans={advocatePlans(consultationPlans)}
-            videoPlans={advocatePlans(videoPlans)}
-            audioPlans={advocatePlans(audioPlans)}
+            chatRate={chatRate}
+            videoRate={videoRate}
+            audioRate={audioRate}
           />
         </div>
       </article>
@@ -263,7 +263,7 @@ export default function AdvocateCard({ advocate }) {
           </div>
           <FeePill
             amount={feeText}
-            minutes={cheapestPlan?.minutes}
+            subtitle={feeSubtitle}
             quoted={feeQuoted}
           />
         </div>

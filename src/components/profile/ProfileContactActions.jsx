@@ -18,11 +18,11 @@ import AudioConsultModal from './AudioConsultModal';
  * @param {string} props.name
  * @param {string} props.waText      pre-encoded WhatsApp message
  * @param {string} props.advocateId  lawyer MongoDB _id (for activity + booking)
- * @param {Array}  [props.plans]     the lawyer's own live-chat rates
- * @param {Array}  [props.audioPlans] the lawyer's own paid audio-call rates
+ * @param {number} [props.chatRate]  the lawyer's ₹/min for live chat
+ * @param {number} [props.audioRate] the lawyer's ₹/min for audio calls
  */
 export default function ProfileContactActions({
-  contact = {}, name, waText, advocateId, plans = [], audioPlans = [],
+  contact = {}, name, waText, advocateId, chatRate = 0, audioRate = 0,
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -69,7 +69,7 @@ export default function ProfileContactActions({
   /**
    * Call is the one action that does not simply follow its href. For a signed-in
    * client it opens the paid audio-consultation booking, priced from the
-   * lawyer's own audio plans. Lawyers keep the plain `tel:` behaviour, which is
+   * lawyer's own per-minute audio rate. Lawyers keep the plain `tel:` behaviour, which is
    * why the href stays on the button.
    */
   const onCall = (e) => {
@@ -94,7 +94,7 @@ export default function ProfileContactActions({
     <>
       <div className="space-y-2">
         {/* Primary CTA — book a paid live chat, shown when the lawyer offers it. */}
-        {role !== 'advocate' && plans.length > 0 && (
+        {role !== 'advocate' && chatRate > 0 && (
           <Button
             type="button"
             onClick={onBook}
@@ -108,7 +108,7 @@ export default function ProfileContactActions({
           <Button
             href={`tel:${contact.phone.replace(/\s/g, '')}`}
             onClick={onCall}
-            variant={plans.length > 0 ? 'outline' : 'primary'}
+            variant={chatRate > 0 ? 'outline' : 'primary'}
             fullWidth
             leftIcon={<Phone className="h-4 w-4" />}
           >
@@ -148,7 +148,7 @@ export default function ProfileContactActions({
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={audioPlans}
+        rate={audioRate}
       />
       <BookConsultationModal
         open={bookOpen}
@@ -156,7 +156,7 @@ export default function ProfileContactActions({
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={plans}
+        rate={chatRate}
       />
     </>
   );

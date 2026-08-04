@@ -52,3 +52,24 @@ export const STATES = Object.keys(STATES_CITIES).sort();
 export function citiesForState(state) {
   return STATES_CITIES[state] || [];
 }
+
+/**
+ * Every city selectable in a state — this list plus any an admin has added.
+ *
+ * The directory's own `CITIES` covers only the dozen cities that have landing
+ * pages, which is far too few to pick a home town from. The full district list
+ * above is the answer to "which cities are in Maharashtra"; `extra` folds in
+ * anything created since, so a newly added city is selectable immediately.
+ *
+ * @param {string} state
+ * @param {Array<{name?:string,state?:string}>} [extra]
+ * @returns {string[]} deduped, alphabetical
+ */
+export function allCitiesForState(state, extra = []) {
+  if (!state) return [];
+  const names = new Set(STATES_CITIES[state] || []);
+  for (const c of extra || []) {
+    if (c?.state === state && c?.name) names.add(String(c.name).trim());
+  }
+  return [...names].sort((a, b) => a.localeCompare(b));
+}

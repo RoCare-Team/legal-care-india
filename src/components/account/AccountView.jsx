@@ -12,6 +12,7 @@ import ViewConversationButton from '@/components/consultation/ViewConversationBu
 import { logout } from '@/utils/logout';
 import { refreshAuth } from '@/utils/authEvents';
 import { formatDate } from '@/utils/formatters';
+import { formatRate } from '@/constants/callRates';
 
 const NAV = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -353,10 +354,12 @@ function ConsultationsView({ consultations = [], onRemove }) {
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink/8 pt-3 text-xs text-ink/60">
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarCheck className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
-                  Booked {c.minutes} min
-                </span>
+                {c.rate > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <CalendarCheck className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
+                    {formatRate(c.rate)}
+                  </span>
+                )}
                 {c.charged && (
                   <span className="inline-flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />

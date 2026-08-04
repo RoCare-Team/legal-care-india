@@ -72,6 +72,33 @@ const AdvocateSchema = new Schema(
     tagline: { type: String, default: '' },
     about: { type: String, default: '' },
 
+    // Personal details collected at registration. All optional — a lawyer is
+    // not blocked from listing for want of a date of birth, and nothing here is
+    // shown publicly unless a later change chooses to.
+    gender: {
+      type: String,
+      enum: ['', 'Male', 'Female', 'Other', 'Prefer not to say'],
+      default: '',
+    },
+    dob: { type: Date, default: null },
+    // The lawyer's own residential/correspondence address, distinct from
+    // `office.address` below, which is where clients are seen.
+    address: { type: String, default: '' },
+    pincode: { type: String, default: '' },
+
+    // Enrolment details. `barCouncilNumber` above is the number itself; these
+    // say which Bar Council issued it and when.
+    barCouncilState: { type: String, default: '' },
+    enrollmentDate: { type: Date, default: null },
+
+    // How the lawyer describes their standing and where they work from.
+    designation: { type: String, default: '' },
+    chamberName: { type: String, default: '' },
+    // 'Independent' | 'Law Firm' | 'Chamber' | 'Corporate / In-house' — kept as
+    // a plain string rather than an enum so the option list can grow without a
+    // migration.
+    practiceMode: { type: String, default: '' },
+
     specializations: { type: [String], default: [] },
     subSpecializations: { type: [String], default: [] },
     languages: { type: [String], default: [] },
@@ -83,6 +110,18 @@ const AdvocateSchema = new Schema(
     practiceCities: { type: [String], default: [] },
 
     consultationFee: { type: Number, default: 0 },
+
+    // ── Per-minute consultation rates ────────────────────────────────────
+    // What the lawyer charges for each minute of a live session, set by them
+    // and billed on the minutes actually used. 0 ⇒ they don't offer that
+    // channel at all.
+    //
+    // These replace the fixed { minutes, price } plan lists below, which are
+    // kept only so documents saved before the change still price correctly —
+    // `advocateRate()` converts them on read. Nothing writes them any more.
+    chatRate: { type: Number, default: 0, min: 0 },
+    audioRate: { type: Number, default: 0, min: 0 },
+    videoRate: { type: Number, default: 0, min: 0 },
 
     // Live-chat consultation plans the lawyer defines themselves — both the
     // duration and the price. Empty ⇒ they don't offer live chat.
@@ -141,6 +180,14 @@ const AdvocateSchema = new Schema(
         lat: { type: Number, default: null },
         lng: { type: Number, default: null },
       },
+    },
+    // A second place clients are seen, for advocates who also practise from
+    // home. Not geocoded — `office` remains the address "near me" searches
+    // rank on; this is shown on the profile as an additional location.
+    residence: {
+      practises: { type: Boolean, default: false },
+      address: { type: String, default: '' },
+      pincode: { type: String, default: '' },
     },
     timing: { type: [TimingSchema], default: [] },
 

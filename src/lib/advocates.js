@@ -170,7 +170,12 @@ export function buildAdvocateProfile(a) {
     // frozen into the cache and would keep showing a stale green badge for the
     // whole cache window. Live status comes from /api/presence via
     // PresenceProvider, which is the only source the badges trust.
-    // Live-chat rates the lawyer set themselves (empty ⇒ chat not offered).
+    // Per-minute rates per live channel (0 ⇒ that channel is not offered).
+    chatRate: a.chatRate || 0,
+    audioRate: a.audioRate || 0,
+    videoRate: a.videoRate || 0,
+    // The fixed plans these replaced, still carried so a lawyer who hasn't
+    // saved a rate yet is priced from their old ones rather than reading ₹0.
     consultationPlans: a.consultationPlans || [],
     // Video-call rates, priced separately (empty ⇒ video not offered).
     videoPlans: a.videoPlans || [],

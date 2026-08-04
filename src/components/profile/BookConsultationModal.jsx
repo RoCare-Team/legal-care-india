@@ -2,36 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarCheck, Loader2, Wallet, Clock, CheckCircle2, XCircle, WifiOff, RotateCcw } from 'lucide-react';
+import { CalendarCheck, Loader2, Wallet, Timer, CheckCircle2, XCircle, WifiOff, MessagesSquare } from 'lucide-react';
 import ConsultationModal from '@/components/consultation/ConsultationModal';
 import ChatPanel from '@/components/consultation/ChatPanel';
 import { useIsOnline } from '@/components/consultation/PresenceProvider';
 import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
+import { affordableMinutes, formatRate } from '@/constants/callRates';
 import { refreshAuth } from '@/utils/authEvents';
 
 /**
- * BookConsultationModal — the user side of the paid live-chat flow:
- * pick a plan → connecting (waiting for the lawyer) → chat (charged) → ended.
+ * BookConsultationModal — the user side of the live-chat flow:
+ * start → connecting (waiting for the lawyer) → chat → ended.
  *
- * `plans` are the lawyer's own rates (they set them in their dashboard), so
- * every lawyer can charge what they like.
+ * There is no length to choose. The lawyer's `rate` is per minute, the chat
+ * bills the minutes it actually runs, and the wallet is charged once at the
+ * end — so the only thing to decide here is whether to start.
+ *
+ * @param {object} props
+ * @param {number} props.rate  the lawyer's ₹/min for chat; 0 ⇒ not offered
  */
-/** "8 min 30 sec" / "8 min" / "45 sec" from a whole-second count. */
-function formatLeftover(sec = 0) {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  if (m && s) return `${m} min ${s} sec`;
-  if (m) return `${m} min`;
-  return `${s} sec`;
-}
-
 export default function BookConsultationModal({
-  open, onClose, advocateId, advocateName, walletBalance = 0, plans = [],
+  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0,
 }) {
   const [sessionId, setSessionId] = useState(null);
-  // Leftover time with this lawyer that can be reconnected for free, if any.
-  const [resumable, setResumable] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [insufficient, setInsufficient] = useState(false);
@@ -47,7 +41,7 @@ export default function BookConsultationModal({
   });
 
   // Reset everything when the modal closes — including the polled session, so
-  // reopening always starts fresh at plan selection (not the last ended chat).
+  // reopening always starts fresh (not on the last ended chat).
   useEffect(() => {
     if (!open) {
       setSessionId(null);
@@ -58,47 +52,34 @@ export default function BookConsultationModal({
       setCreating(false);
       setMinimized(false);
       setCallActive(false);
-      setResumable(null);
     }
   }, [open, setSession]);
 
-  // On opening (before a session exists) check for leftover time to offer a
-  // free resume. Refetched each open, so a just-spent leftover disappears.
-  useEffect(() => {
-    if (!open || !advocateId || sessionId) return undefined;
-    let cancelled = false;
-    fetch(`/api/consultations/resumable?advocateId=${advocateId}&type=chat`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled) setResumable(d.resumable || null);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [open, advocateId, sessionId]);
-
   const status = session?.status;
 
+  // How long this wallet can keep the chat going at the lawyer's rate. Shown
+  // up front so nobody is surprised by the cut-off mid-conversation.
+  const budgetMinutes = affordableMinutes(walletBalance, rate);
+
   // A lawyer who has switched themselves offline isn't taking chats, so say
-  // that instead of showing plans they can't act on. Only before a session
+  // that instead of offering a button they can't act on. Only before a session
   // exists — once one is under way it plays out on its own terms.
   const isOnline = useIsOnline(advocateId, true);
   const offlineNote =
     offline || (!sessionId && !isOnline ? `${advocateName} is offline right now.` : '');
 
-  // The wallet is charged the moment the lawyer accepts — refresh the navbar
-  // balance right away rather than waiting for a page reload.
+  // The clock (and the meter) starts the moment the lawyer accepts — refresh
+  // the navbar balance when it stops, which is when the wallet actually moves.
   useEffect(() => {
-    if (status === 'active') refreshAuth();
+    if (status === 'ended') refreshAuth();
   }, [status]);
 
-  // When the consultation ends (time up or either side hangs up), close the
-  // whole modal shortly after — the chat and its timer disappear.
+  // When the consultation ends (budget spent or either side hangs up), close
+  // the whole modal shortly after — the chat and its timer disappear.
   useEffect(() => {
     if (status === 'ended') {
       setMinimized(false); // surface the "ended" state instead of staying tucked away
-      const t = setTimeout(onClose, 1200);
+      const t = setTimeout(onClose, 2400);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -120,7 +101,7 @@ export default function BookConsultationModal({
     return () => clearTimeout(t);
   }, [status, sessionId, advocateName]);
 
-  const book = async (plan) => {
+  const book = async () => {
     setError('');
     setInsufficient(false);
     setCreating(true);
@@ -128,7 +109,7 @@ export default function BookConsultationModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, minutes: plan.minutes }),
+        body: JSON.stringify({ advocateId, type: 'chat' }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -142,41 +123,6 @@ export default function BookConsultationModal({
       }
       if (!res.ok) {
         setError(data.error || 'Could not start the request.');
-        return;
-      }
-      setSessionId(data.session.id);
-    } catch {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  /** Reconnect leftover time from an earlier session — free, no plan. */
-  const resume = async () => {
-    if (!resumable) return;
-    setError('');
-    setInsufficient(false);
-    setCreating(true);
-    try {
-      const res = await fetch('/api/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, resumeFrom: resumable.id }),
-      });
-      const data = await res.json();
-      if (res.status === 409 && data.error === 'offline') {
-        setOffline(data.message || `${advocateName} is offline right now.`);
-        return;
-      }
-      if (res.status === 409 && data.error === 'expired') {
-        // The 24h window closed (or it was already used) — drop the offer.
-        setResumable(null);
-        setError(data.message || 'This leftover time is no longer available.');
-        return;
-      }
-      if (!res.ok) {
-        setError(data.error || 'Could not resume. Please try again.');
         return;
       }
       setSessionId(data.session.id);
@@ -223,7 +169,7 @@ export default function BookConsultationModal({
   };
 
   // ── Chat (connected) — full-width modal ──────────────────────────────────
-  if (sessionId && session && (status === 'active' || (status === 'ended' && session.startedAt))) {
+  if (sessionId && session && status === 'active') {
     // The X only tucks the chat away (like backgrounding a call) — it never
     // hangs up. Ending is the red button inside ChatPanel (onEnd).
     if (open && minimized && !callActive) {
@@ -260,7 +206,7 @@ export default function BookConsultationModal({
       open={open}
       onClose={status === 'pending' ? cancel : onClose}
       closable={status !== 'pending'}
-      title="Book Consultation"
+      title="Start Consultation"
       icon={CalendarCheck}
     >
       <div className="p-5">
@@ -289,7 +235,7 @@ export default function BookConsultationModal({
             </span>
             <h4 className="mt-5 font-display text-lg font-semibold text-ink">Connecting…</h4>
             <p className="mt-1 text-sm text-ink/55">
-              Waiting for {advocateName} to accept your request.
+              Waiting for {advocateName} to accept. Billing starts only when they do.
             </p>
             <button
               type="button"
@@ -314,82 +260,73 @@ export default function BookConsultationModal({
           <div className="flex flex-col items-center py-8 text-center">
             <CheckCircle2 className="h-12 w-12 text-emerald-500" />
             <h4 className="mt-4 font-display text-lg font-semibold text-ink">Consultation ended</h4>
-            <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            {/* The bill, itemised — this is the first moment the user sees what
+                the conversation actually cost. */}
+            {session?.price > 0 ? (
+              <p className="mt-1 text-sm text-ink/55">
+                Charged{' '}
+                <strong className="font-semibold text-ink">
+                  ₹{Number(session.price).toLocaleString('en-IN')}
+                </strong>{' '}
+                for {session.minutes} minute{session.minutes === 1 ? '' : 's'}.
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+            )}
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
               Close
             </button>
           </div>
         ) : (
-          // Plan selection
+          // ── Start ────────────────────────────────────────────────────────
           <>
             <p className="text-sm text-ink/60">
-              Choose a consultation length. You&apos;ll connect over live chat once {advocateName}{' '}
-              accepts, and only then is your wallet charged.
+              You&apos;ll connect over live chat once {advocateName} accepts. You pay only for the
+              minutes the conversation actually runs — end it whenever you like.
             </p>
 
-            {/* Free resume of leftover time — shown only when the user actually
-                has unused, still-valid minutes with this lawyer. */}
-            {resumable && (
-              <button
-                type="button"
-                disabled={creating}
-                onClick={resume}
-                className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-accent/40 bg-accent/[0.08] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-accent hover:shadow-card disabled:opacity-60"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent/25 text-primary-dark">
-                    <RotateCcw className="h-5 w-5" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-ink">Resume where you left off</span>
-                    <span className="block text-xs text-ink/55">
-                      {formatLeftover(resumable.leftoverSeconds)} left · valid for 24 hours
-                    </span>
-                  </span>
+            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm text-ink/60">
+                  <Timer className="h-4 w-4 text-primary" /> Chat rate
                 </span>
-                <span className="shrink-0 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">Free</span>
-              </button>
-            )}
+                <span className="font-display text-xl font-bold text-ink">{formatRate(rate)}</span>
+              </div>
+              {budgetMinutes > 0 && (
+                <p className="mt-2 border-t border-primary/15 pt-2 text-xs text-ink/55">
+                  Your balance covers about{' '}
+                  <strong className="font-semibold text-ink/75">{budgetMinutes} minutes</strong> —
+                  the chat ends on its own at that point.
+                </p>
+              )}
+            </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
+            <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
               <span className="flex items-center gap-2 text-sm text-ink/60">
                 <Wallet className="h-4 w-4 text-primary" /> Wallet balance
               </span>
               <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {plans.map((plan) => {
-                const affordable = walletBalance >= plan.price;
-                return (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    disabled={creating}
-                    onClick={() => book(plan)}
-                    className="group flex flex-col rounded-2xl border border-ink/10 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card disabled:opacity-60"
-                  >
-                    <span className="flex items-center gap-1.5 text-primary">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-display text-base font-bold text-ink">{plan.label}</span>
-                    </span>
-                    <span className="mt-1 text-xs text-ink/50">Live chat consultation</span>
-                    <span className="mt-3 font-display text-xl font-bold text-ink">
-                      ₹{Number(plan.price).toLocaleString('en-IN')}
-                    </span>
-                    {!affordable && (
-                      <span className="mt-1 text-[11px] font-medium text-amber-600">Add money to book</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              disabled={creating || !rate}
+              onClick={book}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
+            >
+              {creating ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Sending request…</>
+              ) : (
+                <><MessagesSquare className="h-4 w-4" /> Start live chat</>
+              )}
+            </button>
 
-            {creating && (
-              <p className="mt-4 flex items-center justify-center gap-2 text-sm text-ink/55">
-                <Loader2 className="h-4 w-4 animate-spin" /> Sending request…
+            {!rate && (
+              <p className="mt-3 text-center text-sm text-ink/55">
+                {advocateName} doesn&apos;t offer live chat at the moment.
               </p>
             )}
+
             {error && (
               <div className="mt-4 rounded-xl bg-red-500/5 px-3.5 py-2.5 text-sm text-red-600">
                 {error}

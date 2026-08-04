@@ -7,7 +7,7 @@ import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 import { cn } from '@/utils/cn';
 import { formatExperience, pluralize } from '@/utils/formatters';
 import { advocateProfilePath } from '@/utils/advocateUrl';
-import { advocatePlans } from '@/constants/consultationPlans';
+import { advocateRates } from '@/constants/callRates';
 
 /**
  * The lawyer rail that sits beside a practice-area or matter page.
@@ -112,12 +112,14 @@ export default function LawyerSidebar({
 function CompactLawyer({ advocate }) {
   const {
     name, photo, city, state, experience, rating, reviews, verified,
-    consultationFee, consultationPlans = [], videoPlans = [], audioPlans = [], contact,
+    consultationFee, contact,
   } = advocate;
 
-  const cheapest = consultationPlans.length
-    ? consultationPlans.reduce((lo, p) => (p.price < lo.price ? p : lo))
-    : null;
+  const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
+  // The headline figure is the cheapest per-minute rate on offer — what it
+  // costs to reach this lawyer — falling back to the flat office fee.
+  const liveRates = [chatRate, audioRate, videoRate].filter((r) => r > 0);
+  const cheapestRate = liveRates.length ? Math.min(...liveRates) : 0;
 
   return (
     <div className="rounded-2xl border border-ink/8 bg-surface p-3.5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card-hover">
@@ -140,9 +142,9 @@ function CompactLawyer({ advocate }) {
               {name}
             </h3>
             <span className="shrink-0 rounded-full bg-primary/[0.07] px-2 py-0.5 text-[11px] font-semibold text-primary">
-              ₹{cheapest ? cheapest.price : consultationFee}
+              ₹{cheapestRate || consultationFee}
               <span className="font-normal text-primary/60">
-                {cheapest ? `/${cheapest.minutes}m` : ''}
+                {cheapestRate ? '/min' : ''}
               </span>
             </span>
           </div>
@@ -169,9 +171,9 @@ function CompactLawyer({ advocate }) {
           contact={contact}
           name={name}
           advocateId={advocate._id}
-          plans={advocatePlans(consultationPlans)}
-          videoPlans={advocatePlans(videoPlans)}
-          audioPlans={advocatePlans(audioPlans)}
+          chatRate={chatRate}
+          videoRate={videoRate}
+          audioRate={audioRate}
         />
       </div>
 

@@ -4,6 +4,7 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
 import { getAllCities } from '@/lib/cities';
 import { advocateProfilePath } from '@/utils/advocateUrl';
+import { advocateRate } from '@/constants/callRates';
 
 /** Flatten a full lawyer profile into the editable form snapshot. */
 function toSnapshot(a) {
@@ -35,21 +36,12 @@ function toSnapshot(a) {
     whatsapp: a.contact?.whatsapp || '',
     email: a.contact?.email || '',
     fee: String(a.consultationFee || ''),
-    // Live-chat plans the lawyer defined (duration + price), as form strings.
-    consultationPlans: (a.consultationPlans || []).map((p) => ({
-      minutes: String(p.minutes ?? ''),
-      price: String(p.price ?? ''),
-    })),
-    // Video-call plans, same shape.
-    videoPlans: (a.videoPlans || []).map((p) => ({
-      minutes: String(p.minutes ?? ''),
-      price: String(p.price ?? ''),
-    })),
-    // Audio-call plans, same shape.
-    audioPlans: (a.audioPlans || []).map((p) => ({
-      minutes: String(p.minutes ?? ''),
-      price: String(p.price ?? ''),
-    })),
+    // Per-minute rate per live channel, as form strings. Lawyers who still
+    // have the old fixed plans and no rate of their own see the converted
+    // equivalent, so the form opens with a sensible number rather than blank.
+    chatRate: String(advocateRate(a, 'chat') || ''),
+    audioRate: String(advocateRate(a, 'audio') || ''),
+    videoRate: String(advocateRate(a, 'video') || ''),
     certificates: a.certificates || [],
     awards: a.awards || [],
     social: {

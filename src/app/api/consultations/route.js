@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
-import { getAdvocatePlan } from '@/constants/consultationPlans';
+import { advocateRate, affordableMinutes, formatRate } from '@/constants/callRates';
 import { bridgeAudioCall } from '@/lib/phoneBridge';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
@@ -26,9 +26,12 @@ export async function GET() {
 }
 
 /**
- * POST /api/consultations  { advocateId, planId }
- * A signed-in user books a consultation. Creates a pending request (charged
- * only when the lawyer accepts). Rejects up front if the wallet can't cover it.
+ * POST /api/consultations  { advocateId, type }
+ *
+ * A signed-in user books a consultation. Creates a pending request at the
+ * lawyer's per-minute rate — no duration is chosen and nothing is charged
+ * here. The bill is the minutes the session actually runs, settled when it
+ * ends. Rejected up front only if the wallet can't cover a single minute.
  */
 export async function POST(request) {
   const session = await getSession();
@@ -47,8 +50,7 @@ export async function POST(request) {
   // A resume reconnects leftover time from an earlier session — no plan, no
   // charge — so it takes a different path from a fresh booking.
   const resumeFrom = String(body?.resumeFrom || '').trim();
-  const minutes = Number(body?.minutes);
-  if (!advocateId || (!resumeFrom && !Number.isFinite(minutes))) {
+  if (!advocateId) {
     return NextResponse.json({ error: 'Invalid booking details.' }, { status: 400 });
   }
 
@@ -60,7 +62,7 @@ export async function POST(request) {
   const [user, advocate] = await Promise.all([
     getUserById(session.id),
     Advocate.findById(advocateId)
-      .select('name consultationPlans videoPlans audioPlans phone contact')
+      .select('name chatRate audioRate videoRate consultationPlans videoPlans audioPlans phone contact')
       .lean(),
   ]);
   if (!advocate) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
@@ -115,25 +117,28 @@ export async function POST(request) {
     }
   }
 
-  // ── Fresh paid booking (chat or video) ───────────────────────────────────
-  // The plan (duration + price) always comes from the lawyer's own list —
-  // never from the client — picking the chat or video list by `type`.
-  const planList =
-    type === 'video' ? advocate.videoPlans
-      : type === 'audio' ? advocate.audioPlans
-        : advocate.consultationPlans;
-  const plan = getAdvocatePlan(planList, minutes);
-  if (!plan) {
-    const label = type === 'video' ? 'video call' : type === 'audio' ? 'audio call' : 'consultation';
+  // ── Fresh booking (chat, audio or video) ─────────────────────────────────
+  // The rate always comes from the lawyer's own profile, never from the
+  // client. A rate of 0 means they don't offer this channel at all.
+  const rate = advocateRate(advocate, type);
+  if (!rate) {
+    const label = type === 'video' ? 'video calls' : type === 'audio' ? 'audio calls' : 'live chat';
     return NextResponse.json(
-      { error: `This lawyer does not offer that ${label} plan.` },
+      { error: `This lawyer does not offer ${label}.` },
       { status: 400 }
     );
   }
 
-  if ((user?.walletBalance || 0) < plan.price) {
+  // Nothing is charged now — but the wallet has to cover at least the first
+  // minute, and what it covers becomes the session's ceiling. Better to say so
+  // here than to cut a client off thirty seconds in.
+  const maxMinutes = affordableMinutes(user?.walletBalance, rate);
+  if (maxMinutes < 1) {
     return NextResponse.json(
-      { error: 'insufficient', message: `You need ₹${plan.price} in your wallet. Add money and try again.` },
+      {
+        error: 'insufficient',
+        message: `This lawyer charges ${formatRate(rate)}. Add at least ₹${rate} to your wallet and try again.`,
+      },
       { status: 402 }
     );
   }
@@ -144,8 +149,8 @@ export async function POST(request) {
     userName: user.anonymous ? 'Anonymous' : user.name,
     advocateId,
     advocateName: advocate.name,
-    minutes: plan.minutes,
-    price: plan.price,
+    rate,
+    maxMinutes,
     type,
   });
 

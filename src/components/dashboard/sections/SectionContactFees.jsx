@@ -1,12 +1,46 @@
-import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Clock, Video, PhoneCall } from 'lucide-react';
+import { Phone, MessageCircle, Mail, IndianRupee, MessagesSquare, Video, PhoneCall, Timer } from 'lucide-react';
 import { FormField, Input } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
-import RepeatableList from '../RepeatableList';
-import { formatDuration } from '@/constants/consultationPlans';
+import { MAX_RATE, formatRate } from '@/constants/callRates';
+
+/** The three live channels, each priced independently by the minute. */
+const RATE_SECTIONS = [
+  {
+    id: 'chat-rates',
+    field: 'chatRate',
+    title: 'Live Chat Rate',
+    icon: MessagesSquare,
+    description:
+      'What you charge per minute of live chat. Leave blank to not offer live chat at all.',
+    placeholder: '10',
+  },
+  {
+    id: 'audio-rates',
+    field: 'audioRate',
+    title: 'Audio Call Rate',
+    icon: PhoneCall,
+    description:
+      'What you charge per minute of a voice call. Leave blank and your Call button tells clients you don’t take audio calls.',
+    placeholder: '20',
+  },
+  {
+    id: 'video-rates',
+    field: 'videoRate',
+    title: 'Video Call Rate',
+    icon: Video,
+    description:
+      'Priced separately from chat — what a minute of video consultation costs. Leave blank to not offer video calls.',
+    placeholder: '30',
+  },
+];
 
 /**
  * SectionContactFees — direct contact channels, the headline consultation fee,
- * and the lawyer's own live-chat plans (they set both duration and price).
+ * and the lawyer's per-minute rate for each live channel.
+ *
+ * One number per channel rather than a list of duration packages: clients are
+ * billed for the minutes a session actually runs, so there is no block of time
+ * to price up front.
  */
 export default function SectionContactFees({ data, set }) {
   return (
@@ -31,131 +65,32 @@ export default function SectionContactFees({ data, set }) {
         </FormField>
       </DashboardSection>
 
-      <DashboardSection
-        id="chat-rates"
-        title="Live Chat Consultation Plans"
-        description="Add your own plans — you choose the duration and the price. Clients see exactly these. Add none to not offer live chat."
-        icon={MessagesSquare}
-      >
-        <RepeatableList
-          items={data.consultationPlans || []}
-          onChange={(v) => set('consultationPlans', v)}
-          template={{ minutes: '', price: '' }}
-          addLabel="Add plan"
-          renderRow={(item, update) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField
-                label="Duration (minutes)"
-                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
-              >
-                <Input
-                  type="number"
-                  min="5"
-                  max="480"
-                  placeholder="15"
-                  value={item.minutes}
-                  onChange={(e) => update({ minutes: e.target.value })}
-                  leftIcon={<Clock className="h-4 w-4" />}
-                />
-              </FormField>
-              <FormField label="Price (₹)" hint="What you charge for this plan.">
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="500"
-                  value={item.price}
-                  onChange={(e) => update({ price: e.target.value })}
-                  leftIcon={<IndianRupee className="h-4 w-4" />}
-                />
-              </FormField>
-            </div>
-          )}
-        />
-      </DashboardSection>
+      {RATE_SECTIONS.map(({ id, field, title, icon, description, placeholder }) => (
+        <DashboardSection key={id} id={id} title={title} description={description} icon={icon}>
+          <FormField
+            label="Rate per minute (₹)"
+            htmlFor={`d-${field}`}
+            hint={
+              Number(data[field]) > 0
+                ? `Clients are billed ${formatRate(data[field])}, for the minutes the session actually runs.`
+                : 'Billed by the minute, from the moment the session connects.'
+            }
+          >
+            <Input
+              id={`d-${field}`}
+              type="number"
+              min="1"
+              max={MAX_RATE}
+              value={data[field] ?? ''}
+              onChange={(e) => set(field, e.target.value)}
+              placeholder={placeholder}
+              leftIcon={<Timer className="h-4 w-4" />}
+              className="max-w-xs"
+            />
+          </FormField>
+        </DashboardSection>
+      ))}
 
-      <DashboardSection
-        id="audio-rates"
-        title="Audio Call Plans"
-        description="What you charge for a voice call. Clients tap Call on your profile and pick one of these. Add none and your Call button tells them you don't take audio calls."
-        icon={PhoneCall}
-      >
-        <RepeatableList
-          items={data.audioPlans || []}
-          onChange={(v) => set('audioPlans', v)}
-          template={{ minutes: '', price: '' }}
-          addLabel="Add audio plan"
-          renderRow={(item, update) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField
-                label="Duration (minutes)"
-                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
-              >
-                <Input
-                  type="number"
-                  min="5"
-                  max="480"
-                  placeholder="15"
-                  value={item.minutes}
-                  onChange={(e) => update({ minutes: e.target.value })}
-                  leftIcon={<Clock className="h-4 w-4" />}
-                />
-              </FormField>
-              <FormField label="Price (₹)" hint="What you charge for this audio call.">
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="400"
-                  value={item.price}
-                  onChange={(e) => update({ price: e.target.value })}
-                  leftIcon={<IndianRupee className="h-4 w-4" />}
-                />
-              </FormField>
-            </div>
-          )}
-        />
-      </DashboardSection>
-
-      <DashboardSection
-        id="video-rates"
-        title="Video Call Plans"
-        description="Priced separately from chat — set your own duration and price for a video consultation. Add none to not offer video calls."
-        icon={Video}
-      >
-        <RepeatableList
-          items={data.videoPlans || []}
-          onChange={(v) => set('videoPlans', v)}
-          template={{ minutes: '', price: '' }}
-          addLabel="Add video plan"
-          renderRow={(item, update) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField
-                label="Duration (minutes)"
-                hint={item.minutes ? formatDuration(item.minutes) : 'e.g. 15, 30, 60'}
-              >
-                <Input
-                  type="number"
-                  min="5"
-                  max="480"
-                  placeholder="15"
-                  value={item.minutes}
-                  onChange={(e) => update({ minutes: e.target.value })}
-                  leftIcon={<Clock className="h-4 w-4" />}
-                />
-              </FormField>
-              <FormField label="Price (₹)" hint="What you charge for this video call.">
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="800"
-                  value={item.price}
-                  onChange={(e) => update({ price: e.target.value })}
-                  leftIcon={<IndianRupee className="h-4 w-4" />}
-                />
-              </FormField>
-            </div>
-          )}
-        />
-      </DashboardSection>
     </>
   );
 }

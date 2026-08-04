@@ -18,20 +18,22 @@ export default async function RegisterPage() {
   const cities = await getAllCities();
 
   return (
-    <Container className="py-10 sm:py-14">
-      <div className="mx-auto mb-8 max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
-        <h1 className="font-display text-3xl font-semibold text-ink sm:text-4xl">
+    <Container className="py-5 sm:py-7">
+      {/* One line, not a hero. This page's job is the form below it, and a
+          four-line masthead pushed the first field off the fold on a laptop. */}
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h1 className="font-display text-xl font-semibold text-ink sm:text-2xl">
           Register as a Lawyer
         </h1>
-        <p className="mt-2 text-ink/60">
+        <p className="text-sm text-ink/60">
           Already registered?{' '}
           <Link href="/login" className="font-medium text-primary hover:underline">
-            Log in to your dashboard
+            Log in
           </Link>
         </p>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <RegisterWizard cities={cities} />
         </div>

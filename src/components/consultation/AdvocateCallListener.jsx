@@ -9,6 +9,7 @@ import ConsultationModal from './ConsultationModal';
 import ChatPanel from './ChatPanel';
 import VideoCallStage from './VideoCallStage';
 import MinimizedCallBar from './MinimizedCallBar';
+import { formatRate } from '@/constants/callRates';
 
 /**
  * AdvocateCallListener — mounted globally; only active for a signed-in lawyer.
@@ -231,17 +232,15 @@ export default function AdvocateCallListener() {
 
             <div className="mt-4 flex items-center gap-4 rounded-xl bg-muted/50 px-4 py-3">
               <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-                <Clock className="h-4 w-4 text-primary" /> {Math.round(incoming.minutes)} min
+                <Clock className="h-4 w-4 text-primary" /> up to {Math.round(incoming.maxMinutes)} min
               </span>
               <span className="h-4 w-px bg-ink/10" />
               <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                <Wallet className="h-4 w-4 text-emerald-600" /> {incoming.isResume ? 'Free' : `₹${incoming.price}`}
+                <Wallet className="h-4 w-4 text-emerald-600" /> {formatRate(incoming.rate)}
               </span>
             </div>
             <p className="mt-2 text-xs text-ink/45">
-              {incoming.isResume
-                ? 'Leftover time from an earlier session — no charge.'
-                : `You'll be credited ₹${incoming.price} on accept.`}
+              You are paid for every minute this runs, credited when it ends.
             </p>
 
             {note && <p className="mt-3 text-sm text-red-600">{note}</p>}

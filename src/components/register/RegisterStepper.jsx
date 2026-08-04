@@ -16,21 +16,24 @@ export default function RegisterStepper({ steps, current }) {
         const active = i === current;
         return (
           <li key={label} className={cn('flex items-center', i < steps.length - 1 && 'flex-1')}>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span
                 className={cn(
-                  'grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors',
+                  'grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors',
                   done && 'bg-primary text-white',
                   active && 'bg-primary/15 text-primary ring-2 ring-primary',
                   !done && !active && 'bg-ink/8 text-ink/50'
                 )}
               >
-                {done ? <Check className="h-4 w-4" /> : i + 1}
+                {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
               </span>
+              {/* Only the step being filled is named. The other four labels
+                  were the widest thing in the rail and said nothing the
+                  numbers and the heading below don't already. */}
               <span
                 className={cn(
-                  'hidden text-sm font-medium sm:block',
-                  active ? 'text-ink' : 'text-ink/50'
+                  'text-[13px] font-medium',
+                  active ? 'text-ink' : 'hidden text-ink/50 lg:block'
                 )}
               >
                 {label}
@@ -38,7 +41,7 @@ export default function RegisterStepper({ steps, current }) {
             </div>
             {i < steps.length - 1 && (
               <span
-                className={cn('mx-2 h-px flex-1 sm:mx-4', done ? 'bg-primary' : 'bg-ink/12')}
+                className={cn('mx-2 h-px flex-1 sm:mx-3', done ? 'bg-primary' : 'bg-ink/12')}
                 aria-hidden="true"
               />
             )}

@@ -3,9 +3,14 @@ import { connectDB } from '@/lib/db';
 import Consultation from '@/models/Consultation';
 import User from '@/models/User';
 import Advocate from '@/models/Advocate';
+import { chargeForDuration } from '@/constants/callRates';
 
 /**
- * Consultation data-access + the wallet transfer that happens on connect.
+ * Consultation data-access + the wallet transfer that settles a session.
+ *
+ * Sessions are billed by the minute, at the end. Nothing is taken when the
+ * lawyer accepts — the clock simply starts — and `settleCharges` moves the
+ * money once the session is over, for the minutes it actually ran.
  */
 
 // How recently the lawyer's listener checked in. Kept as a record of activity
@@ -27,19 +32,19 @@ function leftoverMs(s) {
 }
 
 /**
- * Can this session's leftover time be reconnected for free right now? It must
- * have actually connected, ended early with at least a minute unused, not been
- * claimed already, and still be inside the 24-hour window.
+ * Whether a session's unused time can be reconnected for free.
+ *
+ * Always false now. Leftover time was a consequence of selling fixed blocks:
+ * a client who bought thirty minutes and finished in ten had paid for twenty
+ * they never used, and the free resume gave those back. Per-minute billing
+ * charges only the minutes that ran, so there is nothing left over to return —
+ * `endsAt` is a wallet ceiling, not time anyone paid for.
+ *
+ * Kept as a single false rather than deleted so every caller keeps its shape
+ * while the resume UI is retired.
  */
-function isResumable(s) {
-  return (
-    s?.status === 'ended' &&
-    !s.resumed &&
-    Boolean(s.startedAt) &&
-    Boolean(s.endedAt) &&
-    leftoverMs(s) >= RESUME_MIN_LEFTOVER_MS &&
-    Date.now() - new Date(s.endedAt).getTime() <= RESUME_WINDOW_MS
-  );
+function isResumable() {
+  return false;
 }
 
 /** Heartbeat: mark the lawyer as currently present. */
@@ -90,8 +95,13 @@ export function serializeSession(doc) {
     userName: s.userName || '',
     advocateId: String(s.advocateId),
     advocateName: s.advocateName || '',
-    minutes: s.minutes,
-    price: s.price,
+    // ₹ per minute this session bills at, and the most minutes the wallet can
+    // cover — what the live cost meter on both screens counts against.
+    rate: s.rate || 0,
+    maxMinutes: s.maxMinutes || 0,
+    // What was actually billed. Both are 0 until the session ends.
+    minutes: s.minutes || 0,
+    price: s.price || 0,
     // 'chat' | 'video' | 'audio' — drives which UI the participants open.
     type: s.type || 'chat',
     // A free reconnection of leftover time (no charge). Lets both sides label
@@ -180,17 +190,114 @@ function closeCall(session, reason, by = '') {
 }
 
 /**
- * Flip an active-but-expired session to `ended` (lazy, on read), and settle a
- * video call that outlived it or that nobody ever picked up.
+ * Move the money for a finished session: the minutes it ran, at its own rate,
+ * out of the user's wallet and into the lawyer's.
+ *
+ * Claims the settlement atomically before touching a balance. A session can be
+ * finalised by either side hanging up, or lazily by whichever poll first
+ * notices it expired, and those can happen at the same moment — the claim is
+ * what makes the transfer happen exactly once.
+ *
+ * The charge is capped at `maxMinutes` (what the wallet could afford when the
+ * session was booked) and again at the balance actually present, so a wallet
+ * spent elsewhere mid-session can go to zero but never below it. The lawyer is
+ * credited what was really collected, not what was billed.
+ *
+ * @param {import('mongoose').Document} session  an ended session
+ * @returns {Promise<boolean>} whether this call was the one that settled it
+ */
+async function settleCharges(session) {
+  if (!session || session.settled) return false;
+
+  // Claim first — everything below must run for one caller only.
+  const claimed = await Consultation.findOneAndUpdate(
+    { _id: session._id, settled: false },
+    { $set: { settled: true } }
+  ).lean();
+  if (!claimed) {
+    session.settled = true;
+    return false;
+  }
+  session.settled = true;
+
+  const rate = Number(session.rate) || 0;
+  // Never connected, or a channel with no rate — nothing to bill either way.
+  if (!session.startedAt || rate <= 0) {
+    session.minutes = 0;
+    session.price = 0;
+    return true;
+  }
+
+  const end = session.endedAt ? new Date(session.endedAt) : new Date();
+  const ranMs = Math.max(0, end.getTime() - new Date(session.startedAt).getTime());
+  let { minutes, amount } = chargeForDuration(ranMs, rate);
+
+  // The clock should already have stopped at the ceiling; this is the belt to
+  // that braces, in case a session sat active past its `endsAt` unnoticed.
+  const cap = Number(session.maxMinutes) || 0;
+  if (cap > 0 && minutes > cap) {
+    minutes = cap;
+    amount = minutes * rate;
+  }
+
+  const note = (who) => `${minutes} min ${session.type || 'chat'} consultation with ${who}`;
+
+  // Debit the full amount if it's there; otherwise sweep what remains.
+  let charged = amount;
+  const debited = amount > 0
+    ? await User.findOneAndUpdate(
+      { _id: session.userId, walletBalance: { $gte: amount } },
+      {
+        $inc: { walletBalance: -amount },
+        $push: { walletTransactions: { type: 'debit', amount, note: note(session.advocateName) } },
+      }
+    ).lean()
+    : null;
+
+  if (amount > 0 && !debited) {
+    const wallet = await User.findById(session.userId).select('walletBalance').lean();
+    charged = Math.max(0, Math.min(amount, Number(wallet?.walletBalance) || 0));
+    if (charged > 0) {
+      await User.updateOne(
+        { _id: session.userId },
+        {
+          $inc: { walletBalance: -charged },
+          $push: { walletTransactions: { type: 'debit', amount: charged, note: note(session.advocateName) } },
+        }
+      );
+    }
+  }
+
+  if (charged > 0) {
+    await Advocate.findByIdAndUpdate(session.advocateId, {
+      $inc: { walletBalance: charged },
+      $push: { walletTransactions: { type: 'credit', amount: charged, note: note(session.userName) } },
+    });
+  }
+
+  session.minutes = minutes;
+  session.price = charged;
+  return true;
+}
+
+/**
+ * Flip an active-but-expired session to `ended` (lazy, on read), settle what it
+ * cost, and close a call that outlived it or that nobody ever picked up.
  */
 async function settleIfExpired(session) {
   if (!session) return session;
   let dirty = false;
 
   if (session.status === 'active' && session.endsAt && new Date(session.endsAt) <= new Date()) {
+    // Ran to the ceiling the wallet could afford.
     session.status = 'ended';
-    session.endedAt = session.endsAt; // ran the full booked time
+    session.endedAt = session.endsAt;
     dirty = true;
+  }
+
+  // Any session that is over and unpaid gets settled here, whoever noticed it.
+  if (session.status === 'ended' && !session.settled) {
+    dirty = (await settleCharges(session)) || dirty;
   }
 
   // A call can never outlive the consultation that paid for it.
@@ -235,13 +342,16 @@ function toHistoryRow(r, viewer) {
     userName: r.userName || 'Client',
     advocateId: String(r.advocateId),
     advocateName: r.advocateName || 'Lawyer',
-    minutes: r.minutes,
-    price: r.price,
+    rate: r.rate || 0,
+    // Billed minutes and amount — what the session actually came to.
+    minutes: r.minutes || 0,
+    price: r.price || 0,
     // 'chat' | 'video' | 'audio' — history and the resume board group by it.
     type: r.type || 'chat',
     status: r.status,
-    // Only a connected session cost money / had a conversation.
-    charged: ['active', 'ended'].includes(r.status),
+    // Money only moves once a session is over and settled, so a live one has
+    // not cost anything yet — it is still accruing.
+    charged: Boolean(r.settled) && (r.price || 0) > 0,
     // A free reconnection of earlier leftover time (price 0, no wallet charge).
     isResume: Boolean(r.resumedFromId),
     // Unused time still claimable from this session, and when that offer lapses.
@@ -306,11 +416,18 @@ export async function hideConsultationFor(id, participantId, viewer) {
   return true;
 }
 
-/** Create a pending consultation request (no charge yet). */
-export async function createConsultation({ userId, userName, advocateId, advocateName, minutes, price, type = 'chat' }) {
+/**
+ * Create a pending consultation request. No charge — the rate is only
+ * recorded here, along with the ceiling the user's wallet can cover, and the
+ * bill is worked out when the session ends.
+ */
+export async function createConsultation({
+  userId, userName, advocateId, advocateName, rate, maxMinutes, type = 'chat',
+}) {
   await connectDB();
   const doc = await Consultation.create({
-    userId, userName, advocateId, advocateName, minutes, price, type, status: 'pending',
+    userId, userName, advocateId, advocateName,
+    rate, maxMinutes, type, status: 'pending',
   });
   return serializeSession(doc.toObject());
 }
@@ -406,8 +523,16 @@ export async function getAdvocateInbox(advocateId) {
 }
 
 /**
- * Lawyer accepts: charge the user's wallet, credit the lawyer, open the
- * chat with a hard end time. Returns { session } or throws a coded error.
+ * Lawyer accepts: start the clock. Nothing is charged here.
+ *
+ * The wallet is touched once, at the end, for the minutes that actually ran —
+ * so a lawyer who accepts and finds the client has gone costs them the one
+ * minimum minute rather than a full block. `endsAt` is the point the wallet
+ * runs dry, which is where the session cuts off on its own.
+ *
+ * The balance is re-checked here because it may have been spent between
+ * booking and acceptance; the affordable ceiling is recomputed from what is
+ * there now rather than what was there then.
  */
 export async function acceptConsultation(id, advocateId) {
   await connectDB();
@@ -415,41 +540,18 @@ export async function acceptConsultation(id, advocateId) {
   if (!session) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
   if (session.status !== 'pending') { const e = new Error('Already handled'); e.code = 'BAD_STATE'; throw e; }
 
-  // A free resume of leftover time (price 0) skips the wallet entirely — it was
-  // already paid for on the original session.
-  if (session.price > 0) {
-    // Atomically debit the user only if they still have enough balance.
-    const debited = await User.findOneAndUpdate(
-      { _id: session.userId, walletBalance: { $gte: session.price } },
-      {
-        $inc: { walletBalance: -session.price },
-        $push: { walletTransactions: { type: 'debit', amount: session.price, note: `Consultation with ${session.advocateName}` } },
-      },
-      { new: true }
-    ).lean();
-
-    if (!debited) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
-
-    // Credit the lawyer's earnings wallet.
-    await Advocate.findByIdAndUpdate(advocateId, {
-      $inc: { walletBalance: session.price },
-      $push: { walletTransactions: { type: 'credit', amount: session.price, note: `Consultation with ${session.userName}` } },
-    });
-  } else if (session.resumedFromId) {
-    // Now that the lawyer has taken the reconnection, spend the parent's
-    // leftover so it can't be claimed a second time. Atomic guard against two
-    // resumes racing to accept.
-    const claimed = await Consultation.findOneAndUpdate(
-      { _id: session.resumedFromId, resumed: false },
-      { $set: { resumed: true } }
-    );
-    if (!claimed) { const e = new Error('Leftover already spent'); e.code = 'BAD_STATE'; throw e; }
+  const rate = Number(session.rate) || 0;
+  if (rate > 0) {
+    const wallet = await User.findById(session.userId).select('walletBalance').lean();
+    const affordable = Math.floor((Number(wallet?.walletBalance) || 0) / rate);
+    if (affordable < 1) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
+    session.maxMinutes = affordable;
   }
 
   const startedAt = new Date();
   session.status = 'active';
   session.startedAt = startedAt;
-  session.endsAt = new Date(startedAt.getTime() + session.minutes * 60 * 1000);
+  session.endsAt = new Date(startedAt.getTime() + (session.maxMinutes || 0) * 60 * 1000);
   await session.save();
   return withPairHistory(serializeSession(session.toObject()));
 }
@@ -478,7 +580,11 @@ export async function cancelConsultation(id, userId) {
   return serializeSession(session.toObject());
 }
 
-/** Either participant ends an active session early. */
+/**
+ * Either participant ends an active session — which is also where it is paid
+ * for. The bill is the minutes between accept and this moment, so hanging up
+ * early genuinely costs less.
+ */
 export async function endConsultation(id, participantId) {
   await connectDB();
   const session = await Consultation.findOne({
@@ -489,6 +595,8 @@ export async function endConsultation(id, participantId) {
   if (session.status === 'active') {
     session.status = 'ended';
     session.endedAt = new Date();
+    closeCall(session, 'hangup');
+    await settleCharges(session);
     await session.save();
   }
   return serializeSession(session.toObject());

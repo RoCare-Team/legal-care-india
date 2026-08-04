@@ -5,17 +5,46 @@ import { Send, CheckCircle2 } from 'lucide-react';
 import { Button, FormField, Input, Textarea } from '@/components/ui';
 
 /**
- * ContactForm — general enquiry form (UI only; shows a success state).
+ * ContactForm — the general enquiry form.
+ *
+ * It used to show the success screen without sending anything anywhere: every
+ * message a visitor wrote was thanked and then discarded. It now posts to
+ * /api/contact, which stores it for the admin panel to work through.
  */
 export default function ContactForm() {
   const [data, setData] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
   const set = (field) => (e) => setData((p) => ({ ...p, [field]: e.target.value }));
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    setSent(true);
+    if (sending) return;
+
+    setSending(true);
+    setError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(json.error || 'Could not send your message. Please try again.');
+        return;
+      }
+      setSent(true);
+    } catch {
+      // The success screen is only ever shown for a message that was actually
+      // stored — a network failure has to say so, not quietly congratulate.
+      setError('Could not reach the server. Please check your connection and try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (sent) {
@@ -46,8 +75,20 @@ export default function ContactForm() {
           <Textarea id="c-message" rows={5} value={data.message} onChange={set('message')} required placeholder="Write your message..." />
         </FormField>
       </div>
-      <Button type="submit" className="mt-6" leftIcon={<Send className="h-4 w-4" />}>
-        Send Message
+      {error && (
+        <p className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+          {error}
+        </p>
+      )}
+
+      <Button
+        type="submit"
+        className="mt-6"
+        disabled={sending}
+        aria-busy={sending}
+        leftIcon={<Send className="h-4 w-4" />}
+      >
+        {sending ? 'Sending…' : 'Send Message'}
       </Button>
     </form>
   );

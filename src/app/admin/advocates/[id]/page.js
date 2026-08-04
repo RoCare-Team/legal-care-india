@@ -107,15 +107,21 @@ export default async function AdminAdvocateDetailPage({ params }) {
           </InfoCard>
         )}
 
-        {adv.consultationPlans.length > 0 && (
-          <InfoCard title="Live-chat plans">
+        {Object.values(adv.rates || {}).some((r) => r > 0) && (
+          <InfoCard title="Live consultation rates">
             <ul className="divide-y divide-ink/6">
-              {adv.consultationPlans.map((p, i) => (
-                <li key={i} className="flex items-center justify-between py-2.5">
-                  <span className="text-sm text-ink/70">{p.minutes} min</span>
-                  <span className="text-sm font-semibold text-ink">₹{p.price}</span>
-                </li>
-              ))}
+              {[
+                ['Live chat', adv.rates.chat],
+                ['Audio call', adv.rates.audio],
+                ['Video call', adv.rates.video],
+              ]
+                .filter(([, rate]) => rate > 0)
+                .map(([label, rate]) => (
+                  <li key={label} className="flex items-center justify-between py-2.5">
+                    <span className="text-sm text-ink/70">{label}</span>
+                    <span className="text-sm font-semibold text-ink">₹{rate}/min</span>
+                  </li>
+                ))}
             </ul>
           </InfoCard>
         )}

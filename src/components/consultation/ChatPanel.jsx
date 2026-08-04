@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Send, Clock, Phone, Video, X } from 'lucide-react';
+import { Send, Clock, Phone, Video, X, IndianRupee } from 'lucide-react';
 import useVideoCall from '@/hooks/useVideoCall';
 import VideoCallOverlay from './VideoCallOverlay';
+import { chargeForDuration } from '@/constants/callRates';
 
 /** MM:SS from milliseconds. */
 function fmt(ms) {
@@ -47,6 +48,13 @@ export default function ChatPanel({
   const scrollRef = useRef(null);
 
   const active = session.status === 'active' && remaining > 0;
+
+  // What the session has run up so far. Derived from the elapsed time rather
+  // than polled: it has to move with the countdown to be believable, and the
+  // server's figure is only final once the session ends.
+  const runningCost = session.startedAt && session.rate
+    ? chargeForDuration(Date.now() - new Date(session.startedAt).getTime(), session.rate).amount
+    : 0;
 
   // Video call. `session.call` rides along on the chat poll, which is what
   // makes the lawyer's side ring without a second poller.
@@ -171,10 +179,20 @@ export default function ChatPanel({
               <Video className="h-4 w-4" />
             </button>
           )}
+          {/* What this conversation has cost so far, next to how much of the
+              wallet ceiling is left. The running total is the whole point of
+              per-minute billing — neither side should have to guess it. */}
+          {session.rate > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold tabular-nums text-emerald-700">
+              <IndianRupee className="h-3.5 w-3.5" aria-hidden="true" />
+              {runningCost.toLocaleString('en-IN')}
+            </span>
+          )}
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
               remaining <= 60000 ? 'bg-red-500/10 text-red-600' : 'bg-primary/10 text-primary'
             }`}
+            title="Time left on your wallet balance"
           >
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
             {fmt(remaining)}

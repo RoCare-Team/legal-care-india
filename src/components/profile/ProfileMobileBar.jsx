@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Phone, MessageCircle, Mail } from 'lucide-react';
-import { advocatePlans } from '@/constants/consultationPlans';
+import { advocateRate } from '@/constants/callRates';
 import { useAuth } from '@/hooks/useAuth';
 import AuthGateModal from './AuthGateModal';
 import AudioConsultModal from './AudioConsultModal';
@@ -22,8 +22,8 @@ export default function ProfileMobileBar({ advocate }) {
   const [gateOpen, setGateOpen] = useState(false);
   const [audioOpen, setAudioOpen] = useState(false);
   const authed = role !== null;
-  // What "Call" costs — the lawyer's own audio-call plans.
-  const audioPlans = advocatePlans(advocate.audioPlans);
+  // What "Call" costs — the lawyer's own per-minute audio rate.
+  const audioRate = advocateRate(advocate, 'audio');
 
   const gate = (e) => {
     if (loading) {
@@ -87,7 +87,7 @@ export default function ProfileMobileBar({ advocate }) {
         advocateId={advocateId}
         advocateName={name}
         walletBalance={user?.walletBalance || 0}
-        plans={audioPlans}
+        rate={audioRate}
       />
     </>
   );
