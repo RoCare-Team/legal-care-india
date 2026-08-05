@@ -6,7 +6,7 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById } from '@/lib/advocates';
 
 export const metadata = {
-  title: 'Account Settings | Legal Care India',
+  title: 'Account Settings | Justiceland',
   robots: { index: false, follow: false },
 };
 

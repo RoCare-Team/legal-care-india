@@ -53,14 +53,14 @@ function safeDate(raw) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Generate a Legal Care India ID that isn't already taken (retries on clash). */
+/** Generate a Justiceland ID that isn't already taken (retries on clash). */
 async function uniqueLegalCareId() {
   for (let i = 0; i < 12; i += 1) {
     const id = generateLegalCareId();
     // eslint-disable-next-line no-await-in-loop
     if (!(await Advocate.exists({ legalCareId: id }))) return id;
   }
-  throw new Error('Could not generate a unique Legal Care India ID');
+  throw new Error('Could not generate a unique Justiceland ID');
 }
 
 /**
@@ -132,7 +132,7 @@ export async function POST(request) {
       );
     }
 
-    // SEO slug (need not be unique — the Legal Care India ID disambiguates).
+    // SEO slug (need not be unique — the Justiceland ID disambiguates).
     const slug = slugify(fullName) || 'advocate';
     // Permanent, unique public identifier.
     const legalCareId = await uniqueLegalCareId();

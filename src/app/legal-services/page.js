@@ -10,7 +10,7 @@ import { CATEGORIES } from '@/data/categories';
 export const metadata = createMetadata({
   title: 'Legal Services',
   description:
-    'Explore every legal service on Legal Care India — from Civil and Criminal to Family, Property, Corporate and Tax law — and find the right lawyer.',
+    'Explore every legal service on Justiceland — from Civil and Criminal to Family, Property, Corporate and Tax law — and find the right lawyer.',
   path: '/legal-services',
 });
 

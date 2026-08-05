@@ -44,6 +44,11 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // Normally `.next`. A build wipes and rewrites this directory, so running one
+  // while `next dev` is serving from it leaves the dev server reading files
+  // that no longer exist (ENOENT on the manifests, half-written .tmp chunks).
+  // Setting NEXT_DIST_DIR sends a build somewhere else so the two can coexist.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   // Pin the workspace root to this project (avoids picking up a parent lockfile).
   outputFileTracingRoot: import.meta.dirname,
   images: {

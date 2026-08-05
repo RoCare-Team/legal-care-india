@@ -6,7 +6,7 @@ import { getSession } from '@/lib/auth';
 
 export const metadata = createMetadata({
   title: 'Log In',
-  description: 'Log in to your Legal Care India account.',
+  description: 'Log in to your Justiceland account.',
   path: '/user/login',
 });
 

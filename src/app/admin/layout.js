@@ -6,7 +6,7 @@ import AdminLogoutButton from '@/components/admin/AdminLogoutButton';
 import { getAdminSession } from '@/lib/admin';
 
 export const metadata = {
-  title: 'Admin | Legal Care India',
+  title: 'Admin | Justiceland',
   robots: { index: false, follow: false },
 };
 
@@ -41,7 +41,7 @@ export default async function AdminLayout({ children }) {
               <Scale className="h-4 w-4" aria-hidden="true" />
             </span>
             <span className="font-display text-sm font-bold text-ink">
-              Legal Care <span className="text-primary">Admin</span>
+              Justiceland <span className="text-primary">Admin</span>
             </span>
           </div>
           <AdminLogoutButton />

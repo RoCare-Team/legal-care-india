@@ -5,7 +5,7 @@ import RegisterAside from '@/components/register/RegisterAside';
 
 export const metadata = createMetadata({
   title: 'Lawyer Login',
-  description: 'Sign in to your Legal Care India lawyer dashboard to manage your public profile.',
+  description: 'Sign in to your Justiceland lawyer dashboard to manage your public profile.',
   path: '/login',
 });
 

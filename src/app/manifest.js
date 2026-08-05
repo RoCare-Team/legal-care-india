@@ -15,10 +15,10 @@ export default function manifest() {
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: COLORS.primary,
-    // Uses the scalable SVG icon served by the App Router (src/app/icon.svg),
+    // Uses the brand mark served by the App Router (src/app/icon.png),
     // so there are no missing PNG assets to 404.
     icons: [
-      { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src: '/icon.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
   };
 }

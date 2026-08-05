@@ -14,10 +14,10 @@ import { cn } from '@/utils/cn';
  * @param {import('react').ReactNode} props.children
  */
 const SIZES = {
-  1: 'text-4xl sm:text-5xl lg:text-6xl',
-  2: 'text-3xl sm:text-4xl',
-  3: 'text-2xl sm:text-3xl',
-  4: 'text-xl sm:text-2xl',
+  1: 'text-3xl sm:text-4xl lg:text-5xl',
+  2: 'text-2xl sm:text-3xl',
+  3: 'text-xl sm:text-2xl',
+  4: 'text-lg sm:text-xl',
 };
 
 export default function Heading({
@@ -39,7 +39,7 @@ export default function Heading({
       {eyebrow && (
         <span
           className={cn(
-            'mb-3.5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.06] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary',
+            'mb-2.5 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.06] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary',
             centered && 'mx-auto'
           )}
         >
@@ -61,14 +61,14 @@ export default function Heading({
           headings (404, error pages), where a decorative flourish is noise. */}
       {(eyebrow || subtitle) && (
         <span
-          className={cn('rule-gold mt-4 block h-px w-24 rounded-full', centered && 'mx-auto')}
+          className={cn('rule-gold mt-3 block h-px w-24 rounded-full', centered && 'mx-auto')}
           aria-hidden="true"
         />
       )}
       {subtitle && (
         <p
           className={cn(
-            'mt-3.5 text-base leading-relaxed text-ink/60 sm:text-[17px]',
+            'mt-2.5 text-[15px] leading-relaxed text-ink/60 sm:text-base',
             centered && 'mx-auto max-w-2xl'
           )}
         >

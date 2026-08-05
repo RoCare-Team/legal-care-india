@@ -17,7 +17,7 @@ import AudioConsultModal from './AudioConsultModal';
  */
 export default function ProfileMobileBar({ advocate }) {
   const { contact = {}, name, _id: advocateId } = advocate;
-  const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India.`);
+  const waText = encodeURIComponent(`Hi ${name}, I found your profile on Justiceland.`);
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
   const [audioOpen, setAudioOpen] = useState(false);

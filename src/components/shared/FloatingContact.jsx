@@ -6,7 +6,7 @@ import { CONTACT, SITE } from '@/constants/site';
 
 /**
  * FloatingContact — the WhatsApp and Call buttons pinned to the corner of every
- * public page, for a visitor who wants to reach Legal Care India itself rather
+ * public page, for a visitor who wants to reach Justiceland itself rather
  * than a particular lawyer.
  *
  * Deliberately not shown everywhere:

@@ -31,7 +31,7 @@ export default function AdminSidebar({ adminEmail }) {
           <Scale className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="leading-tight">
-          <p className="font-display text-sm font-bold">Legal Care</p>
+          <p className="font-display text-sm font-bold">Justiceland</p>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">Admin</p>
         </div>
       </div>

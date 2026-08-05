@@ -33,7 +33,7 @@ function genericFaqs(service) {
       a: 'Fees vary by the lawyer and the complexity of your matter. Each lawyer lists their consultation fee on their profile, so you can pick one that suits your budget before reaching out.',
     },
     {
-      q: 'Is contacting a lawyer on Legal Care India free?',
+      q: 'Is contacting a lawyer on Justiceland free?',
       a: 'Yes. Browsing profiles and contacting lawyers is completely free. You only pay the lawyer directly for their consultation or case work.',
     },
   ];

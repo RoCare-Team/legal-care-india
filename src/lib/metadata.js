@@ -25,7 +25,7 @@ export function createMetadata({
   noindex = false,
 } = {}) {
   // Brand first so the site name is always visible in the browser tab (tabs
-  // truncate from the end), e.g. "Legal Care India — <page>".
+  // truncate from the end), e.g. "Justiceland — <page>".
   const pageTitle = title ? `${SITE.name} — ${title}` : `${SITE.name} — ${SITE.tagline}`;
   const canonical = new URL(path, SITE.url).toString();
 
@@ -118,5 +118,5 @@ export const baseMetadata = {
       : {}),
   },
   // Icons are provided via the App Router file convention:
-  // src/app/icon.svg and src/app/apple-icon.svg (auto-linked by Next.js).
+  // src/app/icon.png and src/app/apple-icon.png (auto-linked by Next.js).
 };

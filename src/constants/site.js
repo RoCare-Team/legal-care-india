@@ -3,12 +3,12 @@
  * Consumed by metadata, layout, footer, and SEO helpers.
  */
 export const SITE = {
-  name: 'Legal Care India',
-  shortName: 'Legal Care',
+  name: 'Justiceland',
+  shortName: 'Justiceland',
   tagline: 'Find Verified Lawyers Across India',
   description:
-    'Legal Care India is a trusted lawyer directory platform to discover, compare and connect with verified lawyers across every city and legal service in India.',
-  url: 'https://www.legalcareindia.com',
+    'Justiceland is a trusted lawyer directory platform to discover, compare and connect with verified lawyers across every city and legal service in India.',
+  url: 'https://justiceland.online',
   locale: 'en_IN',
   language: 'en-IN',
   twitterHandle: '@legalcareindia',

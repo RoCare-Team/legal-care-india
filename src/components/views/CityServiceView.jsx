@@ -28,7 +28,7 @@ function buildFaqs(service, city, count) {
   return [
     {
       q: `How do I find a good ${service.name} lawyer in ${city.name}?`,
-      a: `Browse verified ${service.name} lawyers in ${city.name} on Legal Care India, compare their experience, ratings and consultation fees, and contact the right one directly.`,
+      a: `Browse verified ${service.name} lawyers in ${city.name} on Justiceland, compare their experience, ratings and consultation fees, and contact the right one directly.`,
     },
     {
       q: `How many ${service.name} lawyers are in ${city.name}?`,

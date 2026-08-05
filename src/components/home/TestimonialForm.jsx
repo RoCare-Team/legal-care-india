@@ -138,7 +138,7 @@ export default function TestimonialForm() {
                     </FormField>
                   </div>
                   <FormField label="Your review" htmlFor="t-text">
-                    <Textarea id="t-text" value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={600} placeholder="How was your experience using Legal Care India?" />
+                    <Textarea id="t-text" value={text} onChange={(e) => setText(e.target.value)} rows={4} maxLength={600} placeholder="How was your experience using Justiceland?" />
                   </FormField>
 
                   {error && <p className="text-xs text-red-600">{error}</p>}

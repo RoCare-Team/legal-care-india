@@ -9,7 +9,7 @@ import { CONTACT } from '@/constants/site';
 
 export const metadata = createMetadata({
   title: 'Contact Us',
-  description: 'Get in touch with the Legal Care India team for support, partnerships or feedback.',
+  description: 'Get in touch with the Justiceland team for support, partnerships or feedback.',
   path: '/contact',
 });
 
@@ -27,8 +27,8 @@ export default function ContactPage() {
         data={[
           webPageSchema({
             type: 'ContactPage',
-            name: 'Contact Legal Care India',
-            description: 'Get in touch with the Legal Care India team for support, partnerships or feedback.',
+            name: 'Contact Justiceland',
+            description: 'Get in touch with the Justiceland team for support, partnerships or feedback.',
             path: '/contact',
           }),
           breadcrumbSchema([
@@ -39,7 +39,7 @@ export default function ContactPage() {
       />
       <PageHeader
         eyebrow="We're here to help"
-        title="Contact Legal Care India"
+        title="Contact Justiceland"
         subtitle="Questions about your profile, verification or the platform? Send us a message and we'll respond quickly."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Contact' }]}
       />

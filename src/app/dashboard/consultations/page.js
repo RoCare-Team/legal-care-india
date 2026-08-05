@@ -8,7 +8,7 @@ import { getAdvocateConsultations } from '@/lib/consultations';
 import { formatDate } from '@/utils/formatters';
 
 export const metadata = {
-  title: 'Consultations | Legal Care India',
+  title: 'Consultations | Justiceland',
   robots: { index: false, follow: false },
 };
 

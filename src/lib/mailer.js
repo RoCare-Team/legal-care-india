@@ -33,7 +33,7 @@ function getTransporter() {
  */
 export async function sendEmail({ to, subject, html, text }) {
   const transporter = getTransporter();
-  const from = process.env.SMTP_FROM || 'Legal Care India <no-reply@legalcareindia.com>';
+  const from = process.env.SMTP_FROM || 'Justiceland <no-reply@legalcareindia.com>';
 
   if (!transporter) {
     // Dev fallback — no SMTP configured. Log so the flow is still testable.
@@ -51,12 +51,12 @@ export async function sendEmail({ to, subject, html, text }) {
 export function passwordResetEmail({ name, otp }) {
   const safeName = name || 'there';
   return {
-    subject: `${otp} is your Legal Care India password reset code`,
-    text: `Hi ${safeName},\n\nYour password reset OTP is: ${otp}\n\nEnter this code on the reset page to set a new password. It is valid for 10 minutes.\n\nIf you didn't request this, you can safely ignore this email.\n\n— Legal Care India`,
+    subject: `${otp} is your Justiceland password reset code`,
+    text: `Hi ${safeName},\n\nYour password reset OTP is: ${otp}\n\nEnter this code on the reset page to set a new password. It is valid for 10 minutes.\n\nIf you didn't request this, you can safely ignore this email.\n\n— Justiceland`,
     html: `
       <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f172a">
         <div style="background:#1E3A5F;border-radius:14px;padding:20px 24px;color:#fff">
-          <strong style="font-size:18px">Legal Care India</strong>
+          <strong style="font-size:18px">Justiceland</strong>
         </div>
         <h2 style="margin:24px 0 8px">Your password reset code</h2>
         <p style="color:#475569;line-height:1.6">Hi ${safeName}, use the code below to reset your password. It is valid for <strong>10 minutes</strong>.</p>

@@ -17,7 +17,7 @@ import { formatCompactNumber, pluralize } from '@/utils/formatters';
 export const metadata = createMetadata({
   title: 'About Us',
   description:
-    'Legal Care India is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video — at fees each advocate states upfront.',
+    'Justiceland is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video — at fees each advocate states upfront.',
   path: '/about',
 });
 
@@ -73,9 +73,9 @@ export default async function AboutPage() {
         data={[
           webPageSchema({
             type: 'AboutPage',
-            name: 'About Legal Care India',
+            name: 'About Justiceland',
             description:
-              'Legal Care India is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video.',
+              'Justiceland is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video.',
             path: '/about',
           }),
           breadcrumbSchema([
@@ -85,7 +85,7 @@ export default async function AboutPage() {
         ]}
       />
       <PageHeader
-        eyebrow="About Legal Care India"
+        eyebrow="About Justiceland"
         title="Connecting India with trusted lawyers"
         subtitle="A directory where every advocate is verified before they are listed, states their fee upfront, and can be consulted without you giving up your name."
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'About' }]}
@@ -128,7 +128,7 @@ export default async function AboutPage() {
                   a matter like yours, or what they are going to charge you for saying so.
                 </p>
                 <p>
-                  Legal Care India exists to replace that. Advocates register with their Bar
+                  Justiceland exists to replace that. Advocates register with their Bar
                   Council details, their practice areas, the courts they appear in and the
                   languages they work in. Every one of them is reviewed before their profile is
                   published, and every one of them states their consultation fee on the profile
@@ -333,7 +333,7 @@ export default async function AboutPage() {
             </span>
             <div>
               <h2 className="font-display text-lg font-bold text-ink">
-                What Legal Care India does not do
+                What Justiceland does not do
               </h2>
               <ul className="mt-3 space-y-2 text-sm leading-relaxed text-ink/65">
                 <li>

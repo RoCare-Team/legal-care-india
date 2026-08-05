@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { ImageResponse } from 'next/og';
 import { SITE } from '@/constants/site';
 
@@ -9,6 +11,17 @@ import { SITE } from '@/constants/site';
 export const alt = `${SITE.name} — ${SITE.tagline}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+
+/**
+ * The real brand lockup, inlined as a data URL.
+ *
+ * `ImageResponse` renders on the server with no page to resolve relative URLs
+ * against, so a plain `/logo2.png` would not load. Read once at module scope
+ * rather than per request — the file never changes between deploys.
+ */
+const LOGO = `data:image/png;base64,${fs
+  .readFileSync(path.join(process.cwd(), 'public', 'logo2.png'))
+  .toString('base64')}`;
 
 export default function OgImage() {
   return new ImageResponse(
@@ -26,26 +39,41 @@ export default function OgImage() {
           fontFamily: 'sans-serif',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <svg width="88" height="88" viewBox="0 0 64 64">
-            <rect width="64" height="64" rx="14" fill="#ffffff" />
-            <g fill="none" stroke="#1E3A5F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M32 16v32" />
-              <path d="M22 22h20" />
-              <path d="M18 24l-6 12h12z" />
-              <path d="M46 24l-6 12h12z" />
-              <path d="M24 48h16" />
-            </g>
-          </svg>
-          <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: -1 }}>{SITE.name}</span>
+        {/* On a white plate: the lockup is navy and gold, and navy on this
+            navy gradient would be half a logo. The wordmark is part of the
+            artwork, so the name is not set again in type beside it.
+
+            `alignSelf` keeps the plate the width of its contents — a column
+            flex parent would otherwise stretch it the full 1200px. The inner
+            box crops the file's empty margin the same way the Logo component
+            does, so the artwork fills the plate instead of floating in a
+            corner of it. */}
+        <div
+          style={{
+            display: 'flex',
+            alignSelf: 'flex-start',
+            background: '#ffffff',
+            borderRadius: 18,
+            padding: '20px 26px',
+          }}
+        >
+          <div style={{ display: 'flex', position: 'relative', width: 340, height: 80, overflow: 'hidden' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={LOGO}
+              alt=""
+              width={383}
+              height={191}
+              style={{ position: 'absolute', left: -21, top: -51 }}
+            />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', fontSize: 74, fontWeight: 800, lineHeight: 1.1, marginTop: 56 }}>
-         Get Anonymous Legal Help
-        in Just 10 Minutes
+        <div style={{ display: 'flex', fontSize: 62, fontWeight: 800, lineHeight: 1.12, marginTop: 44 }}>
+          Get Anonymous Legal Help in Just 10 Minutes
         </div>
 
-        <div style={{ display: 'flex', fontSize: 32, color: '#D4AF37', marginTop: 28, maxWidth: 900 }}>
+        <div style={{ display: 'flex', fontSize: 28, color: '#D4AF37', marginTop: 26, maxWidth: 940 }}>
           Discover, compare and connect with verified lawyers by legal service, city and experience.
         </div>
       </div>

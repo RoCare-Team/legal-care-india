@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 /**
  * User — a regular client account (not a lawyer).
  *
- * Users can sign up to get a lightweight account on Legal Care India. For now
+ * Users can sign up to get a lightweight account on Justiceland. For now
  * this is just identity + login credentials; richer features (saved lawyers,
  * reviews, enquiries) can hang off this model later.
  */

@@ -41,7 +41,7 @@ const structuredData = {
       name: SITE.name,
       url: SITE.url,
       description: SITE.description,
-      logo: new URL('/icon.svg', SITE.url).toString(),
+      logo: new URL('/logo2.png', SITE.url).toString(),
       email: CONTACT.email,
       sameAs: Object.values(SOCIAL),
       contactPoint: {

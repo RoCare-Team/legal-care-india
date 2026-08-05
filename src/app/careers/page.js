@@ -13,7 +13,7 @@ export default function CareersPage() {
   return (
     <ContentPage
       eyebrow="Company"
-      title="Careers at Legal Care India"
+      title="Careers at Justiceland"
       subtitle="Help us make legal help accessible to everyone in India."
       breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Careers' }]}
     >

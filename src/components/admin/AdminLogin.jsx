@@ -47,7 +47,7 @@ export default function AdminLogin() {
           <ShieldCheck className="h-6 w-6" aria-hidden="true" />
         </span>
         <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Admin Login</h1>
-        <p className="mt-1 text-sm text-ink/55">Sign in to access the Legal Care India admin panel.</p>
+        <p className="mt-1 text-sm text-ink/55">Sign in to access the Justiceland admin panel.</p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <FormField label="Email" htmlFor="admin-email">

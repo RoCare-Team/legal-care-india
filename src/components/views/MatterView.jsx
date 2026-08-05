@@ -120,7 +120,7 @@ export default async function MatterView({ service, subService, subSlug }) {
                 <div className="mt-6 space-y-4 text-[15px] leading-[1.75] text-ink/70">
                   <p>
                     Looking for a <span className="font-medium text-ink">{subService}</span> lawyer?{' '}
-                    {description} Legal Care India connects you with verified lawyers who have
+                    {description} Justiceland connects you with verified lawyers who have
                     listed {subService} as a matter they actually handle — not merely{' '}
                     {service.name} in general. Compare their experience, ratings and consultation
                     fees, then reach out directly. No middlemen, and no commission on your case.

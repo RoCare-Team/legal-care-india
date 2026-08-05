@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
  * ContactMessage — an enquiry sent from the public contact form.
  *
  * Separate from `Enquiry`, which is a client reaching one particular lawyer.
- * This is someone writing to Legal Care India itself — a support question, a
+ * This is someone writing to Justiceland itself — a support question, a
  * complaint, a partnership request — so it belongs to the admin panel rather
  * than to any lawyer's dashboard.
  *

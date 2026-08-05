@@ -144,7 +144,7 @@ export default function ContactMessages({ messages }) {
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink/8 pt-4">
                 <a
                   href={`mailto:${m.email}?subject=${encodeURIComponent(
-                    m.subject ? `Re: ${m.subject}` : 'Re: your message to Legal Care India'
+                    m.subject ? `Re: ${m.subject}` : 'Re: your message to Justiceland'
                   )}`}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"
                 >

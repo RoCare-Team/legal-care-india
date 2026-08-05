@@ -18,7 +18,7 @@ export default function ProfileContactCard({ advocate }) {
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
   // Only keep timing rows that actually have a day + hours filled in.
   const timing = (advocate.timing || []).filter((t) => t && t.day && t.hours);
-  const waText = encodeURIComponent(`Hi ${name}, I found your profile on Legal Care India and would like a consultation.`);
+  const waText = encodeURIComponent(`Hi ${name}, I found your profile on Justiceland and would like a consultation.`);
 
   return (
     <aside id="contact" className="scroll-mt-24 space-y-4 lg:sticky lg:top-24">

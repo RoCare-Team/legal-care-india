@@ -8,7 +8,7 @@ import { getUserConsultations } from '@/lib/consultations';
 
 export const metadata = createMetadata({
   title: 'My Account',
-  description: 'Manage your Legal Care India account.',
+  description: 'Manage your Justiceland account.',
   path: '/account',
 });
 

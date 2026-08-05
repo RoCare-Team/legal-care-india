@@ -67,7 +67,7 @@ export default function ProfileHeader({ advocate }) {
               <Rating value={rating} reviews={reviews} size="sm" />
               {legalCareId && (
                 <span
-                  title="Legal Care India ID"
+                  title="Justiceland ID"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-primary ring-1 ring-primary/10"
                 >
                   <Fingerprint className="h-3.5 w-3.5" aria-hidden="true" />

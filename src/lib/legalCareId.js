@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 /**
- * Legal Care India ID — a permanent, unique public identifier for every
+ * Justiceland ID — a permanent, unique public identifier for every
  * lawyer (e.g. "LCI-8KQ9PM"). Generated with a CSPRNG.
  *
  * The alphabet excludes ambiguous characters (0/O, 1/I/L) so the ID is safe in

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { SearchX, Loader2 } from 'lucide-react';
+import { SearchX, Loader2, Columns2, Columns3 } from 'lucide-react';
 import { Button } from '@/components/ui';
-import AdvocateCard from '@/components/cards/AdvocateCard';
+import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
 import ListingFilters from './ListingFilters';
 import { usePresence } from '@/components/consultation/PresenceProvider';
 import { useLocation } from '@/components/location/LocationProvider';
@@ -64,6 +64,21 @@ function sortByDistance(list) {
 /** How many more cards to reveal each time the visitor scrolls to the end. */
 const BATCH_SIZE = 12;
 
+/**
+ * Where the chosen column count is kept between visits.
+ *
+ * Two or three across is a reading preference, not a property of the search —
+ * someone who wants the denser grid wants it on every page of results and on
+ * their next visit, so it outlives both the filters and the session.
+ */
+const COLUMNS_KEY = 'lci:listing-columns';
+
+/** Grid classes per choice. Below `lg` the width decides, not the toggle. */
+const COLUMN_CLASSES = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+};
+
 export default function AdvocateListing({
   advocates,
   initial = {},
@@ -81,6 +96,25 @@ export default function AdvocateListing({
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   // Watched by an IntersectionObserver — when it scrolls into view, load more.
   const sentinelRef = useRef(null);
+
+  // Three across by default, matching the band on the home page. Read from
+  // storage on mount rather than during render: the server has no localStorage,
+  // and reading it in the initial state would hydrate to different markup.
+  const [columns, setColumns] = useState(3);
+
+  useEffect(() => {
+    const saved = Number(window.localStorage.getItem(COLUMNS_KEY));
+    if (saved === 2 || saved === 3) setColumns(saved);
+  }, []);
+
+  const chooseColumns = (next) => {
+    setColumns(next);
+    try {
+      window.localStorage.setItem(COLUMNS_KEY, String(next));
+    } catch {
+      // Private browsing can refuse to store; the choice still applies here.
+    }
+  };
 
   // Live online ids — the same source the card badges read, so the list and the
   // green dots can never disagree. `null` until the first poll lands.
@@ -276,7 +310,7 @@ export default function AdvocateListing({
             onClearLocation={clearLocation}
           />
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-ink/60">
               <span className="font-semibold text-ink">{results.length}</span>{' '}
               {pluralize(results.length, 'lawyer').replace(`${results.length} `, '')} found
@@ -287,16 +321,49 @@ export default function AdvocateListing({
                   : ''}
               {userLocation && filters.radius ? ` within ${filters.radius} km` : ''}
             </p>
+
+            {/* Two across or three. Hidden below `lg`, where the viewport
+                already decides the count and the control would do nothing. */}
+            <div
+              role="group"
+              aria-label="Cards per row"
+              className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-ink/12 bg-surface p-0.5 shadow-sm lg:flex"
+            >
+              {[
+                { value: 2, icon: Columns2, label: '2 per row' },
+                { value: 3, icon: Columns3, label: '3 per row' },
+              ].map(({ value, icon: Icon, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => chooseColumns(value)}
+                  aria-pressed={columns === value}
+                  title={label}
+                  aria-label={label}
+                  className={`grid h-8 w-8 place-items-center rounded-lg transition-colors ${
+                    columns === value
+                      ? 'bg-primary text-white'
+                      : 'text-ink/45 hover:bg-primary/[0.06] hover:text-primary'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </button>
+              ))}
+            </div>
           </div>
         </>
       )}
 
       {results.length > 0 ? (
         <>
-          {/* Two across at most — these are listing rows, not tiles. */}
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+          {/* The same card the home page shows, at the density the visitor
+              chose — one across on a phone whatever the toggle says. */}
+          <div className={`grid grid-cols-1 gap-4 sm:gap-5 ${COLUMN_CLASSES[columns]}`}>
             {pageResults.map((advocate) => (
-              <AdvocateCard key={advocate.id || advocate._id || advocate.slug} advocate={advocate} />
+              <AdvocateGridCard
+                key={advocate.id || advocate._id || advocate.slug}
+                advocate={advocate}
+              />
             ))}
           </div>
 

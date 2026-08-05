@@ -13,7 +13,7 @@
  */
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse';
-const USER_AGENT = 'LegalCareIndia/1.0 (support@legalcareindia.com)';
+const USER_AGENT = 'Justiceland/1.0 (support@legalcareindia.com)';
 
 /** Shared fetch: identifies us per Nominatim policy and never caches. */
 async function nominatim(url) {

@@ -256,7 +256,7 @@ export async function adminGetAdvocateById(id) {
  * Messages sent through the public contact form, newest first.
  *
  * Distinct from enquiries: an enquiry goes to one lawyer and lives in that
- * lawyer's dashboard, whereas these are written to Legal Care India itself and
+ * lawyer's dashboard, whereas these are written to Justiceland itself and
  * only the admin ever sees them.
  */
 export async function adminGetContactMessages() {

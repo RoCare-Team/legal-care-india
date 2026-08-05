@@ -34,7 +34,7 @@ export async function generateStaticParams() {
 
 /**
  * Resolve a lawyer from the route param. Primary lookup is by the permanent
- * Legal Care India ID embedded in the URL; a bare slug is a legacy URL that we
+ * Justiceland ID embedded in the URL; a bare slug is a legacy URL that we
  * look up best-effort so we can 308-redirect it to the canonical path.
  */
 async function resolveAdvocate(param) {

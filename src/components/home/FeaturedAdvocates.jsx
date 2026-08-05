@@ -1,6 +1,6 @@
 import { UserPlus } from 'lucide-react';
 import { Section, Button } from '@/components/ui';
-import FeaturedCarousel from './FeaturedCarousel';
+import AdvocateGrid from './AdvocateGrid';
 import { getAllAdvocates } from '@/lib/advocates';
 
 /**
@@ -22,22 +22,20 @@ export default async function FeaturedAdvocates({ city }) {
 
   return (
     <Section spacing="sm" className="bg-surface/55 pt-8 sm:pt-10">
+      {/* A grid rather than a slider: three lawyers side by side can be
+          compared, which is what a directory is for, and nothing is hidden
+          behind an arrow the visitor has to discover. */}
       {advocates.length > 0 ? (
-        <>
-          {/* The heading, the way out to the full listing and the row's arrows
-              are all laid out by the carousel on one line — the button and the
-              arrows used to sit on two rows with dead space between them. */}
-          <FeaturedCarousel
-            advocates={advocates}
-            eyebrow="Advocate listing"
-            title={
-              city ? `Verified lawyers in ${city.name}` : 'Verified lawyers on Legal Care India'
-            }
-            note="newest first"
-            actionHref="/lawyers"
-            actionLabel="Browse all lawyers"
-          />
-        </>
+        <AdvocateGrid
+          advocates={advocates}
+          eyebrow="Advocate listing"
+          title={
+            city ? `Verified lawyers in ${city.name}` : 'Verified lawyers on Justiceland'
+          }
+          note="newest first"
+          actionHref="/lawyers"
+          actionLabel="Find all lawyers"
+        />
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">
           <UserPlus className="h-10 w-10 text-primary/60" aria-hidden="true" />

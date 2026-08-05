@@ -17,10 +17,25 @@ import { useIsOnline } from './PresenceProvider';
  *
  * @param {object} props
  * @param {string} props.id  lawyer _id
- * @param {'card'|'profile'} [props.variant]
+ * @param {'card'|'profile'|'dot'} [props.variant]
  */
 export default function PresenceIndicator({ id, variant = 'card' }) {
   const online = useIsOnline(id, false);
+
+  // A bare status dot, for pinning to the corner of a portrait. The white ring
+  // is what keeps it legible over a photograph rather than only over the grey
+  // placeholder — without it a green dot on a green shirt disappears.
+  if (variant === 'dot') {
+    return (
+      <span
+        title={online ? 'Online now' : 'Offline'}
+        aria-label={online ? 'Online now' : 'Offline'}
+        className={`block h-4 w-4 rounded-full ring-2 ring-white ${
+          online ? 'bg-emerald-500' : 'bg-slate-300'
+        }`}
+      />
+    );
+  }
 
   if (variant === 'profile') {
     return (

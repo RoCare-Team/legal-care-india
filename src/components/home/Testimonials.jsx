@@ -51,7 +51,7 @@ export default async function Testimonials() {
             <MessageSquarePlus className="h-10 w-10 text-primary/60" aria-hidden="true" />
             <h3 className="mt-4 font-semibold text-ink">No reviews yet</h3>
             <p className="mt-1 max-w-sm text-sm text-ink/55">
-              Be the first to share your experience using Legal Care India.
+              Be the first to share your experience using Justiceland.
             </p>
           </div>
         )}

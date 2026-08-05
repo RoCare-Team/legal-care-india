@@ -90,7 +90,7 @@ export default function LoginForm() {
       </div>
 
       <p className="mt-6 text-center text-sm text-ink/60">
-        New to Legal Care India?{' '}
+        New to Justiceland?{' '}
         <Link href="/register" className="font-medium text-primary hover:underline">
           Register as a Lawyer
         </Link>

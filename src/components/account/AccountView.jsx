@@ -543,7 +543,7 @@ function ProfileView({ user }) {
         <Avatar src={user.photo} name={user.name} size="lg" />
         <div className="min-w-0">
           <h2 className="font-display text-2xl font-semibold text-ink">{user.name}</h2>
-          <p className="text-sm text-ink/55">Your Legal Care India account</p>
+          <p className="text-sm text-ink/55">Your Justiceland account</p>
         </div>
       </div>
 

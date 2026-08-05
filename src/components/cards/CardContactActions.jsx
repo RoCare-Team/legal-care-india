@@ -22,16 +22,22 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   signed-in client's "Chat" opens the paid consultation booking (same as the
  *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
  * @param {number} [props.audioRate]  the lawyer's ₹/min for audio calls.
- * @param {'default'|'compact'|'mobile'} [props.variant='default']
+ * @param {boolean} [props.iconOnly=false]  drop the labels and render each
+ *   action as a square. The three words cost a row of their own on a narrow
+ *   grid card; the icons alone are understood, and the label stays on each
+ *   button as its accessible name.
+ * @param {'default'|'compact'|'quiet'|'mobile'} [props.variant='default']
  *   'compact' for the condensed rail card, whose whole row is about the height
  *   of one full-size button — at the default size the three actions dominated a
- *   card meant to be a summary. 'mobile' is the taller, 44px tap target the
- *   phone listing card uses, with Video on a grey fill rather than a tint so
- *   the three read as three distinct weights at a glance.
+ *   card meant to be a summary. 'quiet' is that same size with all three as
+ *   equal outlines, for a card that carries its own primary CTA below them.
+ *   'mobile' is the taller, 44px tap target the phone listing card uses, with
+ *   Video on a grey fill rather than a tint so the three read as three distinct
+ *   weights at a glance.
  */
 export default function CardContactActions({
   contact = {}, name, advocateId, chatRate = 0, videoRate = 0, audioRate = 0,
-  variant = 'default',
+  variant = 'default', iconOnly = false,
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -124,6 +130,25 @@ export default function CardContactActions({
       video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
       chat: 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow',
     },
+    // Three outlined buttons on a white face — for a card that carries its own
+    // filled CTA beside them. Equal and quiet on purpose: the three are ways of
+    // reaching the same person, so none of them outranks another, and none of
+    // them should outrank the profile link they sit next to.
+    quiet: {
+      base: 'inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-1.5 text-[12px] font-semibold text-slate-700 transition-colors duration-200 hover:border-primary/35 hover:bg-primary/[0.04] hover:text-primary',
+      icon: 'h-3.5 w-3.5 shrink-0',
+      call: '',
+      chat: '',
+      video: '',
+      // One hue per channel, on the icon only. The buttons stay white so the
+      // three read as one group beside the profile link, but the colours are
+      // the ones the rest of the site already uses for these actions — green
+      // for a phone call, navy for chat, the brand gold for video — so each is
+      // recognised before its label is read.
+      callIcon: 'text-emerald-600',
+      chatIcon: 'text-primary',
+      videoIcon: 'text-[#B08D2A]',
+    },
     // 44px tall — the minimum comfortable tap target, so the row never needs a
     // second attempt on a 360px phone.
     mobile: {
@@ -135,7 +160,14 @@ export default function CardContactActions({
     },
   };
   const set = SETS[variant] || SETS.default;
-  const { base, icon } = set;
+  // Icon-only actions are squares rather than stretched pills, so the three
+  // read as a tidy group beside whatever shares their row.
+  // A minimum square, but free to stretch: the caller decides how much of
+  // the row the three share, so they can be widened without this file caring.
+  const base = iconOnly ? `${set.base} min-w-8 px-0` : set.base;
+  const { icon } = set;
+  const iconFor = (key) => `${icon} ${set[`${key}Icon`] || ''}`;
+  const label = (text) => (iconOnly ? null : text);
 
   return (
     <>
@@ -143,10 +175,11 @@ export default function CardContactActions({
         href={`tel:${contact?.phone || ''}`}
         onClick={onCall}
         aria-label={`Call ${name}`}
+        title="Audio call"
         className={`${base} ${set.call}`}
       >
-        <Phone className={icon} />
-        Call
+        <Phone className={iconFor('call')} />
+        {label('Call')}
       </a>
 
       <a
@@ -155,19 +188,21 @@ export default function CardContactActions({
         rel="noopener noreferrer"
         onClick={onChat}
         aria-label={`Chat with ${name}`}
+        title="Live chat"
         className={`${base} ${set.chat}`}
       >
-        <MessageSquare className={icon} />
-        Chat
+        <MessageSquare className={iconFor('chat')} />
+        {label('Chat')}
       </a>
       <button
         type="button"
         onClick={onVideo}
         aria-label={`Video call ${name}`}
+        title="Video call"
         className={`${base} ${set.video}`}
       >
-        <Video className={icon} />
-        Video
+        <Video className={iconFor('video')} />
+        {label('Video')}
       </button>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />

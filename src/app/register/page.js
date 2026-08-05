@@ -8,7 +8,7 @@ import { getAllCities } from '@/lib/cities';
 export const metadata = createMetadata({
   title: 'Register as a Lawyer',
   description:
-    'Create your free verified lawyer profile on Legal Care India and start receiving direct client enquiries by call, WhatsApp and email.',
+    'Create your free verified lawyer profile on Justiceland and start receiving direct client enquiries by call, WhatsApp and email.',
   path: '/register',
 });
 

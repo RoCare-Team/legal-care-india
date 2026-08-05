@@ -10,7 +10,7 @@ import { getAllBlogs } from '@/lib/blogs';
 export const metadata = createMetadata({
   title: 'Legal Blogs & Guides',
   description:
-    'Practical legal guides and articles from Legal Care India — understand your rights, processes and how to work with a lawyer.',
+    'Practical legal guides and articles from Justiceland — understand your rights, processes and how to work with a lawyer.',
   path: '/blogs',
 });
 

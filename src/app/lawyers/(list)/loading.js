@@ -44,34 +44,36 @@ export default function Loading() {
 
         <Skeleton className="mt-6 h-4 w-32" />
 
-        {/* Card grid — six placeholders shaped like AdvocateCard. */}
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {/* Card grid — six placeholders shaped like AdvocateGridCard, at the
+            three-across default. A skeleton that does not match the card it
+            stands in for makes the page jump when the real one arrives. */}
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="overflow-hidden rounded-2xl border border-ink/8 bg-surface shadow-card"
-            >
-              <div className="h-16 bg-gradient-to-br from-primary/90 to-primary-dark" />
-              <div className="p-5">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="h-16 w-16 shrink-0 rounded-xl" />
-                  <div className="min-w-0 flex-1">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="mt-2.5 h-3 w-40 max-w-full" />
-                    <Skeleton className="mt-2.5 h-3 w-24" />
-                  </div>
+            <div key={i} className="rounded-2xl border border-ink/8 bg-surface p-4 shadow-card sm:p-5">
+              <div className="flex items-start gap-3.5">
+                <Skeleton className="h-[68px] w-[68px] shrink-0 rounded-full sm:h-20 sm:w-20" />
+                <div className="min-w-0 flex-1">
+                  <Skeleton className="h-4 w-32 max-w-full" />
+                  <Skeleton className="mt-2 h-3 w-40 max-w-full" />
+                  <Skeleton className="mt-2.5 h-3 w-28" />
                 </div>
-                <Skeleton className="mt-4 h-6 w-28 rounded-full" />
-                <div className="mt-4 flex gap-3">
-                  <Skeleton className="h-3 w-28" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-ink/8 pt-4">
-                  <Skeleton className="h-9 rounded-xl" />
-                  <Skeleton className="h-9 rounded-xl" />
-                  <Skeleton className="h-9 rounded-xl" />
-                </div>
-                <Skeleton className="mt-3 h-11 rounded-xl" />
+                <Skeleton className="h-9 w-20 shrink-0 rounded-lg" />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+              <div className="mt-3 flex gap-1.5">
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+              <div className="mt-4 flex items-center gap-1.5 border-t border-ink/8 pt-4">
+                <Skeleton className="h-9 flex-1 rounded-xl" />
+                <Skeleton className="h-9 flex-1 rounded-xl" />
+                <Skeleton className="h-9 flex-1 rounded-xl" />
+                <Skeleton className="h-9 w-24 shrink-0 rounded-xl" />
               </div>
             </div>
           ))}

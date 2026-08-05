@@ -18,7 +18,7 @@ export default function RegisterAside() {
         aria-hidden="true"
       />
       <h2 className="relative font-display text-2xl font-semibold">
-        Grow your practice with Legal Care India
+        Grow your practice with Justiceland
       </h2>
       <p className="relative mt-2 text-sm text-white/80">
         Join thousands of lawyers reaching clients who need them — build a premium public profile

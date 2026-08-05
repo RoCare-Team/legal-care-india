@@ -288,7 +288,7 @@ export default function AudioConsultModal({
                 for {session.minutes} minute{session.minutes === 1 ? '' : 's'}.
               </p>
             ) : (
-              <p className="mt-1 text-sm text-ink/55">Thanks for using Legal Care India.</p>
+              <p className="mt-1 text-sm text-ink/55">Thanks for using Justiceland.</p>
             )}
 
             <button type="button" onClick={onClose} className="mt-6 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-dark">

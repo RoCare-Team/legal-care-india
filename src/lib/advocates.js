@@ -68,7 +68,7 @@ const AWARDS_POOL = [
   { title: 'Best Advocate of the Year', org: 'District Bar Association', year: 2022 },
   { title: 'Pro Bono Excellence Award', org: 'State Legal Services Authority', year: 2021 },
   { title: 'Young Achiever in Law', org: 'Legal Era Awards', year: 2019 },
-  { title: 'Client Choice Award', org: 'Legal Care India', year: 2023 },
+  { title: 'Client Choice Award', org: 'Justiceland', year: 2023 },
 ];
 
 const CERTIFICATES_POOL = [
@@ -208,7 +208,7 @@ export function buildAdvocateProfile(a) {
     contact: a.contact || {
       phone,
       whatsapp: phone.replace(/[^0-9]/g, ''),
-      email: `${a.slug.replace(/-/g, '.')}@legalcareindia.com`,
+      email: `${a.slug.replace(/-/g, '.')}@justiceland.online`,
     },
     social: a.social || {
       linkedin: `https://linkedin.com/in/${a.slug}`,
@@ -277,7 +277,7 @@ const _getAdvocateBySlug = unstable_cache(
 
 /**
  * Full profile for a legacy slug lookup, or null. Only used to redirect old
- * slug-only URLs — the primary key is now the Legal Care India ID.
+ * slug-only URLs — the primary key is now the Justiceland ID.
  */
 export async function getAdvocateBySlug(slug) {
   try {
@@ -299,7 +299,7 @@ const _getAdvocateByLegalCareId = unstable_cache(
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** Full profile for a permanent Legal Care India ID, or null. */
+/** Full profile for a permanent Justiceland ID, or null. */
 export async function getAdvocateByLegalCareId(legalCareId) {
   try {
     return await _getAdvocateByLegalCareId(legalCareId);

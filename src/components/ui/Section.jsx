@@ -15,15 +15,18 @@ import Container from './Container';
  * @param {import('react').ReactNode} props.children
  */
 /**
- * Vertical rhythm. Two stacked sections each contribute their own padding, so
- * the visible gap between them is roughly double these numbers — hence the
- * tighter values: at py-20 the page read as disconnected bands with dead space
- * between them.
+ * Vertical rhythm — the single lever for how tall every page on the site is.
+ *
+ * Two stacked sections each contribute their own padding, so the visible gap
+ * between them is roughly double these numbers. Tightened again from
+ * py-10/14/20: at those values a visitor scrolled past more empty space than
+ * content, and a band that is generously padded on a 27-inch monitor is simply
+ * a long scroll on a laptop.
  */
 const SPACING = {
-  sm: 'py-8 sm:py-10',
-  default: 'py-10 sm:py-14',
-  lg: 'py-14 sm:py-20',
+  sm: 'py-6 sm:py-8',
+  default: 'py-7 sm:py-10',
+  lg: 'py-9 sm:py-14',
 };
 
 export default function Section({

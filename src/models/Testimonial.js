@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 /**
- * Testimonial — a public review of the Legal Care India platform itself
+ * Testimonial — a public review of the Justiceland platform itself
  * (not tied to a single lawyer). Shown in the homepage "Client Stories".
  */
 const TestimonialSchema = new mongoose.Schema(

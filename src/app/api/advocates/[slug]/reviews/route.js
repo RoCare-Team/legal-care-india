@@ -10,7 +10,7 @@ import { ADVOCATES_TAG } from '@/lib/advocates';
  * rating. Anyone can submit; basic validation guards against junk input.
  */
 export async function POST(request, { params }) {
-  // The route segment carries the lawyer's Legal Care India ID.
+  // The route segment carries the lawyer's Justiceland ID.
   const { slug: legalCareId } = await params;
 
   let body;

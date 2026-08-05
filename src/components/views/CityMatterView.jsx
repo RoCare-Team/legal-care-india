@@ -104,7 +104,7 @@ export default async function CityMatterView({ city, service, subService, subSlu
               </div>
               <p className="mt-5 text-[15px] leading-relaxed text-ink/70">
                 Looking for a <span className="font-medium text-ink">{subService}</span> lawyer in{' '}
-                {city.name}? Legal Care India connects you with verified lawyers in {city.name},{' '}
+                {city.name}? Justiceland connects you with verified lawyers in {city.name},{' '}
                 {city.state} who specialise in {subService} matters under {service.name}. Compare
                 their experience, ratings and consultation fees, then reach out directly.
               </p>

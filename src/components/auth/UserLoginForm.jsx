@@ -87,7 +87,7 @@ export default function UserLoginForm() {
       </div>
 
       <p className="mt-6 text-center text-sm text-ink/60">
-        New to Legal Care India?{' '}
+        New to Justiceland?{' '}
         <Link href="/user/signup" className="font-medium text-primary hover:underline">
           Create an account
         </Link>

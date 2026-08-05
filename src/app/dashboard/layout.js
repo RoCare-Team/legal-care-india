@@ -7,7 +7,7 @@ import { getAdvocateById } from '@/lib/advocates';
 import ExitImpersonation from '@/components/admin/ExitImpersonation';
 
 export const metadata = {
-  title: 'Lawyer Dashboard | Legal Care India',
+  title: 'Lawyer Dashboard | Justiceland',
   robots: { index: false, follow: false },
 };
 

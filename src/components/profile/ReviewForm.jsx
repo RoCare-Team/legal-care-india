@@ -10,7 +10,7 @@ import { Button, FormField, Input, Textarea } from '@/components/ui';
  * On success it refreshes the server data so the new review appears.
  *
  * @param {object} props
- * @param {string} props.legalCareId  lawyer's Legal Care India ID (API target)
+ * @param {string} props.legalCareId  lawyer's Justiceland ID (API target)
  */
 export default function ReviewForm({ legalCareId }) {
   const router = useRouter();
