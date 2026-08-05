@@ -15,65 +15,83 @@ import { useDisclosure } from '@/hooks/useDisclosure';
 /**
  * Header — top bar with logo, desktop nav, CTAs and a mobile menu trigger.
  *
- * On the homepage it floats transparently over the dark hero (fixed, so the
- * hero image runs up behind it) and switches to a solid light bar the moment
- * the page is scrolled. Every other route keeps the plain sticky light bar,
- * where transparent-white text would be invisible.
+ * Everything from the logo to the account actions lives on one white surface.
+ * On the homepage that surface is a floating rounded bar over the dark hero
+ * (fixed, so the image runs up behind it); scrolled, and on every other route,
+ * it becomes the full-width bar pinned to the top.
+ *
+ * One white surface either way, so nothing inside it needs a light-on-dark
+ * variant. The bar used to be transparent over the hero, which left the nav,
+ * the location and the account buttons as loose pale words competing with a
+ * photograph — legible only where the image happened to be dark.
  */
 export default function Header() {
   const scrollY = useScrollPosition();
   const menu = useDisclosure(false);
   const scrolled = scrollY > 8;
 
-  // Only the homepage has a dark hero for the bar to sit on.
+  // Only the homepage has a dark hero for the bar to float over.
   const overlay = usePathname() === '/';
-  // Light text/logo only while actually floating over that hero.
-  const onDark = overlay && !scrolled;
+  // Floating capsule while actually over that hero; a plain bar once scrolled.
+  const floating = overlay && !scrolled;
 
   return (
     <>
     <header
       className={cn(
-        'z-40 w-full border-b transition-colors duration-200',
+        'z-40 w-full transition-all duration-200',
         overlay ? 'fixed top-0 left-0' : 'sticky top-0',
-        onDark
-          ? 'border-transparent bg-transparent'
+        floating
+          // The gap above the capsule is tighter on a phone so the bar still
+          // ends at the 72px the hero's own top padding is measured against —
+          // its first line would otherwise sit a few pixels under the bar.
+          ? 'border-b border-transparent bg-transparent py-2 sm:py-3'
           : scrolled
-            ? 'border-ink/10 bg-surface/95 backdrop-blur-md shadow-sm'
-            : 'border-ink/8 bg-surface'
+            ? 'border-b border-ink/10 bg-surface/95 shadow-sm backdrop-blur-md'
+            : 'border-b border-ink/8 bg-surface'
       )}
     >
-      {/* The same Container every page uses, so the logo lines up with the
-          headings below it — the bar was 86rem wide against the content's 80rem,
-          which left it hanging 48px further out on each side.
-
-          Roomier than the usual 64px bar: with nav links, a location, a wallet
-          and two account actions all on one line, the extra height and the gaps
-          are what keep it from reading as a wall of controls. */}
-      <Container className="flex h-[72px] items-center gap-4 lg:gap-6">
-        <Logo onDark={onDark} />
-
-        <Navbar className="hidden flex-1 justify-center lg:flex" onDark={onDark} />
-
-        {/* Everything the visitor acts on sits together on the right: where
-            they are, their wallet, their account. */}
-        <div className="hidden items-center gap-2.5 lg:flex">
-          <LocationPicker onDark={onDark} />
-          <span className="h-6 w-px bg-current opacity-10" aria-hidden="true" />
-          <HeaderAuth onDark={onDark} />
-        </div>
-
-        <button
-          type="button"
-          onClick={menu.open}
-          aria-label="Open menu"
+      {/* The page's own gutter, so the logo lines up with the headings below
+          it. Widening the bar to stop the last control overflowing worked, but
+          the extra 128px became slack the centred nav split evenly on either
+          side — the fix for a crowded bar had left it looking gappy instead.
+          Tightening the gaps and the capsule inset bought back more room than
+          the widening did, so the width goes back. */}
+      <Container>
+        <div
           className={cn(
-            'ml-auto grid h-10 w-10 place-items-center rounded-lg lg:hidden',
-            onDark ? 'text-white hover:bg-white/10' : 'text-ink/70 hover:bg-ink/5'
+            'flex items-center gap-2 transition-all duration-200 lg:gap-3',
+            floating
+              // `rounded-full` curves away half the bar's height at each end,
+              // so the padding has to clear that curve — at px-4 the Log out
+              // button's corner sat outside the white and hung over the hero.
+              // Not `overflow-hidden`: the location and account menus drop out
+              // of this box, and clipping would cut them off at the bar.
+              ? 'h-[64px] rounded-full bg-white px-4 shadow-[0_8px_28px_-10px_rgba(15,23,42,0.45)] ring-1 ring-ink/5 sm:px-6'
+              : 'h-[72px]'
           )}
         >
-          <Menu className="h-6 w-6" />
-        </button>
+          <Logo />
+
+          <Navbar className="hidden min-w-0 flex-1 justify-center lg:flex" />
+
+          {/* Everything the visitor acts on sits together on the right: where
+              they are, and their account. */}
+          <div className="hidden items-center gap-2.5 lg:flex">
+            <LocationPicker />
+            <span className="h-6 w-px bg-ink/10" aria-hidden="true" />
+            <HeaderAuth />
+          </div>
+
+          <button
+            type="button"
+            onClick={menu.open}
+            aria-label="Open menu"
+            className="ml-auto grid h-10 w-10 place-items-center rounded-lg text-ink/70 hover:bg-ink/5 lg:hidden"
+          >
+            <Menu className="h-6 w-6" />
+          </button>
+        </div>
       </Container>
     </header>
 

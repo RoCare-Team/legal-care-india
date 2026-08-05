@@ -6,16 +6,23 @@ import { cn } from '@/utils/cn';
 import { MAIN_NAV } from '@/constants/navigation';
 
 /**
- * Navbar — desktop primary navigation links with active-route highlighting.
+ * Navbar — desktop primary navigation.
+ *
+ * The current page is a filled pill rather than a different shade of text, so
+ * "where am I" is a shape and not a colour — the only cue a colour-blind
+ * visitor could rely on before.
+ *
+ * No container of its own: the header bar is already a white surface, and a
+ * white capsule inside a white bar is an edge nobody can see.
  *
  * @param {object} props
  * @param {string} [props.className]
  */
-export default function Navbar({ className, onDark = false }) {
+export default function Navbar({ className }) {
   const pathname = usePathname();
 
   return (
-    <nav className={cn('items-center gap-1', className)} aria-label="Primary">
+    <nav aria-label="Primary" className={cn('items-center gap-0.5', className)}>
       {MAIN_NAV.map(({ label, href }) => {
         const active =
           href === '/' ? pathname === '/' : pathname.startsWith(href.split('#')[0]);
@@ -24,15 +31,12 @@ export default function Navbar({ className, onDark = false }) {
           <Link
             key={href}
             href={href}
+            aria-current={active ? 'page' : undefined}
             className={cn(
-              'whitespace-nowrap rounded-lg px-3 py-2 text-[15px] font-medium transition-colors xl:px-3.5',
-              onDark
-                ? active
-                  ? 'text-accent'
-                  : 'text-white/75 hover:text-white hover:bg-white/10'
-                : active
-                  ? 'text-primary'
-                  : 'text-ink/70 hover:text-ink hover:bg-ink/5'
+              'whitespace-nowrap rounded-full px-3 py-1.5 text-[14.5px] transition-colors xl:px-3.5',
+              active
+                ? 'bg-primary/[0.09] font-bold text-primary'
+                : 'font-medium text-ink/65 hover:bg-ink/[0.04] hover:text-ink'
             )}
           >
             {label}

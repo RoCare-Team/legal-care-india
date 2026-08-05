@@ -144,6 +144,16 @@ async function tuneSenders(pc) {
 // the other side closing their laptop or losing signal mid-call.
 const RECONNECT_GRACE_MS = 15000;
 
+// How long the handshake gets before we call it a failure.
+//
+// A browser will keep trying candidate pairs for the better part of a minute
+// before it reports 'failed' on its own — and when there is no route between
+// the two networks, every second of that is spent on a call that was never
+// going to connect. Both sides sat on "Connecting…" with nothing to read.
+// Twenty seconds is far longer than a working handshake needs and short
+// enough to be an answer rather than a wait.
+const CONNECT_TIMEOUT_MS = 20000;
+
 /** Human wording for why a call stopped. */
 function endMessage(reason, endedBy, viewerRole, hasTurn = true) {
   if (reason === 'rejected') return 'The lawyer declined the video call.';
@@ -203,6 +213,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
   const phaseRef = useRef('idle');
   const hasTurnRef = useRef(true);
   const dropTimerRef = useRef(null);
+  const connectTimerRef = useRef(null);
 
   phaseRef.current = phase;
   const isClient = viewerRole === 'user';
@@ -227,6 +238,10 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     if (dropTimerRef.current) {
       clearTimeout(dropTimerRef.current);
       dropTimerRef.current = null;
+    }
+    if (connectTimerRef.current) {
+      clearTimeout(connectTimerRef.current);
+      connectTimerRef.current = null;
     }
     if (pcRef.current) {
       pcRef.current.onicecandidate = null;
@@ -297,6 +312,11 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       finish('failed');
     };
 
+    // The handshake gets a bounded amount of time, whatever the browser thinks.
+    connectTimerRef.current = setTimeout(() => {
+      if (pc.connectionState !== 'connected') giveUp();
+    }, CONNECT_TIMEOUT_MS);
+
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
 
@@ -305,6 +325,10 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
         if (dropTimerRef.current) {
           clearTimeout(dropTimerRef.current);
           dropTimerRef.current = null;
+        }
+        if (connectTimerRef.current) {
+          clearTimeout(connectTimerRef.current);
+          connectTimerRef.current = null;
         }
         setReconnecting(false);
         setPhase('connected');

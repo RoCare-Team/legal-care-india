@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, LogOut, UserRound, ChevronDown, Scale } from 'lucide-react';
+import { LayoutDashboard, LogOut, UserRound, ChevronDown, Scale, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useDisclosure } from '@/hooks/useDisclosure';
@@ -18,13 +18,18 @@ const GHOST_ON_DARK = 'text-white hover:bg-white/10 hover:text-white';
  * account link + log out.
  */
 export default function HeaderAuth({ onDark = false }) {
-  const { role, loading } = useAuth();
+  const { role, user } = useAuth();
 
   // On the dark header: ghost buttons get light text, the solid CTA turns gold.
   const ghostClass = onDark ? GHOST_ON_DARK : undefined;
   const ctaVariant = onDark ? 'accent' : 'primary';
 
-  if (loading) return <div className="h-9 w-40" aria-hidden="true" />;
+  // No blank placeholder while the session is being read. It used to render an
+  // empty 160px box until /api/auth/me came back, which on a real connection
+  // meant the account buttons appeared a beat after the rest of the bar — they
+  // looked like they were waiting for something. Signed out is both the safe
+  // assumption and the common one, and `useAuth` corrects it immediately for
+  // anyone this browser has seen signed in before.
 
   if (role === 'advocate') {
     return (
@@ -38,11 +43,22 @@ export default function HeaderAuth({ onDark = false }) {
   }
 
   if (role === 'user') {
-    // The wallet balance used to sit here as a pill; with a location control on
-    // the bar too it left "My Account" wrapping onto two lines. The balance
-    // lives on the account page, one click away.
     return (
       <div className="flex items-center gap-2">
+        {/* The balance, where money belongs — in sight before a consultation is
+            started, not one click away on the account page. It links to the
+            wallet tab, so "I need to top up" is a single tap from anywhere. */}
+        <Link
+          href="/account?tab=wallet"
+          title="Wallet balance — tap to add money"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1.5 text-[13px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200 transition-colors hover:bg-emerald-100"
+        >
+          <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="tabular-nums">
+            ₹{Number(user?.walletBalance || 0).toLocaleString('en-IN')}
+          </span>
+          <span className="sr-only">wallet balance</span>
+        </Link>
         <Button href="/account" variant="ghost" size="sm" className={ghostClass} leftIcon={<UserRound className="h-4 w-4" />}>
           My Account
         </Button>

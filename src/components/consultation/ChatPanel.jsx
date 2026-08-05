@@ -6,23 +6,36 @@ import useVideoCall from '@/hooks/useVideoCall';
 import VideoCallOverlay from './VideoCallOverlay';
 import { chargeForDuration } from '@/constants/callRates';
 
-/** MM:SS from milliseconds. */
+/** MM:SS from milliseconds (HH:MM:SS once an hour is passed). */
 function fmt(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
-  const m = String(Math.floor(total / 60)).padStart(2, '0');
+  const h = Math.floor(total / 3600);
+  const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
   const s = String(total % 60).padStart(2, '0');
-  return `${m}:${s}`;
+  return h ? `${h}:${m}:${s}` : `${m}:${s}`;
+}
+
+/** "7:04 pm" — the time of day a message was sent. */
+function messageTime(at) {
+  const d = at ? new Date(at) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
 }
 
 /**
  * ChatPanel — the shared live chat used by both the user and the lawyer once
- * a consultation connects. A live countdown to `session.endsAt` sits in the
- * header; when it hits zero (or the status leaves 'active') the input locks.
+ * a consultation connects.
+ *
+ * The header clock counts UP from the moment the session connected, not down
+ * to `endsAt`. Sessions are billed by the minute, so how long this has run is
+ * the number both sides care about — and next to the running total it is the
+ * number that explains it. `endsAt` is still the ceiling the wallet can cover:
+ * when it is reached (or the status leaves 'active') the input locks.
  *
  * The video call lives here too, so both sides of the app get it from the one
  * place: the client rings from the header button, the lawyer's copy of this
  * panel picks the ring up off the ordinary chat poll. The call is bounded by
- * the same countdown — it costs nothing extra and dies when the session does.
+ * the same session — it costs nothing extra and dies when the session does.
  *
  * @param {object} props
  * @param {object} props.session       serialized session (status, messages, endsAt…)
@@ -40,6 +53,7 @@ export default function ChatPanel({
 }) {
   const [text, setText] = useState('');
   const [remaining, setRemaining] = useState(session.remainingMs ?? 0);
+  const [elapsed, setElapsed] = useState(0);
   // Optimistic messages: rendered instantly on send, dropped once the server
   // echoes them back — so the chat feels immediate instead of waiting on a poll.
   const [pending, setPending] = useState([]);
@@ -98,16 +112,21 @@ export default function ChatPanel({
   // What actually renders: confirmed server messages + not-yet-confirmed ones.
   const allMessages = [...(session.messages || []), ...pending];
 
-  // Local 1s countdown while the session is active. Once it ends (time up or a
-  // hang-up), freeze the timer instead of letting it keep ticking.
+  // One 1s tick drives both numbers: how long this has run (shown) and how
+  // much of the wallet ceiling is left (which decides when the input locks).
+  // Once the session ends, freeze them instead of letting them keep moving.
   useEffect(() => {
-    if (!session.endsAt) return undefined;
-    const end = new Date(session.endsAt).getTime();
-    setRemaining(Math.max(0, end - Date.now()));
+    const end = session.endsAt ? new Date(session.endsAt).getTime() : null;
+    const start = session.startedAt ? new Date(session.startedAt).getTime() : null;
+    const tick = () => {
+      if (end) setRemaining(Math.max(0, end - Date.now()));
+      if (start) setElapsed(Math.max(0, Date.now() - start));
+    };
+    tick();
     if (session.status !== 'active') return undefined; // frozen when not active
-    const t = setInterval(() => setRemaining(Math.max(0, end - Date.now())), 1000);
+    const t = setInterval(tick, 1000);
     return () => clearInterval(t);
-  }, [session.endsAt, session.status]);
+  }, [session.endsAt, session.startedAt, session.status]);
 
   // Auto-scroll to the newest message (including optimistic ones).
   useEffect(() => {
@@ -188,14 +207,20 @@ export default function ChatPanel({
               {runningCost.toLocaleString('en-IN')}
             </span>
           )}
+          {/* How long this has run. It turns red in the last minute the wallet
+              can cover — the only time the ceiling is worth mentioning. */}
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${
               remaining <= 60000 ? 'bg-red-500/10 text-red-600' : 'bg-primary/10 text-primary'
             }`}
-            title="Time left on your wallet balance"
+            title={
+              remaining <= 60000
+                ? 'Under a minute of balance left'
+                : 'Time this consultation has run'
+            }
           >
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-            {fmt(remaining)}
+            {fmt(elapsed)}
           </span>
           {active && (
             <button
@@ -221,6 +246,10 @@ export default function ChatPanel({
           allMessages.map((m) => {
             const mine = m.from === viewerRole;
             const optimistic = typeof m.id === 'string' && m.id.startsWith('tmp-');
+            // An optimistic message has not been stamped by the server yet;
+            // showing "now" for it would be a guess, so it shows nothing until
+            // the real time arrives a poll later.
+            const sentAt = messageTime(m.at);
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div
@@ -230,7 +259,17 @@ export default function ChatPanel({
                       : 'rounded-bl-sm bg-surface text-ink shadow-sm ring-1 ring-ink/5'
                   } ${optimistic ? 'opacity-70' : ''}`}
                 >
-                  {m.text}
+                  <span className="whitespace-pre-wrap break-words">{m.text}</span>
+                  {sentAt && (
+                    <time
+                      dateTime={new Date(m.at).toISOString()}
+                      className={`ml-2 float-right mt-1 text-[10px] tabular-nums ${
+                        mine ? 'text-white/60' : 'text-ink/40'
+                      }`}
+                    >
+                      {sentAt}
+                    </time>
+                  )}
                 </div>
               </div>
             );

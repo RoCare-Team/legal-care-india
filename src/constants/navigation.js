@@ -2,12 +2,15 @@
  * Centralized navigation maps used by the Navbar, MobileMenu and Footer.
  * Keeping links here keeps the layout components presentational and reusable.
  */
+// About is deliberately not here. The header bar has to hold the logo, the
+// links, a location, a wallet and two account actions on one line, and "About"
+// is the one item nobody arrives looking for — it keeps its place in the
+// footer's Company column, which is where visitors go for it.
 export const MAIN_NAV = [
   { label: 'Home', href: '/' },
   { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
   { label: 'Blogs', href: '/blogs' },
-  { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
 

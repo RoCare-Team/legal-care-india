@@ -115,15 +115,21 @@ export default function AdvocateGridCard({ advocate }) {
 
   return (
     <article
-      className={`group flex h-full flex-col rounded-2xl border ${HAIRLINE} bg-white p-[18px] ${CARD_SHADOW} ${CARD_SHADOW_HOVER} transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/25 sm:p-5`}
+      className={`group relative flex h-full flex-col rounded-2xl border ${HAIRLINE} bg-white p-[18px] ${CARD_SHADOW} ${CARD_SHADOW_HOVER} transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/25 sm:p-5`}
     >
+      {/* One link stretched over the whole card, so anywhere that is not a
+          control opens the profile. It sits underneath everything (z-0) and the
+          three contact buttons are lifted above it, which is what keeps them
+          clickable — and it is a real anchor rather than an onClick, so the
+          profile still opens in a new tab on middle-click and reads as a link
+          to a screen reader. */}
+      <Link href={profileHref} className="absolute inset-0 z-0 rounded-2xl">
+        <span className="sr-only">View {name}&apos;s profile</span>
+      </Link>
+
       {/* ── Identity + rate ───────────────────────────────────────────── */}
       <div className="flex items-start gap-3.5">
-        <Link
-          href={profileHref}
-          aria-label={`View ${name}'s profile`}
-          className="relative shrink-0"
-        >
+        <span className="relative shrink-0">
           <span className="block h-[68px] w-[68px] overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80 sm:h-20 sm:w-20">
             <Avatar
               src={photo}
@@ -135,12 +141,12 @@ export default function AdvocateGridCard({ advocate }) {
           <span className="absolute bottom-0 right-0">
             <PresenceIndicator id={advocate._id} variant="dot" />
           </span>
-        </Link>
+        </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
-              <Link href={profileHref} className="flex min-w-0 items-center gap-1.5">
+              <div className="flex min-w-0 items-center gap-1.5">
                 <h3 className="truncate text-[16px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary sm:text-[17px]">
                   {name}
                 </h3>
@@ -155,7 +161,7 @@ export default function AdvocateGridCard({ advocate }) {
                     <Check className="h-3 w-3 text-white" strokeWidth={3.5} aria-hidden="true" />
                   </span>
                 )}
-              </Link>
+              </div>
 
               <p className="mt-0.5 truncate text-[13px] font-medium text-slate-500">{standing}</p>
 
@@ -170,14 +176,25 @@ export default function AdvocateGridCard({ advocate }) {
               )}
             </div>
 
+            {/* A torn ticket: dashed rule, tinted face, and a bite out of each
+                side. The label is gone — "₹24/min" beside a lawyer's name is
+                self-evidently what they charge, and spelling it out was a
+                second line of type for no second piece of information. */}
             {feeQuoted && (
-              <div className="shrink-0 text-right">
-                <p className="whitespace-nowrap text-[17px] font-bold leading-tight text-slate-900">
+              <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-2 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
+                {/* The notches are the card's own white punched over the
+                    border, which is what makes the edge read as torn. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
+                />
+                <p className="whitespace-nowrap text-[17px] font-bold leading-none text-emerald-700">
                   ₹{Number(feeAmount).toLocaleString('en-IN')}
-                  <span className="text-[12px] font-semibold text-slate-500">/{feeUnit}</span>
-                </p>
-                <p className="mt-0.5 whitespace-nowrap text-[11px] font-medium text-slate-400">
-                  Consultation Fee
+                  <span className="text-[12px] font-semibold text-emerald-600/70">/{feeUnit}</span>
                 </p>
               </div>
             )}
@@ -210,8 +227,12 @@ export default function AdvocateGridCard({ advocate }) {
       {/* Full width under the portrait, not beside the name. In that column
           there was room for two before they wrapped, which cost the card a
           whole row to show one more. */}
-      {tags.length > 0 && (
-        <div className="mb-1.5 mt-3.5 flex flex-wrap gap-1.5">
+      {/* Tags on the left, the way in on the right. "View Profile" is a cue,
+          not a control — the whole card already opens the profile — so it is
+          plain text with no face of its own, and it moves with the card's own
+          hover rather than owning one. */}
+      <div className="mb-1.5 mt-3.5 flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
           {tags.map((tag) => (
             <span
               key={tag}
@@ -226,37 +247,39 @@ export default function AdvocateGridCard({ advocate }) {
             </span>
           )}
         </div>
-      )}
+
+        {/* Still no face of its own — the card is the button. Text and arrow
+            both carry the site's own blue, the one every link on the site
+            already uses, so this reads as a link rather than as a third
+            colour competing with the rate beside it. */}
+        <span
+          aria-hidden="true"
+          className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-bold text-primary underline-offset-4 transition-colors duration-200 group-hover:text-primary-dark group-hover:underline"
+        >
+          View Profile
+          <span className="grid h-5 w-5 place-items-center rounded-full bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
+            <ArrowRight className="h-3 w-3" />
+          </span>
+        </span>
+      </div>
 
       {/* ── Actions ───────────────────────────────────────────────────── */}
-      {/* Four controls on one line at a third of a desktop's width, so the
-          three channels share whatever the profile link leaves rather than
-          each claiming their label's width. `mt-auto` pins the row to the foot
-          of the card, keeping it level across a row of the grid however short
-          one lawyer's details are. */}
-      <div className={`mt-auto flex items-center gap-1.5 border-t ${HAIRLINE} pt-4`}>
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 [&>*]:min-w-0 [&>*]:flex-1">
-          <CardContactActions
-            variant="quiet"
-            contact={contact}
-            name={name}
-            advocateId={advocate._id}
-            chatRate={chatRate}
-            videoRate={videoRate}
-            audioRate={audioRate}
-          />
-        </div>
-
-        <Link
-          href={profileHref}
-          className="group/cta inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-primary pl-2.5 pr-2 text-[12px] font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-dark hover:shadow"
-        >
-          Profile
-          <ArrowRight
-            className="h-3.5 w-3.5 transition-transform duration-200 group-hover/cta:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </Link>
+      {/* Lifted above the stretched link so these three are still buttons and
+          not part of the card's own click target. `mt-auto` pins the row to
+          the foot of the card, keeping it level across a row of the grid
+          however short one lawyer's details are. */}
+      <div
+        className={`relative z-10 mt-auto grid grid-cols-3 gap-1.5 border-t ${HAIRLINE} pt-4 [&>*]:min-w-0`}
+      >
+        <CardContactActions
+          variant="quiet"
+          contact={contact}
+          name={name}
+          advocateId={advocate._id}
+          chatRate={chatRate}
+          videoRate={videoRate}
+          audioRate={audioRate}
+        />
       </div>
     </article>
   );

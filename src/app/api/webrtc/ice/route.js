@@ -20,6 +20,19 @@ const DEFAULT_STUN = [
   'stun:stun1.l.google.com:19302',
 ];
 
+let turnWarned = false;
+
+/** Log the missing-relay warning once per server start. */
+function warnNoTurn() {
+  if (turnWarned) return;
+  turnWarned = true;
+  console.warn(
+    '[webrtc] No TURN_URL configured — video and audio calls will fail between ' +
+      'networks that STUN cannot traverse (most mobile data in India). Set ' +
+      'TURN_URL / TURN_USERNAME / TURN_CREDENTIAL to fix.'
+  );
+}
+
 /** Split a comma-separated env list into a clean array. */
 function list(value, fallback = []) {
   const parts = String(value || '')
@@ -44,6 +57,12 @@ export async function GET() {
       username: process.env.TURN_USERNAME || '',
       credential: process.env.TURN_CREDENTIAL || '',
     });
+  } else {
+    // Said once per cold start, not per call. Without a relay every call
+    // between two carrier-grade-NAT networks — which is most Indian mobile
+    // data — rings normally and then never connects, and the only clue in the
+    // logs would be its absence.
+    warnNoTurn();
   }
 
   return NextResponse.json(

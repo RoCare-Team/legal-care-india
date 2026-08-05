@@ -18,12 +18,45 @@ import { AUTH_REFRESH_EVENT } from '@/utils/authEvents';
  * after a wallet top-up or a consultation charge so the balance in the navbar
  * updates immediately, without a page refresh.
  *
+ * The last known role is remembered in localStorage and applied the instant
+ * this mounts, before the fetch has been anywhere. Every page on the site is
+ * statically rendered, so the server has no idea who is asking and the header
+ * would otherwise sit blank for a whole network round trip — long enough on a
+ * real connection that the account buttons look like they arrive late. The
+ * remembered role is a guess, corrected a moment later by the fetch, which is
+ * the only thing that actually decides.
+ *
  * @returns {{ role: 'advocate'|'user'|null, advocate: object|null, user: object|null, account: object|null, loading: boolean }}
  */
+const ROLE_KEY = 'lci:last-role';
+
+/** Keep (or clear) the role this browser last saw, for the next first paint. */
+function remember(role) {
+  try {
+    if (role) window.localStorage.setItem(ROLE_KEY, role);
+    else window.localStorage.removeItem(ROLE_KEY);
+  } catch {
+    // Nothing to do — the guess is an optimisation, not a requirement.
+  }
+}
+
 export function useAuth() {
   const pathname = usePathname();
   const [session, setSession] = useState({ role: null, advocate: null, user: null });
   const [loading, setLoading] = useState(true);
+
+  // Applied after hydration, never during render: reading storage while
+  // rendering would make the first client pass disagree with the server's HTML.
+  useEffect(() => {
+    try {
+      const remembered = window.localStorage.getItem(ROLE_KEY);
+      if (remembered === 'user' || remembered === 'advocate') {
+        setSession((prev) => (prev.role ? prev : { ...prev, role: remembered }));
+      }
+    } catch {
+      // Storage can be unavailable (private mode); the fetch still resolves it.
+    }
+  }, []);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -34,6 +67,7 @@ export function useAuth() {
         advocate: data.advocate || null,
         user: data.user || null,
       });
+      remember(data.role || null);
     } catch {
       setSession({ role: null, advocate: null, user: null });
     } finally {

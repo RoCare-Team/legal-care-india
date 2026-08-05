@@ -18,7 +18,7 @@ import { logout } from '@/utils/logout';
  * @param {() => void} props.onClose
  */
 export default function MobileMenu({ isOpen, onClose }) {
-  const { role, user, loading } = useAuth();
+  const { role, user } = useAuth();
 
   // Lock background scroll while the drawer is open so the page behind it
   // stays put. Always restore on close/unmount.
@@ -79,7 +79,7 @@ export default function MobileMenu({ isOpen, onClose }) {
             </nav>
 
             <div className="space-y-2 border-t border-ink/8 p-5">
-              {loading ? null : role === 'advocate' ? (
+              {role === 'advocate' ? (
                 <>
                   <Button
                     href="/dashboard"
