@@ -36,6 +36,11 @@ export function validateStep(step, data) {
     if (!data.state) e.state = 'Select your state.';
     if (!data.city) e.city = 'Select your city.';
     if (data.languages.length === 0) e.languages = 'Select at least one language.';
+    // Optional — the state and city can still be picked by hand — but a PIN
+    // that was typed has to be a real one.
+    if (data.pincode && !isPincode(data.pincode)) {
+      e.pincode = 'Enter a valid 6-digit PIN code.';
+    }
   }
 
   // ── 1 · Professional ────────────────────────────────────────────────
@@ -46,10 +51,6 @@ export function validateStep(step, data) {
     }
     if (!data.officeName.trim()) e.officeName = 'Office name is required.';
     if (!data.officeAddress.trim()) e.officeAddress = 'Office address is required.';
-    // The office PIN is optional, but one that was typed has to be a real one.
-    if (data.pincode && !isPincode(data.pincode)) {
-      e.pincode = 'Enter a valid 6-digit PIN code.';
-    }
     // Same for the residence, and only while that toggle is on — a PIN left
     // behind by a toggle since switched off must not block the step.
     if (data.practiceFromResidence && data.residencePincode && !isPincode(data.residencePincode)) {
@@ -91,13 +92,13 @@ export const INITIAL_REGISTER_DATA = {
   photo: '',
   fullName: '', email: '', phone: '', password: '', confirm: '',
   gender: '', dob: '',
-  state: '', city: '',
+  state: '', city: '', pincode: '',
   languages: [],
 
   // Professional
   barCouncil: '', enrollmentDate: '',
   experience: '', designation: '', chamberName: '', practiceMode: '',
-  officeName: '', officeAddress: '', pincode: '',
+  officeName: '', officeAddress: '',
   // Optional second place clients are seen, revealed by a toggle on step 2.
   practiceFromResidence: false, residenceAddress: '', residencePincode: '',
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { User, Mail, Phone, Lock, Camera, Trash2 } from 'lucide-react';
+import { User, Mail, Phone, Lock, Camera, Trash2, MapPin, Loader2 } from 'lucide-react';
 import { FormField, Input, Select, Avatar } from '@/components/ui';
 import ChipMultiSelect from '@/components/shared/ChipMultiSelect';
 import { LANGUAGES } from '@/data/languages';
@@ -108,13 +108,96 @@ export default function StepPersonal({ data, set, errors, cities = CITIES, onBlo
     }
   };
 
+  // ── PIN code → state + city ─────────────────────────────────────────────
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinNote, setPinNote] = useState('');
+  // A district India Post returned that our own list doesn't carry. Kept so it
+  // can be offered in the City select — otherwise the lookup would "succeed"
+  // and leave the field empty.
+  const [pinCity, setPinCity] = useState('');
+  // Bumped per lookup so a slow reply for an old PIN can't overwrite a newer one.
+  const pinTicket = useRef(0);
+
+  useEffect(() => {
+    const pin = String(data.pincode || '');
+    const mine = (pinTicket.current += 1);
+    setPinNote('');
+    if (!/^[1-9][0-9]{5}$/.test(pin)) {
+      setPinLoading(false);
+      return undefined;
+    }
+
+    setPinLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/pincode?code=${pin}`);
+        const payload = await res.json();
+        if (mine !== pinTicket.current) return;
+
+        if (!res.ok || !payload.state) {
+          setPinNote('Couldn’t find that PIN code — pick your state and city below.');
+          return;
+        }
+        // Filled in, not locked: both selects stay editable, because the
+        // directory is occasionally a district behind the visitor.
+        setPinCity(payload.cityInList ? '' : payload.city);
+        set('state', payload.state);
+        set('city', payload.city);
+        setPinNote(
+          `${payload.area ? `${payload.area} · ` : ''}${payload.city}, ${payload.state}`
+        );
+      } catch {
+        if (mine === pinTicket.current) {
+          setPinNote('Couldn’t check that PIN code — pick your state and city below.');
+        }
+      } finally {
+        if (mine === pinTicket.current) setPinLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.pincode]);
+
+  // ── …and the other way: city → PIN ──────────────────────────────────────
+  // Only when the PIN is still empty. A city has many PINs, so this is a
+  // starting point rather than an answer, and it must never overwrite the one
+  // the advocate typed — theirs is the specific one, ours is the town's.
+  useEffect(() => {
+    if (data.pincode || !data.city || !data.state) return undefined;
+    const mine = (pinTicket.current += 1);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/pincode?city=${encodeURIComponent(data.city)}&state=${encodeURIComponent(data.state)}`
+        );
+        const payload = await res.json();
+        if (mine !== pinTicket.current || !payload?.pincode) return;
+        set('pincode', payload.pincode);
+      } catch {
+        // No PIN found for that town — it stays empty and typeable.
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.city, data.state, data.pincode]);
+
+  const pinHint = pinLoading ? 'Looking up…' : pinNote || 'Fills in your state and city — or fills itself in once you pick them.';
+
   // State first, city narrowed to it — asked the other way round the two could
   // disagree, and a profile would claim a city in a state it is not in.
   //
   // Every city in the state, not just the handful with landing pages: an
   // advocate in Latur should not have to call themselves a Mumbai lawyer for
-  // want of their own city in the list.
+  // want of their own city in the list. A district the PIN lookup returned but
+  // the list doesn't carry is added, so the selection it made is selectable.
   const citiesInState = allCitiesForState(data.state, cities);
+  const cityOptions =
+    pinCity && !citiesInState.includes(pinCity)
+      ? [...citiesInState, pinCity].sort((a, b) => a.localeCompare(b))
+      : citiesInState;
 
   const onStateChange = (nextState) => {
     set('state', nextState);
@@ -278,6 +361,39 @@ export default function StepPersonal({ data, set, errors, cities = CITIES, onBlo
       {/* ── Location + languages ───────────────────────────────────────── */}
       <FormSection title="Location & languages">
         <div className="grid gap-4 sm:grid-cols-2">
+          {/* The PIN comes first because it answers the two fields below it.
+              Nobody has to remember whether their district is filed under
+              Gurgaon or Gurugram — six digits they know by heart settle it,
+              and the selects stay editable for the cases the directory gets
+              wrong. */}
+          <FormField
+            label="PIN Code"
+            htmlFor="pincode"
+            error={errors.pincode}
+            hint={pinHint}
+            className="sm:col-span-2"
+          >
+            <div className="relative">
+              <Input
+                id="pincode"
+                inputMode="numeric"
+                maxLength={6}
+                value={data.pincode}
+                onChange={(e) => set('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="e.g. 122001"
+                leftIcon={<MapPin className="h-4 w-4" />}
+                invalid={Boolean(errors.pincode)}
+                className="sm:max-w-xs"
+              />
+              {pinLoading && (
+                <Loader2
+                  className="absolute left-[10.5rem] top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-primary sm:left-[16.5rem]"
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+          </FormField>
+
           <FormField label="State" htmlFor="state" required error={errors.state}>
             <Select
               id="state"
@@ -289,25 +405,38 @@ export default function StepPersonal({ data, set, errors, cities = CITIES, onBlo
             />
           </FormField>
 
+          {/* A text field with suggestions, not a closed list. India has close
+              to eight thousand towns and every state's list here is a few
+              dozen — an advocate in Perinthalmanna or Chalakudy would have had
+              to file themselves under a city they don't practise in. The
+              known cities still drop down as you type; anything else is simply
+              accepted. */}
           <FormField
             label="City"
             htmlFor="city"
             required
             error={errors.city}
-            hint={data.state ? undefined : 'Choose your state first.'}
+            hint={
+              data.state
+                ? 'Pick from the list or type your own.'
+                : 'Choose your state first.'
+            }
           >
-            <Select
+            <Input
               id="city"
+              list="city-options"
               value={data.city}
               onChange={(e) => set('city', e.target.value)}
               disabled={!data.state}
+              placeholder={data.state ? 'Start typing your city' : 'Select state first'}
               invalid={Boolean(errors.city)}
-            >
-              <option value="">{data.state ? 'Select city' : 'Select state first'}</option>
-              {citiesInState.map((name) => (
-                <option key={name} value={name}>{name}</option>
+              autoComplete="off"
+            />
+            <datalist id="city-options">
+              {cityOptions.map((name) => (
+                <option key={name} value={name} />
               ))}
-            </Select>
+            </datalist>
           </FormField>
 
           {/* No street address here. Where the advocate lives is not something

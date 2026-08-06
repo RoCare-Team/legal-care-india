@@ -157,21 +157,9 @@ export default function StepProfessional({ data, set, errors }) {
             />
           </FormField>
 
-          {/* Beside the office name rather than under the address: it is a
-              six-character field, and on its own row it left half the width
-              empty for no reason. */}
-          <FormField label="Office PIN Code" htmlFor="pincode" error={errors.pincode}>
-            <Input
-              id="pincode"
-              inputMode="numeric"
-              maxLength={6}
-              value={data.pincode}
-              onChange={(e) => set('pincode', e.target.value.replace(/\D/g, ''))}
-              placeholder="e.g. 122001"
-              leftIcon={<MapPin className="h-4 w-4" />}
-              invalid={Boolean(errors.pincode)}
-            />
-          </FormField>
+          {/* No PIN here. It is asked once, on step 1, where it fills in the
+              state and city — a second input bound to the same value would let
+              the two disagree on screen and quietly overwrite each other. */}
 
           <FormField label="Office Address" htmlFor="officeAddress" required error={errors.officeAddress} className="sm:col-span-2">
             <Textarea

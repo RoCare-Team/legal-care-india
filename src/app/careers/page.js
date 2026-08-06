@@ -40,11 +40,11 @@ export default function CareersPage() {
       <h2>How to apply</h2>
       <p>
         Send your résumé and a short note about what you&apos;d like to work on to{' '}
-        <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>.
+        <a href={`mailto:${CONTACT.infoEmail}`}>{CONTACT.infoEmail}</a>.
       </p>
 
       <div className="not-prose mt-8">
-        <Button href={`mailto:${CONTACT.email}`}>Email us your résumé</Button>
+        <Button href={`mailto:${CONTACT.infoEmail}`}>Email us your résumé</Button>
       </div>
     </ContentPage>
   );

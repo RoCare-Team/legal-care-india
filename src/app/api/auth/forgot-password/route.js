@@ -63,10 +63,37 @@ export async function POST(request) {
       await account.save();
 
       // Send only on the chosen channel.
-      if (channel === 'phone') {
-        await sendOtpSms({ phone, otp });
-      } else {
-        await sendEmail({ to: email, ...passwordResetEmail({ name: account.name, otp }) });
+      //
+      // A failure here is reported rather than swallowed. The generic replies
+      // elsewhere in this route exist so nobody can discover which addresses
+      // have accounts; a mail server that is down is not that secret, and
+      // hiding it left the visitor on a "check your inbox" screen waiting for
+      // a code that was never sent — with nothing but a server log to say so.
+      try {
+        if (channel === 'phone') {
+          await sendOtpSms({ phone, otp });
+        } else {
+          const { delivered } = await sendEmail({
+            to: email,
+            ...passwordResetEmail({ name: account.name, otp }),
+          });
+          // `delivered: false` means no SMTP is configured at all — in
+          // development the code is in the terminal, in production it is a
+          // misconfiguration the visitor should not be left guessing about.
+          if (!delivered && process.env.NODE_ENV === 'production') {
+            throw new Error('SMTP is not configured');
+          }
+        }
+      } catch (sendErr) {
+        console.error('forgot-password: could not send OTP', sendErr);
+        return NextResponse.json(
+          {
+            error: 'send-failed',
+            message:
+              'We could not send the code right now. Please try again in a few minutes, or contact support.',
+          },
+          { status: 502 }
+        );
       }
 
       const sentTo =

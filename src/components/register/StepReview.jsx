@@ -111,6 +111,7 @@ export default function StepReview({ data, set, errors }) {
           ['Gender', data.gender],
           ['Date of birth', readableDate(data.dob)],
           ['Location', [data.city, data.state].filter(Boolean).join(', ')],
+          ['PIN code', data.pincode],
         ]}
       >
         <ChipRow label="Languages" items={data.languages} variant="secondary" />
@@ -128,7 +129,6 @@ export default function StepReview({ data, set, errors }) {
           ['Chamber / firm', data.chamberName],
           ['Office', data.officeName],
           ['Office address', data.officeAddress],
-          ['Office PIN code', data.pincode],
           ['Residence address', data.practiceFromResidence ? data.residenceAddress : ''],
           ['Residence PIN code', data.practiceFromResidence ? data.residencePincode : ''],
         ]}

@@ -4,7 +4,11 @@ import nodemailer from 'nodemailer';
  * Email sending helper.
  *
  * Configure SMTP in .env.local to send real emails:
- *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+ *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_FROM_INFO
+ *
+ * One connection, two From addresses. Most providers let an authenticated
+ * mailbox send as another on the same domain; if yours does not, the info
+ * address simply needs its own credentials and a second transporter.
  *
  * If SMTP is not configured, emails are logged to the server console instead
  * (handy in development — you can copy the reset link from the terminal).
@@ -28,12 +32,26 @@ function getTransporter() {
 }
 
 /**
- * Send an email. Returns { delivered: boolean }.
- * @param {{ to: string, subject: string, html: string, text?: string }} message
+ * Who a message goes out as.
+ *
+ * Two mailboxes, because a reply goes back to whoever sent it: an account
+ * email sent from `info@` would have people asking for a password reset in the
+ * queue meant for careers and partnerships. `support` is the default because
+ * everything the site sends on its own — OTPs, notices — is support.
  */
-export async function sendEmail({ to, subject, html, text }) {
+const SENDERS = {
+  support: () => process.env.SMTP_FROM || 'Justiceland <support@justiceland.online>',
+  info: () => process.env.SMTP_FROM_INFO || 'Justiceland <info@justiceland.online>',
+};
+
+/**
+ * Send an email. Returns { delivered: boolean }.
+ * @param {{ to: string, subject: string, html: string, text?: string,
+ *          sender?: 'support'|'info' }} message
+ */
+export async function sendEmail({ to, subject, html, text, sender = 'support' }) {
   const transporter = getTransporter();
-  const from = process.env.SMTP_FROM || 'Justiceland <no-reply@legalcareindia.com>';
+  const from = (SENDERS[sender] || SENDERS.support)();
 
   if (!transporter) {
     // Dev fallback — no SMTP configured. Log so the flow is still testable.

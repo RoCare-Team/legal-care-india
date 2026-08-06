@@ -16,11 +16,11 @@ export const contentType = 'image/png';
  * The real brand lockup, inlined as a data URL.
  *
  * `ImageResponse` renders on the server with no page to resolve relative URLs
- * against, so a plain `/logo2.png` would not load. Read once at module scope
+ * against, so a plain `/logo3.png` would not load. Read once at module scope
  * rather than per request — the file never changes between deploys.
  */
 const LOGO = `data:image/png;base64,${fs
-  .readFileSync(path.join(process.cwd(), 'public', 'logo2.png'))
+  .readFileSync(path.join(process.cwd(), 'public', 'logo3.png'))
   .toString('base64')}`;
 
 export default function OgImage() {
@@ -57,14 +57,14 @@ export default function OgImage() {
             padding: '20px 26px',
           }}
         >
-          <div style={{ display: 'flex', position: 'relative', width: 340, height: 80, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', position: 'relative', width: 340, height: 82, overflow: 'hidden' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={LOGO}
               alt=""
-              width={383}
-              height={191}
-              style={{ position: 'absolute', left: -21, top: -51 }}
+              width={364}
+              height={178}
+              style={{ position: 'absolute', left: -15, top: -45 }}
             />
           </div>
         </div>

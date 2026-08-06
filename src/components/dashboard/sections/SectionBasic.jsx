@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { UserRound, Upload, X, ImageIcon } from 'lucide-react';
 import { FormField, Input, Select, Avatar } from '@/components/ui';
 import { CITIES } from '@/data/cities';
-import { STATES } from '@/data/languages';
+import { STATES, allCitiesForState } from '@/data/indiaLocations';
 import { fileToResizedDataURL } from '@/utils/imageFile';
 import DashboardSection from '../DashboardSection';
 
@@ -16,6 +16,9 @@ import DashboardSection from '../DashboardSection';
  */
 export default function SectionBasic({ data, set, cities = CITIES }) {
   const [error, setError] = useState('');
+
+  // Suggestions for whichever state is selected, plus any city an admin added.
+  const cityOptions = allCitiesForState(data.state, cities);
 
   const handlePhoto = async (file) => {
     try {
@@ -86,12 +89,24 @@ export default function SectionBasic({ data, set, cities = CITIES }) {
         <FormField label="Headline / Tagline" htmlFor="d-tagline" className="sm:col-span-2">
           <Input id="d-tagline" value={data.tagline} onChange={(e) => set('tagline', e.target.value)} />
         </FormField>
-        <FormField label="City" htmlFor="d-city">
-          <Select id="d-city" value={data.city} onChange={(e) => set('city', e.target.value)}>
-            {cities.map((c) => (
-              <option key={c.slug} value={c.name}>{c.name}</option>
+        {/* Suggestions, not a closed list — the same reason registration takes
+            a typed city: the built-in list is a few dozen per state against
+            India's several thousand towns, and a lawyer whose town is missing
+            was being asked to claim one they don't practise in. */}
+        <FormField label="City" htmlFor="d-city" hint="Pick from the list or type your own.">
+          <Input
+            id="d-city"
+            list="d-city-options"
+            value={data.city}
+            onChange={(e) => set('city', e.target.value)}
+            placeholder="Start typing your city"
+            autoComplete="off"
+          />
+          <datalist id="d-city-options">
+            {cityOptions.map((name) => (
+              <option key={name} value={name} />
             ))}
-          </Select>
+          </datalist>
         </FormField>
         <FormField label="State" htmlFor="d-state">
           <Select id="d-state" value={data.state} onChange={(e) => set('state', e.target.value)} options={STATES} />

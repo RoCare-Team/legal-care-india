@@ -49,7 +49,10 @@ export default function ForgotPasswordForm({ role = 'advocate' }) {
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(payload.error || 'Something went wrong. Please try again.');
+        // `message` is the sentence written for the visitor; `error` is the
+        // machine code behind it. Showing the code ("send-failed") where the
+        // sentence exists is how an error message becomes gibberish.
+        setError(payload.message || payload.error || 'Something went wrong. Please try again.');
         return;
       }
       setSentTo(payload.sentTo || null);

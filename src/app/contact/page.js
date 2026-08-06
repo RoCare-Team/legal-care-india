@@ -1,11 +1,11 @@
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, LifeBuoy } from 'lucide-react';
 import { createMetadata } from '@/lib/metadata';
 import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import ContactForm from '@/components/contact/ContactForm';
 import JsonLd from '@/components/shared/JsonLd';
 import { webPageSchema, breadcrumbSchema } from '@/lib/schema';
-import { CONTACT } from '@/constants/site';
+import { CONTACT, addressText, mapsUrl } from '@/constants/site';
 
 export const metadata = createMetadata({
   title: 'Contact Us',
@@ -14,9 +14,10 @@ export const metadata = createMetadata({
 });
 
 const INFO = [
-  { icon: Mail, label: 'Email', value: CONTACT.email, href: `mailto:${CONTACT.email}` },
+  { icon: LifeBuoy, label: 'Support', value: CONTACT.email, href: `mailto:${CONTACT.email}` },
+  { icon: Mail, label: 'General enquiries', value: CONTACT.infoEmail, href: `mailto:${CONTACT.infoEmail}` },
   { icon: Phone, label: 'Phone', value: CONTACT.phone, href: `tel:${CONTACT.phone}` },
-  { icon: MapPin, label: 'Location', value: 'India' },
+  { icon: MapPin, label: 'Office', value: addressText, href: mapsUrl },
   { icon: Clock, label: 'Support Hours', value: 'Mon – Sat, 10 AM – 7 PM' },
 ];
 

@@ -46,8 +46,13 @@ export default function Header() {
           // ends at the 72px the hero's own top padding is measured against —
           // its first line would otherwise sit a few pixels under the bar.
           ? 'border-b border-transparent bg-transparent py-2 sm:py-3'
+          // Fully opaque, not the frosted `bg-surface/95 backdrop-blur-md` it
+          // used to be. The logo is a photograph with a solid white background,
+          // so against a bar that was letting 5% of the page through it read as
+          // a brighter rectangle sitting on top of the bar rather than part of
+          // it. Frosting is worth less than a header that looks like one piece.
           : scrolled
-            ? 'border-b border-ink/10 bg-surface/95 shadow-sm backdrop-blur-md'
+            ? 'border-b border-ink/10 bg-surface shadow-sm'
             : 'border-b border-ink/8 bg-surface'
       )}
     >
@@ -95,8 +100,9 @@ export default function Header() {
       </Container>
     </header>
 
-    {/* Rendered OUTSIDE the header so the header's backdrop-blur (a containing
-        block for fixed elements) can't break the drawer's full-screen overlay. */}
+    {/* Rendered OUTSIDE the header. The header no longer blurs its backdrop,
+        but it is still a fixed, stacked element on the home page — keeping the
+        drawer out of it is what lets its overlay cover the whole screen. */}
     <MobileMenu isOpen={menu.isOpen} onClose={menu.close} />
     </>
   );
