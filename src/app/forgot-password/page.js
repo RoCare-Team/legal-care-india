@@ -8,6 +8,7 @@ export const metadata = {
     title: 'Forgot Password',
     description: 'Reset your Justiceland account password.',
     path: '/forgot-password',
+    noindex: true,
   }),
   robots: { index: false, follow: false },
 };

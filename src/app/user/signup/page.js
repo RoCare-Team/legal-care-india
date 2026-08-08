@@ -1,25 +1,14 @@
-import { redirect } from 'next/navigation';
-import { createMetadata } from '@/lib/metadata';
-import { Container } from '@/components/ui';
-import UserSignupForm from '@/components/auth/UserSignupForm';
-import { getSession } from '@/lib/auth';
+import { permanentRedirect } from 'next/navigation';
 
-export const metadata = createMetadata({
-  title: 'Sign Up',
-  description: 'Create a free Justiceland account to save lawyers and manage your enquiries.',
-  path: '/user/signup',
-});
-
-export default async function UserSignupPage() {
-  const session = await getSession();
-  if (session?.role === 'user') redirect('/account');
-  if (session?.role === 'advocate') redirect('/dashboard');
-
-  return (
-    <Container className="py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-md">
-        <UserSignupForm />
-      </div>
-    </Container>
-  );
+/**
+ * There is no sign-up any more — a client account is created the first time a
+ * mobile number passes OTP verification, so /user/login does both jobs.
+ *
+ * The route is kept as a permanent redirect rather than deleted: the old URL is
+ * in browser histories, bookmarks and any link already sent to someone, and a
+ * 404 on the way to creating an account is a lost account. 308 also tells a
+ * crawler the address moved for good.
+ */
+export default function UserSignupPage() {
+  permanentRedirect('/user/login');
 }

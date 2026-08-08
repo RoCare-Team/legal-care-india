@@ -5,6 +5,7 @@ import { Container, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
 import JsonLd from '@/components/shared/JsonLd';
+import { SeoSection, LinkCardGrid } from '@/components/shared/SeoSection';
 import { articleSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllBlogs, getBlogBySlug } from '@/lib/blogs';
 
@@ -65,7 +66,14 @@ export default async function BlogPostPage({ params }) {
   const post = posts.find((p) => p.slug === slug);
   if (!post) notFound();
 
-  const related = posts.filter((p) => p.slug !== post.slug).slice(0, 3);
+  // Same-category posts first — a reader on a property piece is far likelier
+  // to want another property piece than whatever happens to be newest. The
+  // rest of the list backfills so the row is never half-empty.
+  const others = posts.filter((p) => p.slug !== post.slug);
+  const related = [
+    ...others.filter((p) => p.category === post.category),
+    ...others.filter((p) => p.category !== post.category),
+  ].slice(0, 3);
   const blocks = toBlocks(post.content);
 
   return (
@@ -92,7 +100,7 @@ export default async function BlogPostPage({ params }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={post.coverImage}
-            alt=""
+            alt={post.title}
             className="mb-6 h-56 w-full rounded-2xl object-cover sm:h-72"
           />
         )}
@@ -132,12 +140,46 @@ export default async function BlogPostPage({ params }) {
       </Container>
 
       <Container className="pb-16">
-        <h2 className="mb-6 font-display text-xl font-semibold text-ink">Related Articles</h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {related.map((p) => (
-            <BlogCard key={p.slug} post={p} />
-          ))}
-        </div>
+        {related.length > 0 && (
+          <>
+            <h2 className="mb-6 font-display text-xl font-semibold text-ink">Related Articles</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {related.map((p) => (
+                <BlogCard key={p.slug} post={p} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Every article is a dead end without this: the reader finishes,
+            agrees they need a lawyer, and has nowhere to go. These are real
+            routes on the site — no claims are made about the article itself. */}
+        <SeoSection
+          title="Take the Next Step"
+          lead={`Reading up is the right first move. When the question becomes what to do about your own ${post.category.toLowerCase()} matter, that needs a lawyer looking at your facts.`}
+          className={related.length > 0 ? 'mt-16' : 'mt-0'}
+        >
+          <LinkCardGrid
+            items={[
+              {
+                href: '/lawyers',
+                title: 'Find a verified lawyer',
+                text: 'Filter by practice area, city, court and language. Compare per-minute rates before you start.',
+              },
+              {
+                href: '/legal-services',
+                title: 'Browse practice areas',
+                text: 'See what a matter in each area of law usually involves and which lawyers handle it.',
+              },
+              {
+                href: '/blogs',
+                title: 'More legal guides',
+                text: 'Plain-English explanations of process, paperwork and cost across Indian law.',
+              },
+            ]}
+            columns={3}
+          />
+        </SeoSection>
       </Container>
     </>
   );

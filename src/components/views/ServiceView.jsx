@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { withTail, practiceLabel } from '@/lib/metadata';
 import { ShieldCheck, MessageSquare, BadgeIndianRupee, Users, Layers } from 'lucide-react';
 import { Container, Card } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
@@ -41,13 +42,24 @@ function genericFaqs(service) {
 
 export function serviceMeta(service) {
   const content = getServiceContent(service.name);
+  const label = practiceLabel(service.name);
+  const lower = label.toLowerCase();
+
   return {
-    title: `${service.name} Lawyers`,
+    title: withTail(`${label} Lawyers in India`, 'Verified & Online'),
+    // The page's own opening line where there is one — it is written about
+    // this area specifically, which a generic sentence never is.
     description: content
-      ? `${content.intro[0].slice(0, 150)}…`
-      : `Find verified ${service.name} lawyers in India. ${service.description}`,
+      ? `${content.intro[0].slice(0, 152).trim()}…`
+      : `Find verified ${lower} lawyers across India. Compare experience, courts and per-minute rates, then consult by chat, call or video.`,
     path: servicePath(service),
-    keywords: [`${service.name} lawyer`, `best ${service.name} lawyer in India`],
+    keywords: [
+      `${lower} lawyer`,
+      `${lower} advocate india`,
+      `best ${lower} lawyer in india`,
+      `${lower} legal advice online`,
+      `consult ${lower} lawyer`,
+    ],
   };
 }
 

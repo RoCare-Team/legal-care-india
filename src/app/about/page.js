@@ -15,10 +15,16 @@ import { CATEGORIES } from '@/data/categories';
 import { formatCompactNumber, pluralize } from '@/utils/formatters';
 
 export const metadata = createMetadata({
-  title: 'About Us',
+  title: 'About Justiceland | India’s Lawyer Directory',
   description:
-    'Justiceland is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video — at fees each advocate states upfront.',
+    'Justiceland is a lawyer directory where clients find verified advocates and consult them anonymously by chat, call or video, at rates stated upfront.',
   path: '/about',
+  keywords: [
+    'about justiceland',
+    'online lawyer consultation india',
+    'verified lawyer directory india',
+    'anonymous legal advice india',
+  ],
 });
 
 const VALUES = [

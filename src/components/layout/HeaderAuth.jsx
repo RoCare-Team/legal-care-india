@@ -78,14 +78,13 @@ export default function HeaderAuth({ onDark = false }) {
           { icon: Scale, label: 'As a Lawyer', sub: 'Manage your profile', href: '/login' },
         ]}
       />
-      <AuthDropdown
-        label="Sign up"
-        variant={ctaVariant}
-        items={[
-          { icon: UserRound, label: 'Sign up as User', sub: 'Free client account', href: '/user/signup' },
-          { icon: Scale, label: 'Register as Lawyer', sub: 'List your practice', href: '/register' },
-        ]}
-      />
+      {/* Only lawyers register: a client account is created by logging in with
+          a mobile number, so a "Sign up as User" entry would lead to the same
+          screen as "Log in" and only make the visitor choose between two names
+          for one thing. */}
+      <Button href="/register" variant={ctaVariant} size="sm" leftIcon={<Scale className="h-4 w-4" />}>
+        Register as Lawyer
+      </Button>
     </div>
   );
 }

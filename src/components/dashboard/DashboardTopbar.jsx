@@ -22,7 +22,7 @@ export default function DashboardTopbar({ advocate }) {
             {advocate.verified && (
               <Badge variant="success" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
                 Verified
-              </Badge>
+              </Badge>  
             )}
           </div>
           <p className="mt-0.5 break-words text-sm text-ink/55">

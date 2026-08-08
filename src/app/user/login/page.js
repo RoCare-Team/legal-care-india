@@ -8,6 +8,7 @@ export const metadata = createMetadata({
   title: 'Log In',
   description: 'Log in to your Justiceland account.',
   path: '/user/login',
+  noindex: true,
 });
 
 export default async function UserLoginPage() {

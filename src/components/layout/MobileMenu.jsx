@@ -136,15 +136,9 @@ export default function MobileMenu({ isOpen, onClose }) {
                 </>
               ) : (
                 <>
-                  <Button href={AUTH_NAV.userSignup.href} fullWidth onClick={onClose}>
-                    {AUTH_NAV.userSignup.label}
-                  </Button>
-                  <Button
-                    href={AUTH_NAV.userLogin.href}
-                    variant="outline"
-                    fullWidth
-                    onClick={onClose}
-                  >
+                  {/* User login is the primary action now — it doubles as
+                      sign-up, so there is no separate button for that. */}
+                  <Button href={AUTH_NAV.userLogin.href} fullWidth onClick={onClose}>
                     {AUTH_NAV.userLogin.label}
                   </Button>
                   <Button

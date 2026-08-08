@@ -39,7 +39,7 @@ export default function CityCard({ city, count }) {
           <>
             <Image
               src={image}
-              alt=""
+              alt={`${name}, ${state}`}
               fill
               sizes="160px"
               className="object-cover transition-transform duration-500 group-hover:scale-105"

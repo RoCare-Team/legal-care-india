@@ -18,8 +18,9 @@ export const MAIN_NAV = [
 export const AUTH_NAV = {
   login: { label: 'Lawyer Login', href: '/login' },
   register: { label: 'Register as Lawyer', href: '/register' },
+  // No `userSignup`: a client account is created by logging in with a mobile
+  // number, so /user/login is the only client-facing entry point.
   userLogin: { label: 'User Login', href: '/user/login' },
-  userSignup: { label: 'Sign Up', href: '/user/signup' },
 };
 
 export const FOOTER_NAV = [

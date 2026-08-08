@@ -22,9 +22,24 @@ const WalletTxnSchema = new Schema(
 
 const UserSchema = new Schema(
   {
-    name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    // Identity is the mobile number now: an account is created the first time a
+    // number passes OTP verification. Name, email and password are all things
+    // an account may simply not have — there is no sign-up form left to demand
+    // them, so requiring them here would make login itself impossible.
+    name: { type: String, default: '', trim: true },
+
+    // `sparse` matters: without it, every account created without an email
+    // would count as the same `null` value and the unique index would reject
+    // all but the first one.
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+      default: undefined,
+    },
+    passwordHash: { type: String, default: undefined },
 
     // Password reset via OTP — same scheme as Advocate: only the SHA-256 hash
     // of the 6-digit code is stored, with an expiry, and `resetOtpAttempts`
@@ -33,7 +48,15 @@ const UserSchema = new Schema(
     resetOtpExpires: { type: Date, default: null, select: false },
     resetOtpAttempts: { type: Number, default: 0, select: false },
 
-    phone: { type: String, default: '' },
+    // The 10-digit mobile number, stored bare (no +91, no spaces) so a lookup
+    // at login is an exact match. This is the account's identity, so the
+    // database enforces one account per number rather than trusting the login
+    // route to check first — two requests arriving together would both pass
+    // that check and create two accounts for the same person.
+    //
+    // `sparse` covers accounts that genuinely have no number; without it every
+    // one of them would collide on the same missing value.
+    phone: { type: String, unique: true, sparse: true, default: undefined },
     photo: { type: String, default: '' },
     city: { type: String, default: '' },
     // Privacy preference: when on, the user's name is hidden from lawyers

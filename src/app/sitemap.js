@@ -33,7 +33,10 @@ export default async function sitemap() {
     { path: '/about', priority: 0.5, changeFrequency: 'monthly' },
     { path: '/contact', priority: 0.5, changeFrequency: 'monthly' },
     { path: '/register', priority: 0.7, changeFrequency: 'monthly' },
-    { path: '/login', priority: 0.4, changeFrequency: 'monthly' },
+    // /login and the other account routes are deliberately absent: they carry
+    // `noindex`, and listing a noindex URL in the sitemap asks a crawler to
+    // index a page that then tells it not to. Google reports that as a
+    // conflict rather than resolving it silently.
     { path: '/verification', priority: 0.4, changeFrequency: 'monthly' },
     { path: '/success-stories', priority: 0.3, changeFrequency: 'monthly' },
     { path: '/careers', priority: 0.3, changeFrequency: 'monthly' },

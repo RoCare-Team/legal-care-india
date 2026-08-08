@@ -10,6 +10,7 @@ export const metadata = createMetadata({
   title: 'My Account',
   description: 'Manage your Justiceland account.',
   path: '/account',
+  noindex: true,
 });
 
 export default async function AccountPage() {

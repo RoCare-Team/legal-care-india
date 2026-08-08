@@ -7,6 +7,7 @@ export const metadata = createMetadata({
   title: 'Lawyer Login',
   description: 'Sign in to your Justiceland lawyer dashboard to manage your public profile.',
   path: '/login',
+  noindex: true,
 });
 
 export default function LoginPage() {

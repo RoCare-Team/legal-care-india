@@ -23,7 +23,22 @@ export default function robots() {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/dashboard/', '/_next/'],
+        // Crawl budget spent on a login form is crawl budget not spent on a
+        // lawyer profile. These routes are all `noindex` already; blocking
+        // them here stops the fetch happening at all. Kept in step with the
+        // noindex set in the page metadata — if one grows, so does the other.
+        disallow: [
+          '/api/',
+          '/_next/',
+          '/dashboard/',
+          '/admin/',
+          '/account/',
+          '/login',
+          '/user/login',
+          '/user/signup',
+          '/forgot-password',
+          '/reset-password',
+        ],
       },
     ],
     sitemap: new URL('/sitemap.xml', SITE.url).toString(),

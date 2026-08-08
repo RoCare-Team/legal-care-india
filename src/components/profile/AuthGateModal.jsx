@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { X, UserPlus, LogIn, ShieldCheck } from 'lucide-react';
+import { X, LogIn, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 /**
@@ -77,20 +77,20 @@ export default function AuthGateModal({ open, onClose, advocateName }) {
         </span>
 
         <h2 id="auth-gate-title" className="mt-4 font-display text-xl font-semibold text-ink">
-          Create a free account
+          Log in to continue
         </h2>
         <p className="mt-1.5 text-sm text-ink/60">
-          Sign up or log in to contact{' '}
+          Enter your mobile number to contact{' '}
           <span className="font-medium text-ink/80">{advocateName || 'this lawyer'}</span>{' '}
-          and save lawyers you like. It only takes a minute.
+          and save lawyers you like. No password — we send a one-time code.
         </p>
 
-        <div className="mt-5 space-y-2">
-          <Button href={`/user/signup${next}`} fullWidth leftIcon={<UserPlus className="h-4 w-4" />}>
-            Sign Up — it&apos;s free
-          </Button>
-          <Button href={`/user/login${next}`} variant="outline" fullWidth leftIcon={<LogIn className="h-4 w-4" />}>
-            I already have an account
+        {/* One button, because there is one path: a first-time number creates
+            the account as part of logging in. Offering "sign up" and "log in"
+            as a choice would ask the visitor to know which one they are. */}
+        <div className="mt-5">
+          <Button href={`/user/login${next}`} fullWidth leftIcon={<LogIn className="h-4 w-4" />}>
+            Continue with mobile number
           </Button>
         </div>
       </div>

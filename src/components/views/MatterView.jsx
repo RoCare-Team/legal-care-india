@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { withTail, practiceLabel } from '@/lib/metadata';
 import { ShieldCheck, MessageSquare, BadgeIndianRupee, Users, Scale } from 'lucide-react';
 import { Container } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
@@ -27,13 +28,20 @@ const TRUST = [
 
 export function matterMeta(service, subService, subSlug) {
   const description = getMatterDescription(service.name, subService);
+  const lower = subService.toLowerCase();
+
   return {
-    title: `${subService} Lawyers`,
+    title: withTail(`${subService} Lawyers in India`, 'Verified & Online'),
     description: description
-      ? `${description} Find verified ${subService} lawyers in India — compare experience, fees and contact them directly.`
-      : `Find verified lawyers for ${subService} matters (${service.name}) in India.`,
+      ? `${description} Find verified ${lower} lawyers in India — compare experience and rates, then consult online.`
+      : `Find verified lawyers for ${lower} matters in India. Compare experience and per-minute rates, then consult by chat, call or video.`,
     path: matterPath(subSlug),
-    keywords: [`${subService} lawyer`, `${subService} advocate`, `${service.name} lawyer`],
+    keywords: [
+      `${lower} lawyer`,
+      `${lower} advocate india`,
+      `${lower} case lawyer`,
+      `${practiceLabel(service.name).toLowerCase()} lawyer`,
+    ],
   };
 }
 

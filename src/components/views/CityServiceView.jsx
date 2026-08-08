@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { withTail, practiceLabel } from '@/lib/metadata';
 import {
   ArrowRight, ArrowLeft, ChevronDown, ShieldCheck, MessageSquare, BadgeIndianRupee,
   Users, Layers, MapPin, Sparkles,
@@ -14,6 +15,9 @@ import {
   cityPath, servicePath, cityServicePath, cityMatterPath,
 } from '@/lib/serviceRoutes';
 import { getSubServiceLinks, CATEGORIES } from '@/data/categories';
+import { getMatterDescription } from '@/data/matterContent';
+import { getServiceContent } from '@/data/serviceContent';
+import { WhenToConsult } from '@/components/views/sections/ContentSections';
 import { pluralize } from '@/utils/formatters';
 
 /** `/[service]-in-[city]` — one legal service, scoped to one city. */
@@ -44,13 +48,21 @@ function buildFaqs(service, city, count) {
 }
 
 export function cityServiceMeta(service, city) {
+  const label = practiceLabel(service.name);
+  const lower = label.toLowerCase();
+
   return {
-    title: `${service.name} Lawyers in ${city.name}`,
-    description: `Find verified ${service.name} lawyers in ${city.name}, ${city.state}. ${service.description} Compare experience and contact them directly.`,
+    title: withTail(`${label} Lawyers in ${city.name}`, 'Verified Experts'),
+    description: `Find verified ${lower} lawyers in ${city.name}, ${city.state}. Compare experience, courts and per-minute rates, then consult by chat, call or video.`,
     path: cityServicePath(service, city),
+    // The terms someone in this city actually types for this area — not the
+    // site-wide list, which said the same nine things on every one of these.
     keywords: [
-      `${service.name} lawyer in ${city.name}`,
-      `${service.name} lawyer ${city.name}`,
+      `${lower} lawyer in ${city.name}`,
+      `${lower} advocate ${city.name}`,
+      `best ${lower} lawyer in ${city.name}`,
+      `${lower} legal consultation ${city.name}`,
+      `${lower} lawyer near me`,
     ],
   };
 }
@@ -58,6 +70,7 @@ export function cityServiceMeta(service, city) {
 export default async function CityServiceView({ city, service }) {
   const Icon = service.icon;
   const subServices = getSubServiceLinks(service.name);
+  const serviceContent = getServiceContent(service.name);
 
   // Lawyers practising this service AND based in this city.
   const allAdvocates = await getAllAdvocates();
@@ -192,13 +205,25 @@ export default async function CityServiceView({ city, service }) {
                     padding="none"
                     className="group flex items-center justify-between gap-3 p-4 transition-all duration-300 hover:-translate-y-0.5"
                   >
-                    <span className="flex items-center gap-3">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent group-hover:text-white">
+                    {/* The matter's own one-line description, not just its
+                        name. It is curated per matter in `matterContent.js`
+                        and was already written — leaving it off made a page of
+                        fourteen bare labels that told a reader nothing about
+                        which of them was their problem. */}
+                    <span className="flex min-w-0 items-start gap-3">
+                      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent transition-colors group-hover:bg-accent group-hover:text-white">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <span className="text-sm font-medium text-ink">{item.name}</span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-ink">{item.name}</span>
+                        {getMatterDescription(service.name, item.name) && (
+                          <span className="mt-1 block text-[13px] leading-relaxed text-ink/55">
+                            {getMatterDescription(service.name, item.name)}
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-ink/20 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-ink/20 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
                   </Card>
                 ))}
               </div>
@@ -248,6 +273,18 @@ export default async function CityServiceView({ city, service }) {
             />
           </div>
         </div>
+
+        {/* ── When you need this lawyer ─────────────────────────────── */}
+        {/* The situations block the practice-area page already carries, shown
+            here too. A city page that only lists lawyers tells someone who
+            arrived from a search nothing about whether their problem is even
+            the right one for this page — and the answer was already written,
+            a route away, in `serviceContent`. The city's own matters, lawyer
+            list and FAQs below are what keep this page from being that one. */}
+        <WhenToConsult
+          title={`When you need a ${practiceLabel(service.name).toLowerCase()} lawyer in ${city.name}`}
+          items={serviceContent?.whenToConsult}
+        />
 
         {/* ── Why choose ────────────────────────────────────────────── */}
         <SectionReveal>

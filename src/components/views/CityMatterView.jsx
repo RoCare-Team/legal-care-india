@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { withTail, practiceLabel } from '@/lib/metadata';
 import {
   ArrowRight, ArrowLeft, ShieldCheck, MessageSquare, BadgeIndianRupee, Users, Scale, MapPin,
 } from 'lucide-react';
@@ -25,14 +26,17 @@ const TRUST = [
 ];
 
 export function cityMatterMeta(service, subService, subSlug, city) {
+  const lower = subService.toLowerCase();
+
   return {
-    title: `${subService} Lawyers in ${city.name}`,
-    description: `Find verified ${subService} lawyers in ${city.name}, ${city.state} (${service.name}). Compare experience, fees and contact them directly.`,
+    title: withTail(`${subService} Lawyers in ${city.name}`, 'Verified'),
+    description: `Find verified ${lower} lawyers in ${city.name}, ${city.state}. Compare experience, courts and per-minute rates, then consult by chat, call or video.`,
     path: cityMatterPath(subSlug, city),
     keywords: [
-      `${subService} lawyer in ${city.name}`,
-      `${subService} lawyer ${city.name}`,
-      `${service.name} lawyer ${city.name}`,
+      `${lower} lawyer in ${city.name}`,
+      `${lower} advocate ${city.name}`,
+      `best ${lower} lawyer ${city.name}`,
+      `${practiceLabel(service.name).toLowerCase()} lawyer ${city.name}`,
     ],
   };
 }

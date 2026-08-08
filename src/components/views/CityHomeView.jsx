@@ -1,4 +1,5 @@
 import JsonLd from '@/components/shared/JsonLd';
+import { withTail, practiceLabel } from '@/lib/metadata';
 import { breadcrumbSchema, webPageSchema } from '@/lib/schema';
 import { cityPath } from '@/lib/serviceRoutes';
 
@@ -32,14 +33,15 @@ import CTA from '@/components/home/CTA';
  */
 export function cityMeta(city) {
   return {
-    title: `Lawyers in ${city.name}`,
-    description: `Find and consult verified lawyers in ${city.name}, ${city.state}. Compare experience, ratings and fees, then speak to the one you choose by chat, call or video.`,
+    title: withTail(`Verified Lawyers in ${city.name}`, 'Consult Online'),
+    description: `Find and consult verified lawyers in ${city.name}, ${city.state}. Compare practice areas, courts and per-minute rates, then talk by chat, call or video.`,
     path: cityPath(city),
     keywords: [
       `lawyers in ${city.name}`,
-      `${city.name} lawyer`,
       `advocate in ${city.name}`,
       `best lawyer in ${city.name}`,
+      `${city.name} lawyer consultation`,
+      `legal advice ${city.name}`,
     ],
   };
 }
