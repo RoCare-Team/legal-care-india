@@ -8,7 +8,13 @@ export const SITE = {
   tagline: 'Find Verified Lawyers Across India',
   description:
     'Justiceland is a trusted lawyer directory platform to discover, compare and connect with verified lawyers across every city and legal service in India.',
-  url: 'https://justiceland.online',
+  // The one spelling of the site's address. Everything canonical-facing is
+  // built from this — canonicals, sitemap, robots host, Open Graph URLs and
+  // the schema — so www vs non-www is decided here and nowhere else.
+  //
+  // It has to match what the server actually serves, or every page names a URL
+  // it does not live at and a crawler has to guess which of the two is real.
+  url: 'https://www.justiceland.online',
   locale: 'en_IN',
   language: 'en-IN',
   twitterHandle: '@legalcareindia',

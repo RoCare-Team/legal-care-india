@@ -195,9 +195,12 @@ export const baseMetadata = {
         },
       },
   verification: {
-    ...(process.env.GOOGLE_SITE_VERIFICATION
-      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
-      : {}),
+    // The Search Console token. It ships in the code rather than the
+    // environment because it is public either way — it is served in the HTML
+    // of every page — and an env var would have to be set again on Vercel,
+    // where forgetting it silently un-verifies the property. The env var still
+    // wins if set, so a different property can be pointed at without a commit.
+    google: process.env.GOOGLE_SITE_VERIFICATION || 'ADk9WTe4LUB5pciHiKXtM_EB_ZvxjWSLhxlGIn57uGI',
     ...(process.env.BING_SITE_VERIFICATION
       ? { other: { 'msvalidate.01': process.env.BING_SITE_VERIFICATION } }
       : {}),
