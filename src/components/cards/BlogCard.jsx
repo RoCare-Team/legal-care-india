@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock } from 'lucide-react';
 import { Badge, Card } from '@/components/ui';
+import SmartImage from '@/components/shared/SmartImage';
 
 /**
  * BlogCard — a single article entry in the blogs grid.
@@ -15,11 +16,11 @@ export default function BlogCard({ post }) {
     <Card as={Link} href={`/blogs/${slug}`} hoverable padding="none" className="group flex h-full flex-col overflow-hidden">
       <div className="relative h-40 bg-gradient-to-br from-primary/15 via-secondary/15 to-accent/15">
         {coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SmartImage
             src={coverImage}
             alt={title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         )}
         <Badge variant="primary" className="absolute left-4 top-4">{category}</Badge>

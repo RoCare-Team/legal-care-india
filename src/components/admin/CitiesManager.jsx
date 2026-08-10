@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus, MapPin, Trash2, ExternalLink, CheckCircle2, Lock, Upload, ImageIcon, X, Loader2 } from 'lucide-react';
 import { Button, FormField, Input, Select } from '@/components/ui';
 import { STATES, citiesForState } from '@/data/indiaLocations';
+import SmartImage from '@/components/shared/SmartImage';
 
 /**
  * CitiesManager — admin UI to add a new city (which creates a /cities/[slug]
@@ -132,8 +133,9 @@ export default function CitiesManager({ cities }) {
           <FormField label="City image (optional)" htmlFor="c-img">
             {image ? (
               <div className="relative overflow-hidden rounded-xl border border-ink/10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image} alt="City preview" className="h-28 w-full object-cover" />
+                <span className="relative block h-28 w-full">
+                  <SmartImage src={image} alt="City preview" sizes="400px" className="object-cover" />
+                </span>
                 <button
                   type="button"
                   onClick={() => setImage('')}

@@ -12,7 +12,7 @@ export const organizationNode = {
   '@id': `${SITE.url}/#organization`,
   name: SITE.name,
   url: SITE.url,
-  logo: abs('/logo3.png'),
+  logo: abs('/logo5.jpeg'),
 };
 
 /**

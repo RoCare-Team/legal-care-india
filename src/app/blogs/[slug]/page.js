@@ -5,6 +5,7 @@ import { Container, Button } from '@/components/ui';
 import PageHeader from '@/components/shared/PageHeader';
 import BlogCard from '@/components/cards/BlogCard';
 import JsonLd from '@/components/shared/JsonLd';
+import SmartImage from '@/components/shared/SmartImage';
 import { SeoSection, LinkCardGrid } from '@/components/shared/SeoSection';
 import { articleSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllBlogs, getBlogBySlug } from '@/lib/blogs';
@@ -97,12 +98,15 @@ export default async function BlogPostPage({ params }) {
 
       <Container size="narrow" className="py-10 sm:py-12">
         {post.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.coverImage}
-            alt={post.title}
-            className="mb-6 h-56 w-full rounded-2xl object-cover sm:h-72"
-          />
+          <div className="relative mb-6 h-56 w-full overflow-hidden rounded-2xl sm:h-72">
+            <SmartImage
+              src={post.coverImage}
+              alt={post.title}
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+              priority
+            />
+          </div>
         )}
 
         <div className="mb-6 flex items-center gap-2 text-sm text-ink/45">

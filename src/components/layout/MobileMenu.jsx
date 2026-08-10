@@ -34,14 +34,14 @@ export default function MobileMenu({ isOpen, onClose }) {
   return (
     <>
       <div
-        className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-50 bg-ink/40 backdrop-blur-sm transition-opacity duration-300 xl:hidden ${
           isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
         onClick={onClose}
         aria-hidden="true"
       />
       <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-[82%] max-w-sm flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+        className={`fixed inset-y-0 right-0 z-50 flex w-[82%] max-w-sm flex-col bg-surface shadow-2xl transition-transform duration-300 ease-out xl:hidden ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"

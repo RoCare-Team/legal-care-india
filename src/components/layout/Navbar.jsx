@@ -33,7 +33,10 @@ export default function Navbar({ className }) {
             href={href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'whitespace-nowrap rounded-full px-3 py-1.5 text-[14.5px] transition-colors xl:px-3.5',
+              // The bar is at its tightest the moment this nav appears, at xl,
+              // and loosens from there — hence the padding growing rather than
+              // starting wide and being clawed back.
+              'whitespace-nowrap rounded-full px-2.5 py-1.5 text-[14.5px] transition-colors 2xl:px-3.5',
               active
                 ? 'bg-primary/[0.09] font-bold text-primary'
                 : 'font-medium text-ink/65 hover:bg-ink/[0.04] hover:text-ink'

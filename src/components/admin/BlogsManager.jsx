@@ -8,6 +8,7 @@ import {
   Pencil, FileText, Eye, EyeOff,
 } from 'lucide-react';
 import { Button, FormField, Input, Select, Textarea } from '@/components/ui';
+import SmartImage from '@/components/shared/SmartImage';
 
 /** The categories an article can be filed under. */
 const CATEGORIES = [
@@ -227,8 +228,9 @@ export default function BlogsManager({ posts }) {
           <FormField label="Cover image (optional)" htmlFor="b-img">
             {form.coverImage ? (
               <div className="relative overflow-hidden rounded-xl border border-ink/10">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.coverImage} alt="Cover preview" className="h-28 w-full object-cover" />
+                <span className="relative block h-28 w-full">
+                  <SmartImage src={form.coverImage} alt="Cover preview" sizes="400px" className="object-cover" />
+                </span>
                 <button
                   type="button"
                   onClick={() => set('coverImage', '')}
@@ -325,12 +327,9 @@ export default function BlogsManager({ posts }) {
               className="flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface p-4 shadow-card"
             >
               {p.coverImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.coverImage}
-                  alt=""
-                  className="h-12 w-16 shrink-0 rounded-xl object-cover"
-                />
+                <span className="relative block h-12 w-16 shrink-0 overflow-hidden rounded-xl">
+                  <SmartImage src={p.coverImage} alt="" sizes="64px" className="object-cover" />
+                </span>
               ) : (
                 <span className="grid h-12 w-16 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                   <FileText className="h-5 w-5" aria-hidden="true" />

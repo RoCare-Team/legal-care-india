@@ -6,71 +6,81 @@ import { SITE } from '@/constants/site';
 /**
  * Logo — the brand lockup, links home.
  *
- * `public/logo3.png` is a horizontal lockup — book-and-scales mark, a rule,
- * then the wordmark — sitting inside a good deal of empty margin. Rendered
- * whole it would be well under half the height it should be at any given box
- * size, so the margin is cropped away here rather than in a second file: one
- * asset to replace when the brand changes.
+ * `public/logo5.jpeg` is the finished artwork: the book-and-scales emblem, a
+ * thin rule, and the JUSTICELAND wordmark, all in one 872×252 file. It is drawn
+ * here exactly as it was supplied — one picture, whole, at its own aspect ratio.
  *
- * The crop is exact, measured off the file itself. The artwork occupies
- * x 4.18%–97.55% and y 25.23%–71.58% of the image; the two CROP entries below
- * turn that into the width and offsets an absolutely-positioned image needs to
- * make the artwork exactly fill its container.
+ * It used to be shown as two separate crops so the emblem could be enlarged
+ * against the wordmark. That let the emblem lead, but it also fixed the
+ * wordmark's height at 20–24px, which is where the letterforms stopped being
+ * readable — the whole point of a wordmark. So the lockup is one image again and
+ * the size is set on the *width*: the wordmark is over half the file, so width
+ * is what actually governs how large the type renders.
  *
- * This file has a white background rather than transparency, so on a dark
- * surface the plate below is what stops it reading as a bare white rectangle:
- * it rounds the corners and gives the artwork a margin to sit in.
+ * Sizing is width-first, and the header bar is sized to fit it rather than the
+ * other way round — see Header.jsx, whose bar heights are derived from these
+ * numbers. At the 3.4603:1 file ratio:
+ *
+ *   232px wide → 67px tall   (xl and up — the desktop target)
+ *   196px wide → 57px tall   (lg)
+ *   176px wide → 51px tall   (sm/tablet)
+ *   156px wide → 45px tall   (phone: shares the bar only with the menu button)
+ *
+ * These are one step down from where they first landed. 264px made the wordmark
+ * unambiguously large, but the bar it needed was 96px deep — taller than the
+ * header of any firm this site is meant to sit beside, and enough to eat a
+ * visible slice of every page below it. 232px still renders JUSTICELAND about
+ * 40% wider than the old two-crop lockup managed, in a bar of ordinary height.
+ *
+ * `shrink-0` matters: the logo sits in a flex row next to a `flex-1` nav, and
+ * without it a crowded bar squeezes the logo first — which is exactly how the
+ * wordmark ended up unreadable.
+ *
+ * Being a JPEG it has no transparency, so on a dark surface the plate below is
+ * what stops it reading as a bare white rectangle.
  *
  * @param {object} props
- * @param {boolean} [props.compact=false]  the mark alone, without the wordmark
- * @param {boolean} [props.onDark=false]   for placement on a dark background
- * @param {string} [props.className]
+ * @param {boolean} [props.onDark=false]  for placement on a dark background
+ * @param {string} [props.className]      overrides the responsive width
  */
 
-/**
- * Crop geometry per variant, as percentages of the *container*.
- *
- * Derived from the artwork's bounding box (Lx, Ty, Wx, Hy as percentages of
- * the image): width = 100/Wx, left = −Lx/Wx, top = −Ty/Hy, and the container's
- * own aspect ratio is the artwork's. Height is left to the image so its aspect
- * is never distorted.
- */
-const CROP = {
-  // Mark + wordmark: x 4.176%, y 25.228%, w 93.374%, h 46.347% → 4.1305 : 1
-  full: { ratio: '4.1305 / 1', width: '107.096%', left: '-4.472%', top: '-54.433%' },
-  // Mark alone: x 4.176%, y 25.228%, w 29.621%, h 46.347% → 1.3103 : 1
-  mark: { ratio: '1.3103 / 1', width: '337.598%', left: '-14.098%', top: '-54.433%' },
-};
+/** The file's own pixel dimensions — 872 × 252, i.e. 3.4603 : 1. */
+const FILE = { width: 872, height: 252 };
 
-export default function Logo({ compact = false, onDark = false, className }) {
-  const crop = compact ? CROP.mark : CROP.full;
-
+export default function Logo({ onDark = false, className }) {
   return (
     <Link
       href="/"
       aria-label={`${SITE.name} — home`}
       className={cn(
-        'inline-flex items-center',
-        // The plate is only for dark surfaces; on a white page the file's own
-        // white background already blends and a plate would be invisible.
-        onDark && 'rounded-xl bg-white px-2 py-1.5 shadow-sm',
+        'block shrink-0',
+        // This file is a JPEG, so it has no transparency — its white ground is
+        // part of the picture. On the dark footer that would read as a bare
+        // white block, so the plate rounds its corners and gives the artwork a
+        // margin to sit in. `w-fit` keeps the plate the width of the logo
+        // instead of stretching across the footer column.
+        onDark && 'w-fit rounded-xl bg-white px-2.5 py-2 shadow-sm',
         className
       )}
     >
-      <span
-        className="relative block h-8 overflow-hidden sm:h-9"
-        style={{ aspectRatio: crop.ratio }}
-      >
-        <Image
-          src="/logo3.png"
-          alt={SITE.name}
-          width={1796}
-          height={876}
-          className="absolute max-w-none"
-          style={{ width: crop.width, height: 'auto', left: crop.left, top: crop.top }}
-          priority
-        />
-      </span>
+      <Image
+        src="/logo5.jpeg"
+        alt=""
+        width={FILE.width}
+        height={FILE.height}
+        // Only the widths this actually renders at, so the browser downloads a
+        // 264px-wide file on desktop rather than the full 872px original.
+        sizes="(max-width: 639px) 156px, (max-width: 1023px) 176px, (max-width: 1279px) 196px, 232px"
+        // Above the default 75. The serifs on JUSTICELAND are thin, and at this
+        // size a re-encode at 75 puts visible mush on their edges; the file is
+        // 36KB to begin with, so the extra bytes are not worth arguing about.
+        quality={95}
+        priority
+        // `h-auto` with a set width is what preserves the aspect ratio — the
+        // intrinsic width/height above give Next the ratio, and nothing here
+        // constrains the height, so the picture can never be squashed.
+        className="h-auto w-[156px] object-contain sm:w-[176px] lg:w-[196px] xl:w-[232px]"
+      />
     </Link>
   );
 }

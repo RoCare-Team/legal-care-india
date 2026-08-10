@@ -1,5 +1,6 @@
 import { ImageIcon } from 'lucide-react';
 import ProfileSection from './ProfileSection';
+import SmartImage from '@/components/shared/SmartImage';
 
 /**
  * ProfileGallery — office photo grid. Uses labelled gradient placeholders
@@ -22,11 +23,11 @@ export default function ProfileGallery({ advocate }) {
             className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-ink/8"
           >
             {img.url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <SmartImage
                 src={img.url}
                 alt={img.label || `Office photo ${i + 1}`}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 640px) 50vw, 25vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
               />
             ) : (
               <div

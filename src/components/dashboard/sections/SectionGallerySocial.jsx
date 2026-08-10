@@ -5,6 +5,7 @@ import { Image as ImageIcon, Share2, Plus, X, Linkedin, Globe, Facebook, Twitter
 import { FormField, Input } from '@/components/ui';
 import { fileToResizedDataURL } from '@/utils/imageFile';
 import DashboardSection from '../DashboardSection';
+import SmartImage from '@/components/shared/SmartImage';
 
 const MAX_PHOTOS = 6;
 
@@ -46,8 +47,7 @@ export default function SectionGallerySocial({ data, set }) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {gallery.map((img, i) => (
             <figure key={img.id || i} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-ink/10">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img.url} alt={`Office photo ${i + 1}`} className="h-full w-full object-cover" />
+              <SmartImage src={img.url} alt={`Office photo ${i + 1}`} sizes="(max-width: 640px) 50vw, 33vw" className="object-cover" />
               <button
                 type="button"
                 onClick={() => removePhoto(i)}

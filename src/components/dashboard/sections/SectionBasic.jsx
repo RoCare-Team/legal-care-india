@@ -7,6 +7,7 @@ import { CITIES } from '@/data/cities';
 import { STATES, allCitiesForState } from '@/data/indiaLocations';
 import { fileToResizedDataURL } from '@/utils/imageFile';
 import DashboardSection from '../DashboardSection';
+import SmartImage from '@/components/shared/SmartImage';
 
 /**
  * SectionBasic — photo/cover, name, tagline and location.
@@ -48,12 +49,7 @@ export default function SectionBasic({ data, set, cities = CITIES }) {
       {/* Cover preview */}
       <div className="relative mb-4 h-32 overflow-hidden rounded-xl border border-ink/10 bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/20">
         {data.coverImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={data.coverImage}
-            alt="Cover"
-            className="h-full w-full object-cover"
-          />
+          <SmartImage src={data.coverImage} alt="Cover" sizes="100vw" className="object-cover" />
         )}
         <div className="absolute right-2 top-2 flex gap-2">
           <UploadButton label="Upload Cover" icon={ImageIcon} onFile={handleCover} solid />
