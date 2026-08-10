@@ -28,6 +28,38 @@ export function normalizePhone(input) {
   return /^[6-9]\d{9}$/.test(digits) ? digits : '';
 }
 
+/**
+ * The test number, if one is configured and allowed to work right now.
+ *
+ * A number that always accepts a known code is a login with the lock taken
+ * off, so it is deliberately awkward to leave switched on: it needs a number
+ * AND a code in the environment, and in production it needs
+ * OTP_TEST_ALLOW_PROD=true on top of that. Forgetting to remove it from a
+ * deploy is the failure this guards against — anyone who knows the pair could
+ * otherwise sign in as that user.
+ */
+function testLoginConfig() {
+  const phone = normalizePhone(process.env.OTP_TEST_PHONE);
+  const code = String(process.env.OTP_TEST_CODE || '').trim();
+  if (!phone || !code) return null;
+  if (process.env.NODE_ENV === 'production' && process.env.OTP_TEST_ALLOW_PROD !== 'true') {
+    return null;
+  }
+  return { phone, code };
+}
+
+/** Whether this number is the configured test number. */
+export function isTestPhone(phone) {
+  const cfg = testLoginConfig();
+  return Boolean(cfg && cfg.phone === phone);
+}
+
+/** Whether this code is the fixed one for the test number. */
+export function isTestCode(phone, otp) {
+  const cfg = testLoginConfig();
+  return Boolean(cfg && cfg.phone === phone && cfg.code === String(otp).trim());
+}
+
 /** Common request shape for both gateway calls. */
 async function callGateway(url, body, withToken) {
   const headers = { 'Content-Type': 'application/json' };

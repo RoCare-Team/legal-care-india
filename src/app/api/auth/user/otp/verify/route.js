@@ -6,6 +6,8 @@ import { signToken, setAuthCookie } from '@/lib/auth';
 import {
   normalizePhone,
   checkOtp,
+  isTestPhone,
+  isTestCode,
   OTP_LENGTH,
   LOGIN_OTP_MAX_ATTEMPTS,
 } from '@/lib/loginOtp';
@@ -49,7 +51,17 @@ export async function POST(request) {
       );
     }
 
-    const result = await checkOtp(phone, otp);
+    // The test number's code is checked here rather than at the gateway, which
+    // has never heard of it. Everything after this point — account lookup,
+    // creation, session — is the ordinary path, so what gets tested is the real
+    // flow and not a second one that only exists in development.
+    const result = isTestCode(phone, otp)
+      ? { ok: true, message: 'test-code' }
+      : await checkOtp(phone, otp);
+
+    if (result.ok && isTestPhone(phone)) {
+      console.warn(`[otp/verify] TEST NUMBER ${phone} signed in with the fixed code.`);
+    }
 
     if (!result.ok) {
       if (throttle) {

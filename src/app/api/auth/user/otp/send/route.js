@@ -4,6 +4,7 @@ import LoginOtp from '@/models/LoginOtp';
 import {
   normalizePhone,
   requestOtp,
+  isTestPhone,
   LOGIN_OTP_RESEND_SECONDS,
   LOGIN_OTP_MAX_PER_HOUR,
   LOGIN_OTP_WINDOW_MS,
@@ -35,6 +36,19 @@ export async function POST(request) {
       { error: 'Enter a valid 10-digit Indian mobile number.' },
       { status: 400 }
     );
+  }
+
+  // The test number never touches the gateway: no SMS is sent and no throttle
+  // is recorded, so it can be hammered while developing without a cooldown or
+  // an hourly cap getting in the way.
+  if (isTestPhone(phone)) {
+    console.warn(`[otp/send] TEST NUMBER ${phone} — no SMS sent, fixed code accepted.`);
+    return NextResponse.json({
+      ok: true,
+      sentTo: `••••••${phone.slice(-4)}`,
+      resendIn: 0,
+      test: true,
+    });
   }
 
   try {
