@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Plus, Trash2, ExternalLink, CheckCircle2, Lock, Upload, ImageIcon, X, Loader2,
-  Pencil, FileText, Eye, EyeOff,
+  Pencil, FileText, Eye, EyeOff, Undo2,
 } from 'lucide-react';
 import { Button, FormField, Input, Select, Textarea } from '@/components/ui';
 import SmartImage from '@/components/shared/SmartImage';
@@ -36,11 +36,17 @@ const EMPTY = {
  * BlogsManager — admin UI to write, edit, publish and delete articles.
  *
  * The form doubles as the editor: picking Edit on a row loads it in place,
- * so there is no second screen to keep in sync. Built-in posts (the ones
- * shipped in code) are listed read-only — they have no database row to edit.
+ * so there is no second screen to keep in sync.
+ *
+ * Built-in posts (the ones shipped in code) have no database row, so they can
+ * be removed from the site but not edited or turned into drafts — their text
+ * only exists in the source file. Removing one is reversible for that same
+ * reason: nobody could type a built-in article back in by hand, so the ones
+ * taken down are kept in a list below with a way back.
  *
  * @param {object} props
- * @param {Array} props.posts  merged list (admin-written + built-in), each with a `custom` flag
+ * @param {Array} props.posts  merged list (admin-written + built-in), each with
+ *                             a `custom` flag and, for built-ins, `hidden`
  */
 export default function BlogsManager({ posts }) {
   const router = useRouter();
@@ -131,7 +137,7 @@ export default function BlogsManager({ posts }) {
   };
 
   const togglePublished = async (post) => {
-    setBusyId(post.id);
+    setBusyId(post.slug);
     try {
       const res = await fetch('/api/admin/blogs', {
         method: 'PATCH',
@@ -144,21 +150,68 @@ export default function BlogsManager({ posts }) {
     }
   };
 
+  /**
+   * Take an article off the site.
+   *
+   * An admin post is deleted by id and is gone for good, so the confirm says
+   * so. A built-in one is only hidden — its text is still in the code and the
+   * Removed list below can put it back — so it asks for less alarm.
+   */
   const remove = async (post) => {
-    if (!window.confirm(`Delete "${post.title}"? Its page will stop working.`)) return;
-    setBusyId(post.id);
+    const message = post.custom
+      ? `Delete "${post.title}"? This cannot be undone, and its page will stop working.`
+      : `Remove "${post.title}" from the site? You can put it back from the Removed list below.`;
+    if (!window.confirm(message)) return;
+
+    const query = post.custom
+      ? `id=${encodeURIComponent(post.id)}`
+      : `slug=${encodeURIComponent(post.slug)}`;
+
+    setBusyId(post.slug);
     try {
-      const res = await fetch(`/api/admin/blogs?id=${encodeURIComponent(post.id)}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        if (form.id === post.id) reset();
-        router.refresh();
+      const res = await fetch(`/api/admin/blogs?${query}`, { method: 'DELETE' });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(payload.error || 'Could not remove the article.');
+        return;
       }
+      if (post.custom && form.id === post.id) reset();
+      router.refresh();
+    } catch {
+      setError('Network error. Please try again.');
     } finally {
       setBusyId('');
     }
   };
+
+  /** Put a removed built-in article back on the site. */
+  const restore = async (post) => {
+    setBusyId(post.slug);
+    try {
+      const res = await fetch('/api/admin/blogs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restore: post.slug }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(payload.error || 'Could not restore the article.');
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setBusyId('');
+    }
+  };
+
+  // Removed built-ins are listed on their own below rather than greyed out
+  // among the live ones, where they read as articles the site is still showing.
+  const [live, removed] = useMemo(
+    () => [posts.filter((p) => !p.hidden), posts.filter((p) => p.hidden)],
+    [posts]
+  );
 
   return (
     <div className="grid gap-6 lg:grid-cols-[24rem_minmax(0,1fr)]">
@@ -318,10 +371,10 @@ export default function BlogsManager({ posts }) {
       {/* Existing articles */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/40">
-          All articles ({posts.length})
+          All articles ({live.length})
         </p>
         <div className="space-y-3">
-          {posts.map((p) => (
+          {live.map((p) => (
             <div
               key={p.slug}
               className="flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface p-4 shadow-card"
@@ -370,12 +423,17 @@ export default function BlogsManager({ posts }) {
                 </Link>
               )}
 
+              {/* Publish/draft and Edit need a database row, so they are for
+                  admin posts only. Removal is offered on every article — a
+                  built-in is hidden rather than deleted, but from here the
+                  difference is only in the confirm and how easily it comes
+                  back, not in whether the button exists. */}
               {p.custom && (
                 <>
                   <button
                     type="button"
                     onClick={() => togglePublished(p)}
-                    disabled={busyId === p.id}
+                    disabled={busyId === p.slug}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/40 hover:bg-ink/5 hover:text-primary disabled:opacity-50"
                     aria-label={p.published ? `Unpublish ${p.title}` : `Publish ${p.title}`}
                     title={p.published ? 'Move back to draft' : 'Publish'}
@@ -390,20 +448,58 @@ export default function BlogsManager({ posts }) {
                   >
                     <Pencil className="h-4 w-4" aria-hidden="true" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => remove(p)}
-                    disabled={busyId === p.id}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/40 hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50"
-                    aria-label={`Delete ${p.title}`}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
                 </>
               )}
+
+              <button
+                type="button"
+                onClick={() => remove(p)}
+                disabled={busyId === p.slug}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink/40 hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50"
+                aria-label={p.custom ? `Delete ${p.title}` : `Remove ${p.title}`}
+                title={p.custom ? 'Delete permanently' : 'Remove from the site'}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </button>
             </div>
           ))}
         </div>
+
+        {removed.length > 0 && (
+          <div className="mt-8">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink/40">
+              Removed ({removed.length})
+            </p>
+            <p className="mb-3 text-xs text-ink/45">
+              Built-in articles taken off the site. Nothing is lost — put one back any time.
+            </p>
+            <div className="space-y-2">
+              {removed.map((p) => (
+                <div
+                  key={p.slug}
+                  className="flex items-center gap-3 rounded-2xl border border-dashed border-ink/15 bg-ink/[0.02] px-4 py-3"
+                >
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-ink/6 text-ink/35">
+                    <FileText className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink/55">{p.title}</p>
+                    <p className="truncate text-xs text-ink/40">{p.category}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => restore(p)}
+                    disabled={busyId === p.slug}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-ink/12 bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink/70 transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+                  >
+                    <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

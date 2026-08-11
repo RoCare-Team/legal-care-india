@@ -16,11 +16,11 @@ export const contentType = 'image/png';
  * The real brand lockup, inlined as a data URL.
  *
  * `ImageResponse` renders on the server with no page to resolve relative URLs
- * against, so a plain `/logo4.png` would not load. Read once at module scope
+ * against, so a plain `/logo1.png` would not load. Read once at module scope
  * rather than per request — the file never changes between deploys.
  */
 const LOGO = `data:image/png;base64,${fs
-  .readFileSync(path.join(process.cwd(), 'public', 'logo5.jpeg'))
+  .readFileSync(path.join(process.cwd(), 'public', 'logo1.png'))
   .toString('base64')}`;
 
 export default function OgImage() {
@@ -47,7 +47,16 @@ export default function OgImage() {
             flex parent would otherwise stretch it the full 1200px. The inner
             box crops the file's empty margin the same way the Logo component
             does, so the artwork fills the plate instead of floating in a
-            corner of it. */}
+            corner of it.
+
+            Every number below comes from one scale factor, which is what keeps
+            the logo from being stretched. logo1.png is 2061×512 with its
+            artwork inside x 82–1968, y 105–432 — 1886 × 327. Showing that
+            1886px-wide region in a 380px box is a scale of 380/1886 = 0.2015,
+            so the whole file draws at 2061 × 0.2015 = 415 wide by 512 × 0.2015
+            = 103 tall, shifted up and left by the margin's own scaled size.
+            The box's 66px height is 327 × 0.2015 — the artwork's height at
+            that same scale, not a figure chosen to make it fit. */}
         <div
           style={{
             display: 'flex',
@@ -57,14 +66,14 @@ export default function OgImage() {
             padding: '20px 26px',
           }}
         >
-          <div style={{ display: 'flex', position: 'relative', width: 340, height: 82, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', position: 'relative', width: 380, height: 66, overflow: 'hidden' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={LOGO}
               alt=""
-              width={364}
-              height={178}
-              style={{ position: 'absolute', left: -15, top: -45 }}
+              width={415}
+              height={103}
+              style={{ position: 'absolute', left: -16.5, top: -21.2 }}
             />
           </div>
         </div>

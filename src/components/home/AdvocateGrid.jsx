@@ -234,17 +234,19 @@ export default function AdvocateGrid({
             </label>
           )}
 
-          {/* The way out first, the arrows after it. They travel as one group
-              rather than as loose children of the header row, whose own
-              justification would otherwise spread them apart and leave the two
-              smallest targets marooned in its busiest stretch.
+          {/* The way out and the arrows, as one group rather than as loose
+              children of the header row — whose own justification would
+              otherwise spread them apart and leave the two smallest targets
+              marooned in its busiest stretch.
 
-              `ml-auto` is what keeps the arrows at the right edge on a phone.
-              The row's `justify-between` only spaces items that share a line,
-              and on a narrow screen the sort pill takes the first line on its
-              own — leaving this group to start the second line hard against the
-              left margin, nowhere near the rail it scrolls. */}
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+              On a phone the group takes a line of its own under the sort pill
+              and splits it: the way out on the left, under the pill, and the
+              arrows hard right where the rail they scroll ends. The row's own
+              `justify-between` cannot do this — it only spaces items that share
+              a line, and here the sort pill has the line above to itself. From
+              sm everything fits on one line and the group is just three
+              controls in a row. */}
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:shrink-0">
             {actionHref && actionLabel && (
               <Button href={actionHref} variant="outline" size="sm" className="shrink-0">
                 {actionLabel}
