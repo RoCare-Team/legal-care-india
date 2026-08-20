@@ -563,3 +563,108 @@ export async function adminGetCounts() {
     };
   }
 }
+
+/* ── Payments (Razorpay wallet top-ups) ─────────────────────────────────── */
+
+/**
+ * Every wallet top-up that came through Razorpay, newest first, with the user
+ * it belongs to.
+ *
+ * The ledger lives inside each user document, so this unwinds it rather than
+ * reading a payments collection. Filtering on `razorpayPaymentId` keeps out
+ * manual credits and refunds, which have no payment behind them.
+ *
+ * @param {{page?:number, perPage?:number, search?:string}} opts
+ *   `search` matches the user's name, email or phone, or a payment/order id.
+ */
+export async function adminGetPayments({ page = 1, perPage = 25, search = '' } = {}) {
+  await connectDB();
+
+  const term = String(search || '').trim();
+  const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const rx = safe ? new RegExp(safe, 'i') : null;
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const pipeline = [
+    // Cheap pre-filter on the whole document before the expensive unwind.
+    { $match: { 'walletTransactions.razorpayPaymentId': { $exists: true, $ne: '' } } },
+    { $unwind: '$walletTransactions' },
+    { $match: { 'walletTransactions.razorpayPaymentId': { $nin: ['', null] } } },
+    {
+      $project: {
+        _id: 0,
+        userId: '$_id',
+        name: '$name',
+        email: '$email',
+        phone: '$phone',
+        txnId: '$walletTransactions._id',
+        amount: '$walletTransactions.amount',
+        note: '$walletTransactions.note',
+        paymentId: '$walletTransactions.razorpayPaymentId',
+        orderId: '$walletTransactions.razorpayOrderId',
+        createdAt: '$walletTransactions.createdAt',
+      },
+    },
+    ...(rx
+      ? [{
+          $match: {
+            $or: [
+              { name: rx }, { email: rx }, { phone: rx },
+              { paymentId: rx }, { orderId: rx },
+            ],
+          },
+        }]
+      : []),
+    { $sort: { createdAt: -1 } },
+    {
+      // One pass for the page, the count and the money — three round trips
+      // otherwise, over the same unwound set.
+      $facet: {
+        rows: [{ $skip: Math.max(0, (page - 1) * perPage) }, { $limit: perPage }],
+        count: [{ $count: 'n' }],
+        total: [{ $group: { _id: null, sum: { $sum: '$amount' } } }],
+        recent: [
+          { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+          { $group: { _id: null, sum: { $sum: '$amount' }, n: { $sum: 1 } } },
+        ],
+      },
+    },
+  ];
+
+  try {
+    const [out] = await User.aggregate(pipeline);
+    const rows = (out?.rows || []).map((r) => ({
+      id: String(r.txnId),
+      userId: String(r.userId),
+      name: r.name || '',
+      email: r.email || '',
+      phone: r.phone || '',
+      amount: r.amount || 0,
+      note: r.note || '',
+      paymentId: r.paymentId || '',
+      orderId: r.orderId || '',
+      createdAt: iso(r.createdAt),
+    }));
+
+    const total = out?.count?.[0]?.n || 0;
+    return {
+      rows,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+      page,
+      perPage,
+      stats: {
+        collected: out?.total?.[0]?.sum || 0,
+        last30Days: out?.recent?.[0]?.sum || 0,
+        last30Count: out?.recent?.[0]?.n || 0,
+      },
+    };
+  } catch (err) {
+    console.error('adminGetPayments failed', err);
+    return {
+      rows: [], total: 0, totalPages: 1, page, perPage,
+      stats: { collected: 0, last30Days: 0, last30Count: 0 },
+    };
+  }
+}

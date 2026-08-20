@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { getUserById, addWalletFunds } from '@/lib/users';
-
-// A sensible cap so a typo can't add a crore by accident.
-const MAX_TOPUP = 100000; // ₹1,00,000 per top-up
+import { getUserById } from '@/lib/users';
 
 /** GET /api/wallet — current user's wallet balance + transactions. */
 export async function GET() {
@@ -22,43 +19,20 @@ export async function GET() {
 }
 
 /**
- * POST /api/wallet  { amount }
- * The signed-in user tops up their own wallet by `amount` (₹).
+ * POST /api/wallet — retired.
+ *
+ * This used to credit the wallet by whatever number the browser sent, with no
+ * payment involved: anyone signed in could give themselves ₹1,00,000 with one
+ * fetch from the console. Money now only enters a wallet through a Razorpay
+ * payment that the server has verified — /api/wallet/order to start checkout,
+ * then /api/wallet/verify (or the webhook) to credit it.
+ *
+ * Kept as an explicit refusal rather than deleted so an old cached page gets a
+ * clear message instead of Next.js's bare 405.
  */
-export async function POST(request) {
-  const session = await getSession();
-  if (!session || session.role !== 'user') {
-    return NextResponse.json({ error: 'Please sign in to add money.' }, { status: 401 });
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
-  }
-
-  const amount = Number(body?.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ error: 'Enter a valid amount.' }, { status: 400 });
-  }
-  if (amount > MAX_TOPUP) {
-    return NextResponse.json(
-      { error: `You can add up to ₹${MAX_TOPUP.toLocaleString('en-IN')} at a time.` },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const user = await addWalletFunds(session.id, amount, 'Added to wallet');
-    if (!user) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
-    return NextResponse.json({
-      ok: true,
-      balance: user.walletBalance,
-      transactions: user.walletTransactions,
-    });
-  } catch (err) {
-    console.error('wallet top-up error', err);
-    return NextResponse.json({ error: 'Could not add money. Please try again.' }, { status: 500 });
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Please add money through the payment screen.' },
+    { status: 410 }
+  );
 }

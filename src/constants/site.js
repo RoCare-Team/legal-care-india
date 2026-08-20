@@ -76,7 +76,7 @@ export const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encode
 
 export const SOCIAL = {
   twitter: 'https://twitter.com/legalcareindia',
-  facebook: 'https://facebook.com/legalcareindia',
+  facebook: 'https://www.facebook.com/justicelandofficial',
   linkedin: 'https://linkedin.com/company/legalcareindia',
-  instagram: 'https://instagram.com/legalcareindia',
+  instagram: 'https://www.instagram.com/justiceland_official',
 };
