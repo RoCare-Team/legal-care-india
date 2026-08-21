@@ -12,6 +12,7 @@ import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
 import FloatingContact from '@/components/shared/FloatingContact';
 import Analytics from '@/components/shared/Analytics';
+import MetaPixel from '@/components/shared/MetaPixel';
 import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
 import PresenceProvider from '@/components/consultation/PresenceProvider';
 import LocationProvider from '@/components/location/LocationProvider';
@@ -101,6 +102,7 @@ export default async function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="preconnect" href="https://connect.facebook.net" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -136,6 +138,7 @@ export default async function RootLayout({ children }) {
         <FloatingContact />
         <AdvocateCallListener />
         <Analytics />
+        <MetaPixel />
       </body>
     </html>
   );
