@@ -11,6 +11,7 @@ import { Avatar, Button } from '@/components/ui';
 import ViewConversationButton from '@/components/consultation/ViewConversationButton';
 import { logout } from '@/utils/logout';
 import { refreshAuth } from '@/utils/authEvents';
+import { loadRazorpayCheckout } from '@/utils/razorpayCheckout';
 import { formatDate } from '@/utils/formatters';
 import { formatRate } from '@/constants/callRates';
 
@@ -395,7 +396,10 @@ function ConsultationsView({ consultations = [], onRemove }) {
 
 /* ── Wallet ───────────────────────────────────────────────────────────── */
 
-const QUICK_AMOUNTS = [100, 500, 1000, 2000];
+// Kept in step with MIN_TOPUP in /api/wallet/order — the server is what
+// actually enforces it; this is only so the user finds out before checkout.
+const MIN_TOPUP = 50;
+const QUICK_AMOUNTS = [50, 100, 500, 1000, 2000];
 
 function WalletView({ user }) {
   const [balance, setBalance] = useState(user.walletBalance || 0);
@@ -403,33 +407,106 @@ function WalletView({ user }) {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
+  // Money can no longer be added by asking the server nicely: the wallet only
+  // grows once Razorpay confirms a payment. Three steps — open an order, run
+  // checkout, then let the server verify what came back.
   const addMoney = async () => {
     setError('');
-    const value = Number(amount);
+    setNotice('');
+
+    const value = Math.round(Number(amount));
     if (!Number.isFinite(value) || value <= 0) {
       setError('Enter a valid amount.');
       return;
     }
+    if (value < MIN_TOPUP) {
+      setError(`The smallest top-up is ₹${MIN_TOPUP}.`);
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch('/api/wallet', {
+      const orderRes = await fetch('/api/wallet/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: value }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Could not add money.');
+      const order = await orderRes.json();
+      if (!orderRes.ok) {
+        setError(order.error || 'Could not start the payment.');
+        setLoading(false);
         return;
       }
+
+      const ready = await loadRazorpayCheckout();
+      if (!ready) {
+        setError('Could not reach the payment page. Check your connection and try again.');
+        setLoading(false);
+        return;
+      }
+
+      const checkout = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+        name: 'Justiceland',
+        description: `Add ${formatMoney(value)} to wallet`,
+        image: '/logo1.png',
+        prefill: order.prefill,
+        theme: { color: '#1E3A5F' },
+        // Razorpay has the money at this point; the balance is whatever our
+        // own server says once it has checked the signature.
+        handler: (response) => confirmPayment(response),
+        modal: {
+          // Sheet closed without paying — not an error, just nothing done.
+          ondismiss: () => setLoading(false),
+        },
+      });
+
+      checkout.on('payment.failed', (resp) => {
+        setLoading(false);
+        setError(resp?.error?.description || 'Payment failed. Please try again.');
+      });
+
+      checkout.open();
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Step three: the browser cannot be trusted about whether it really paid, so
+  // the server re-checks with Razorpay and sends back the true balance.
+  const confirmPayment = async (response) => {
+    try {
+      const res = await fetch('/api/wallet/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(response),
+      });
+      const data = await res.json();
+
+      if (res.status === 202) {
+        // Authorised but not captured yet — the webhook will finish the job.
+        setNotice(data.error || 'Payment received. Your balance will update shortly.');
+        return;
+      }
+      if (!res.ok) {
+        setError(data.error || 'We could not confirm the payment.');
+        return;
+      }
+
       setBalance(data.balance);
       setTransactions(data.transactions);
       setAmount('');
+      setNotice('Money added to your wallet.');
       // Tell the navbar (and any other useAuth consumer) the balance changed.
       refreshAuth();
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError('Payment went through but the balance did not refresh. Please reload the page.');
     } finally {
       setLoading(false);
     }
@@ -474,10 +551,10 @@ function WalletView({ user }) {
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink/50">₹</span>
             <input
               type="number"
-              min="1"
+              min={MIN_TOPUP}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
+              placeholder={`Enter amount (min ₹${MIN_TOPUP})`}
               className="w-full rounded-xl border border-ink/12 py-2.5 pl-7 pr-3 text-sm text-ink outline-none transition-colors focus:border-primary"
             />
           </div>
@@ -487,10 +564,14 @@ function WalletView({ user }) {
             disabled={loading}
             leftIcon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           >
-            {loading ? 'Adding…' : 'Add money'}
+            {loading ? 'Processing…' : 'Add money'}
           </Button>
         </div>
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        {notice && <p className="mt-2 text-sm text-emerald-600">{notice}</p>}
+        <p className="mt-3 text-xs text-ink/45">
+          Payments are handled by Razorpay — cards, UPI, net banking and wallets.
+        </p>
       </div>
 
       {/* Transaction history */}

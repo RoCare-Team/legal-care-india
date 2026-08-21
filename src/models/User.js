@@ -15,6 +15,11 @@ const WalletTxnSchema = new Schema(
     type: { type: String, enum: ['credit', 'debit'], default: 'credit' },
     amount: { type: Number, required: true, min: 0 },
     note: { type: String, default: '' },
+    // Razorpay identifiers for top-ups. `paymentId` is what makes crediting
+    // idempotent: the browser callback and the webhook both report the same
+    // payment, and whichever arrives second must not add the money twice.
+    razorpayOrderId: { type: String, default: '' },
+    razorpayPaymentId: { type: String, default: '' },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: true }
