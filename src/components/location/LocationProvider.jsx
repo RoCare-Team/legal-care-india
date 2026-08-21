@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { detectLocation } from '@/utils/geolocate';
+import { slugify } from '@/utils/slugify';
 
 /**
  * LocationProvider — the visitor's chosen location, shared app-wide.
@@ -16,6 +17,9 @@ import { detectLocation } from '@/utils/geolocate';
  * directly — see the detection effect below for what that costs.
  *
  * Shape: { label, city, state, lat, lng }
+ *
+ * The city list comes down from the root layout so that a chosen place can be
+ * matched to the city page it belongs to — see `cityPathFor`.
  */
 const STORAGE_KEY = 'lci_location';
 /**
@@ -28,7 +32,40 @@ const PROMPTED_KEY = 'lci_location_prompted';
 
 const LocationContext = createContext(null);
 
-export default function LocationProvider({ children }) {
+/**
+ * The city page a place belongs to, or null when the site has no page for it.
+ *
+ * Matching is on the slugified city name, which is how the slugs were built in
+ * the first place, so "New Delhi" and "new-delhi" reach the same row. The name
+ * is compared as well as the slug because an admin-added city is free to carry
+ * a slug that is not simply its name.
+ *
+ * Returning null is a real answer, not a failure: the geocoder knows every town
+ * in India and the site has pages for a couple of dozen. Somewhere with no page
+ * is the common case, and the caller is expected to stay put rather than send
+ * anyone to a 404.
+ *
+ * The state is tried after the city because the geocoder leaves `city` empty
+ * for a union territory — searching Delhi returns state "Delhi" and no city at
+ * all, and Delhi is exactly the sort of place someone picks. Trying it second
+ * costs nothing: a state only matches when a city page happens to carry its
+ * name, which is only true of the city-states.
+ *
+ * @param {Array<{slug: string, name: string}>} cities
+ * @param {{city?: string, state?: string}} place
+ * @returns {string|null}
+ */
+function cityPathFor(cities, place) {
+  for (const candidate of [place?.city, place?.state]) {
+    const wanted = slugify(candidate || '');
+    if (!wanted) continue;
+    const match = cities.find((c) => c.slug === wanted || slugify(c.name) === wanted);
+    if (match) return `/${match.slug}`;
+  }
+  return null;
+}
+
+export default function LocationProvider({ children, cities = [] }) {
   // `undefined` until the stored value is read, so nothing renders "Set
   // location" for a frame before the saved one appears.
   const [location, setLocation] = useState(undefined);
@@ -102,8 +139,12 @@ export default function LocationProvider({ children }) {
       pickerOpen,
       openPicker: () => setPickerOpen(true),
       closePicker: () => setPickerOpen(false),
+      // Exposed rather than acted on here: the provider stores a location,
+      // it does not navigate. Whoever asked the visitor to choose decides
+      // whether choosing should also move them.
+      cityPathFor: (place) => cityPathFor(cities, place),
     }),
-    [location, save, pickerOpen]
+    [location, save, pickerOpen, cities]
   );
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
@@ -120,6 +161,7 @@ export function useLocation() {
       pickerOpen: false,
       openPicker: () => {},
       closePicker: () => {},
+      cityPathFor: () => null,
     }
   );
 }

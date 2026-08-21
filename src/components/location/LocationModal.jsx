@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { Search, LocateFixed, MapPin, X, Loader2, ChevronRight } from 'lucide-react';
 import { useLocation } from './LocationProvider';
 import { detectLocation } from '@/utils/geolocate';
@@ -12,12 +13,18 @@ import { detectLocation } from '@/utils/geolocate';
  * Whatever comes back is turned into a place name before it is shown, because
  * nobody can confirm a pair of decimals is their own neighbourhood.
  *
+ * Choosing a place the site has a city page for also opens that page. Picking
+ * a location is how someone says where they are looking for a lawyer, and the
+ * city page is the answer to that — leaving them on whatever page they happened
+ * to be on made the choice feel like it had done nothing.
+ *
  * @param {object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  */
 export default function LocationModal({ open, onClose }) {
-  const { location, setLocation, clearLocation } = useLocation();
+  const { location, setLocation, clearLocation, cityPathFor } = useLocation();
+  const router = useRouter();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -98,6 +105,14 @@ export default function LocationModal({ open, onClose }) {
       lng: place.lng,
     });
     onClose();
+
+    // Only when the site actually has a page for that city. The geocoder
+    // knows every town in India and the site covers a couple of dozen, so
+    // most choices land here with nowhere to go — and staying put is the
+    // right answer then. The location is saved either way, which is what
+    // the header and the distance filters read.
+    const path = cityPathFor(place);
+    if (path) router.push(path);
   };
 
   /** Ask the browser where we are, then turn that into a place name. */

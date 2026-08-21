@@ -5,6 +5,7 @@ import { SITE, SOCIAL, CONTACT } from '@/constants/site';
 import { COLORS } from '@/constants/colors';
 import { MAIN_NAV } from '@/constants/navigation';
 import { siteNavigationSchema } from '@/lib/schema';
+import { getAllCities } from '@/lib/cities';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import HideOnAdmin from '@/components/layout/HideOnAdmin';
@@ -83,7 +84,15 @@ const structuredData = {
   ],
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Just the slugs and names, for turning a chosen location into the city
+  // page it belongs to. The picker is a client component and cannot read the
+  // city list itself; handing it down here costs nothing — `getAllCities` is
+  // tag-cached, so this is one cached read shared by every route, and what
+  // crosses to the browser is a dozen short strings rather than a round trip
+  // at the moment someone picks a place.
+  const cities = (await getAllCities()).map((c) => ({ slug: c.slug, name: c.name }));
+
   return (
     <html lang="en-IN" className={fontVariables} suppressHydrationWarning>
       <head>
@@ -105,7 +114,7 @@ export default function RootLayout({ children }) {
           Skip to content
         </a>
         <PresenceProvider>
-          <LocationProvider>
+          <LocationProvider cities={cities}>
             <HideOnAdmin>
               <Header />
             </HideOnAdmin>
