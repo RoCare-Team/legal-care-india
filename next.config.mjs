@@ -14,16 +14,27 @@ const isProd = process.env.NODE_ENV === 'production';
  */
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com",
+  // Razorpay Checkout and the Meta Pixel are both third-party scripts the
+  // browser refuses to run unless named here. Leaving Razorpay out is not a
+  // subtle failure: the checkout sheet never opens and no one can add money.
+  // The wildcard is deliberate: checkout.js pulls more of Razorpay's own hosts
+  // as it runs (cdn. for risk detection, checkout-static-next. for the sheet),
+  // and naming them one by one breaks the next time they add another.
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://*.razorpay.com https://connect.facebook.net",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "media-src 'self' blob: mediastream:",
-  "connect-src 'self' blob: stun: turn: turns: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com",
-  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com",
+  // Razorpay: api. is the payment API, lumberjack. is its telemetry — checkout
+  // treats a blocked telemetry call as a fatal error, so it has to be allowed.
+  "connect-src 'self' blob: stun: turn: turns: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.razorpay.com https://connect.facebook.net https://www.facebook.com",
+  // Checkout runs inside an iframe, and bank/UPI pages open in nested ones.
+  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.rzp.io",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  // Netbanking and card flows POST the user out to the bank through Razorpay,
+  // which a bare 'self' would block at the last step of a real payment.
+  "form-action 'self' https://api.razorpay.com https://*.razorpay.com",
   "frame-ancestors 'self'",
   'upgrade-insecure-requests',
 ].join('; ');
