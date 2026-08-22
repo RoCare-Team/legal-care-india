@@ -91,11 +91,16 @@ export default function RegisterWizard({ cities }) {
       }
       setSlug(payload.advocate?.profilePath || payload.advocate?.slug || '');
       setSubmitted(true);
-      // The account exists now. The success screen renders in place, so there
-      // is no navigation racing the pixel's beacon here.
+      // The account exists now — fired here, not on the button click, so a
+      // failed or rejected submission never counts as a registration.
+      // The success screen renders in place, so no navigation races the beacon.
       trackMetaEvent('CompleteRegistration', {
         content_name: 'Lawyer account',
         status: 'wizard',
+        // What one new lawyer is worth to you. It only has to be consistent —
+        // Meta compares these across conversions to rank the ad sets.
+        value: 1,
+        currency: 'INR',
       });
     } catch {
       setServerError('Network error. Check your connection and try again.');

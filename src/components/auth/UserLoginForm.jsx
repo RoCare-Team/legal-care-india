@@ -102,6 +102,8 @@ export default function UserLoginForm() {
         trackMetaEvent('CompleteRegistration', {
           content_name: 'Client account',
           status: 'mobile_otp',
+          value: 1,
+          currency: 'INR',
         });
       }
 
