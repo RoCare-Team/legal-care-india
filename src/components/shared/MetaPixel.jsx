@@ -1,3 +1,5 @@
+import { activeMetaPixelId } from '@/constants/site';
+
 /**
  * MetaPixel — the base pixel code, exactly as Meta ships it.
  *
@@ -7,14 +9,14 @@
  * loaded after hydration, the pixel misses anyone who leaves before the page
  * finishes booting — exactly the visitors an ad campaign is paying for.
  *
- * Loaded only when the env var is set, so nothing tracks in local/dev:
- *   NEXT_PUBLIC_META_PIXEL_ID = "1377884663845359"
+ * The id comes from constants/site (committed, because it is public and a
+ * gitignored .env is how it went missing in production once already).
  *
  * This fires PageView once, on load. Route changes are a separate job — a
  * single-page app never reloads this script — handled by MetaPixelRouteChange.
  */
 export default function MetaPixel() {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const pixelId = activeMetaPixelId;
   if (!pixelId) return null;
 
   return (
@@ -41,7 +43,7 @@ fbq('track', 'PageView');`,
  * only hold link/style/meta, so an <img> there is invalid HTML.
  */
 export function MetaPixelNoscript() {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const pixelId = activeMetaPixelId;
   if (!pixelId) return null;
 
   return (

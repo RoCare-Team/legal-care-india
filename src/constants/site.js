@@ -80,3 +80,24 @@ export const SOCIAL = {
   linkedin: 'https://linkedin.com/company/legalcareindia',
   instagram: 'https://www.instagram.com/justiceland_official',
 };
+
+/**
+ * Meta (Facebook) Pixel ID for the ad account.
+ *
+ * Committed rather than kept in .env on purpose. This value is public — it
+ * ships inside every page's HTML, so there is nothing to protect — and the one
+ * time it lived in .env the pixel silently vanished in production, because
+ * .env is gitignored and the deploy host never had the variable. A tracking
+ * tag that works locally and not on the live site is worse than no tag.
+ *
+ * NEXT_PUBLIC_META_PIXEL_ID still overrides it, for a staging copy that should
+ * report to a different pixel — or to "off", by setting it to `none`.
+ */
+export const META_PIXEL_ID = '1377884663845359';
+
+/** The pixel actually in force. Empty string means tracking is off. */
+export const activeMetaPixelId = (() => {
+  const override = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  if (override === 'none') return '';
+  return override || META_PIXEL_ID;
+})();
