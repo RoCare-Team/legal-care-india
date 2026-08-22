@@ -11,6 +11,7 @@ import StepConsultation from './StepConsultation';
 import StepReview from './StepReview';
 import RegisterSuccess from './RegisterSuccess';
 import { validateStep, INITIAL_REGISTER_DATA } from '@/lib/registerValidation';
+import { trackMetaEvent } from '@/utils/metaPixel';
 
 const STEPS = ['Personal', 'Professional', 'Practice', 'Consultation', 'Review'];
 
@@ -90,6 +91,12 @@ export default function RegisterWizard({ cities }) {
       }
       setSlug(payload.advocate?.profilePath || payload.advocate?.slug || '');
       setSubmitted(true);
+      // The account exists now. The success screen renders in place, so there
+      // is no navigation racing the pixel's beacon here.
+      trackMetaEvent('CompleteRegistration', {
+        content_name: 'Lawyer account',
+        status: 'wizard',
+      });
     } catch {
       setServerError('Network error. Check your connection and try again.');
     } finally {

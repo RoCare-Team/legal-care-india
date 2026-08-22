@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Phone, KeyRound, ArrowLeft, LogIn, RotateCw, UserRound } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 import { safeNextPath } from '@/utils/safeNext';
+import { trackMetaEvent } from '@/utils/metaPixel';
 
 /**
  * UserLoginForm — mobile-number sign-in for clients.
@@ -94,11 +95,25 @@ export default function UserLoginForm() {
         boxes.current[0]?.focus();
         return;
       }
+      // `created` is the only honest signal that this was a sign-up: the same
+      // form logs existing clients in, and firing CompleteRegistration for
+      // them would count every returning visitor as a new one.
+      if (payload.created) {
+        trackMetaEvent('CompleteRegistration', {
+          content_name: 'Client account',
+          status: 'mobile_otp',
+        });
+      }
+
       // Signed in either way. A name is asked for only when we have none —
       // the account already exists at this point, so skipping is safe.
       if (payload.needsName) {
         setNotice('');
         setStep('name');
+      } else if (payload.created) {
+        // A hard navigation cancels the pixel's in-flight beacon, so give it a
+        // moment. Only on the sign-up path — a plain login waits for nothing.
+        setTimeout(finish, 300);
       } else {
         finish();
       }

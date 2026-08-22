@@ -12,7 +12,8 @@ import HideOnAdmin from '@/components/layout/HideOnAdmin';
 import ScrollToTop from '@/components/shared/ScrollToTop';
 import FloatingContact from '@/components/shared/FloatingContact';
 import Analytics from '@/components/shared/Analytics';
-import MetaPixel from '@/components/shared/MetaPixel';
+import MetaPixel, { MetaPixelNoscript } from '@/components/shared/MetaPixel';
+import MetaPixelRouteChange from '@/components/shared/MetaPixelRouteChange';
 import AdvocateCallListener from '@/components/consultation/AdvocateCallListener';
 import PresenceProvider from '@/components/consultation/PresenceProvider';
 import LocationProvider from '@/components/location/LocationProvider';
@@ -107,6 +108,8 @@ export default async function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
+        {/* Meta Pixel base code — Meta requires it in <head>, every page. */}
+        <MetaPixel />
       </head>
       <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <a
@@ -138,7 +141,9 @@ export default async function RootLayout({ children }) {
         <FloatingContact />
         <AdvocateCallListener />
         <Analytics />
-        <MetaPixel />
+        {/* No-JS fallback, and a PageView for each in-app navigation. */}
+        <MetaPixelNoscript />
+        <MetaPixelRouteChange />
       </body>
     </html>
   );
