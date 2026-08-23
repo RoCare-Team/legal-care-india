@@ -2,6 +2,7 @@ import { Star } from 'lucide-react';
 import { adminGetTestimonials } from '@/lib/admin';
 import DataTable, { AdminPageHeader, AdminAvatar } from '@/components/admin/DataTable';
 import { formatDate } from '@/utils/formatters';
+import RefreshTestimonialsButton from '@/components/admin/RefreshTestimonialsButton';
 
 function Stars({ rating }) {
   return (
@@ -47,6 +48,9 @@ export default async function AdminTestimonialsPage() {
   return (
     <div>
       <AdminPageHeader title="Testimonials" subtitle="All platform reviews submitted by clients." count={testimonials.length} />
+      <div className="mb-4">
+        <RefreshTestimonialsButton />
+      </div>
       <DataTable columns={columns} rows={testimonials} empty="No testimonials yet." />
     </div>
   );
