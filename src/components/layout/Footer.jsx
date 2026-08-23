@@ -5,6 +5,7 @@ import Logo from '@/components/shared/Logo';
 import { FOOTER_NAV } from '@/constants/navigation';
 import { SITE, CONTACT, SOCIAL } from '@/constants/site';
 
+
 const SOCIAL_LINKS = [
   { label: 'Twitter', href: SOCIAL.twitter, icon: Twitter },
   { label: 'Facebook', href: SOCIAL.facebook, icon: Facebook },
