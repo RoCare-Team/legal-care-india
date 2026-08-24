@@ -11,7 +11,6 @@ import StepConsultation from './StepConsultation';
 import StepReview from './StepReview';
 import RegisterSuccess from './RegisterSuccess';
 import { validateStep, INITIAL_REGISTER_DATA } from '@/lib/registerValidation';
-import { trackMetaEvent } from '@/utils/metaPixel';
 
 const STEPS = ['Personal', 'Professional', 'Practice', 'Consultation', 'Review'];
 
@@ -90,18 +89,10 @@ export default function RegisterWizard({ cities }) {
         return;
       }
       setSlug(payload.advocate?.profilePath || payload.advocate?.slug || '');
+      // Flipping this renders RegisterSuccess, and that screen is what reports
+      // the Meta CompleteRegistration event — the conversion belongs to the
+      // thank-you page, not to this handler.
       setSubmitted(true);
-      // The account exists now — fired here, not on the button click, so a
-      // failed or rejected submission never counts as a registration.
-      // The success screen renders in place, so no navigation races the beacon.
-      trackMetaEvent('CompleteRegistration', {
-        content_name: 'Lawyer account',
-        status: 'wizard',
-        // What one new lawyer is worth to you. It only has to be consistent —
-        // Meta compares these across conversions to rank the ad sets.
-        value: 1,
-        currency: 'INR',
-      });
     } catch {
       setServerError('Network error. Check your connection and try again.');
     } finally {

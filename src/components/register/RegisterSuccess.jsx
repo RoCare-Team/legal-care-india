@@ -1,15 +1,39 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { Clock, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { trackMetaEvent } from '@/utils/metaPixel';
 
 /**
  * RegisterSuccess — confirmation shown after the wizard is submitted.
  * The profile is created in a "pending" state and goes live only after an
  * admin approves it, so we set expectations about the review window.
  *
+ * This is also where the Meta CompleteRegistration event fires — the
+ * thank-you screen is the confirmation page in Meta's terms, and tying the
+ * event to it means the event is only ever sent when the person actually sees
+ * that their registration went through.
+ *
  * @param {object} props
  * @param {string} props.name
  */
 export default function RegisterSuccess({ name }) {
+  // React runs effects twice in development (Strict Mode), and Meta would
+  // count that as two registrations. One conversion per screen, always.
+  const reported = useRef(false);
+
+  useEffect(() => {
+    if (reported.current) return;
+    reported.current = true;
+    trackMetaEvent('CompleteRegistration', {
+      content_name: 'Lawyer account',
+      status: 'wizard',
+      value: 1,
+      currency: 'INR',
+    });
+  }, []);
+
   return (
     <div className="py-6 text-center">
       <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-amber-50 text-amber-600">
