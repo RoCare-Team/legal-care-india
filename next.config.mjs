@@ -29,12 +29,17 @@ const csp = [
   // treats a blocked telemetry call as a fatal error, so it has to be allowed.
   "connect-src 'self' blob: stun: turn: turns: https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.razorpay.com https://connect.facebook.net https://www.facebook.com",
   // Checkout runs inside an iframe, and bank/UPI pages open in nested ones.
-  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.rzp.io",
+  // facebook.com is here for the Meta Pixel: only its smallest events go out
+  // as a GET image. Anything carrying parameters — every conversion we care
+  // about — is posted from a hidden iframe, which needs frame-src as well as
+  // the form-action entry below. Without both, the pixel silently drops them.
+  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com https://*.rzp.io https://www.facebook.com",
   "object-src 'none'",
   "base-uri 'self'",
   // Netbanking and card flows POST the user out to the bank through Razorpay,
-  // which a bare 'self' would block at the last step of a real payment.
-  "form-action 'self' https://api.razorpay.com https://*.razorpay.com",
+  // which a bare 'self' would block at the last step of a real payment. The
+  // Meta Pixel posts its parameterised events to facebook.com/tr the same way.
+  "form-action 'self' https://api.razorpay.com https://*.razorpay.com https://www.facebook.com",
   "frame-ancestors 'self'",
   'upgrade-insecure-requests',
 ].join('; ');
