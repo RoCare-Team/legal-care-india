@@ -15,14 +15,15 @@
 /**
  * Build the canonical profile path segment for a lawyer.
  *
- * The ID stays upper-case here — `…-JUSLD04`, not `…-jusld04` — so the address
- * bar shows the same ID the profile badge does. Both parsers below are
- * case-insensitive and the page redirects anything non-canonical, so a
- * lower-case link someone already has still lands in the right place.
+ * Lower-case in the URL — `…-jusld04` — even though the profile badge shows
+ * JUSLD04. The whole path is lower-case, and a single mixed-case fragment in
+ * the middle of it reads like a typo. Both parsers below are case-insensitive
+ * and the page redirects anything non-canonical, so an upper-case link still
+ * lands in the right place.
  */
 export function advocateProfilePath(advocate) {
   if (advocate?.legalCareId) {
-    return `${advocate.slug}-${advocate.legalCareId.toUpperCase()}`;
+    return `${advocate.slug}-${advocate.legalCareId.toLowerCase()}`;
   }
   return advocate?.slug || '';
 }

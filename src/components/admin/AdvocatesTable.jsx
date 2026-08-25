@@ -235,9 +235,11 @@ export default function AdvocatesTable({ advocates }) {
             View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <Link
-            href={`/lawyers/${advocateProfilePath(a)}`}
+            // An unapproved profile 404s publicly, so send the admin to the
+            // preview instead of a dead link.
+            href={a.status === 'published' ? `/lawyers/${advocateProfilePath(a)}` : `/admin/advocates/${a.id}/preview`}
             target="_blank"
-            title="Open public profile"
+            title={a.status === 'published' ? 'Open public profile' : 'Preview (awaiting approval)'}
             className="text-ink/35 hover:text-primary"
           >
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />

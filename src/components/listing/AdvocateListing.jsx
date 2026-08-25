@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { servesCity } from '@/utils/advocateCity';
 import { SearchX, Loader2, Columns2, Columns3 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
@@ -22,8 +23,6 @@ import { distanceKm } from '@/utils/distance';
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
  */
-/** How far "near me" reaches when a location comes from the header picker. */
-const DEFAULT_RADIUS_KM = 100;
 
 const EMPTY = {
   query: '',
@@ -127,11 +126,13 @@ export default function AdvocateListing({
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
 
-  // The location picked in the header carries straight into the distance
-  // filter — having set it once, nobody should be asked for it again here —
-  // and brings a 100 km radius with it, which is what "lawyers near me" means
-  // for a city and its surrounding courts. Only as a starting point: changing
-  // the radius or clearing the location below stays in effect.
+  // The location picked in the header is remembered here so distances can be
+  // shown and "within N km" works on the first click — but it does NOT filter
+  // anything on its own. It used to arrive with a 100 km radius already
+  // applied, which meant someone landing on the directory from Gurgaon was met
+  // with "0 lawyers found within 100 km": a filter they never set, hiding
+  // every lawyer on the site. The directory opens unfiltered; narrowing it is
+  // the visitor's move to make.
   const { location: pickedLocation } = useLocation();
   const appliedPickedRef = useRef('');
 
@@ -143,7 +144,6 @@ export default function AdvocateListing({
     setUserLocation({ lat: pickedLocation.lat, lng: pickedLocation.lng });
     setLocationLabel(pickedLocation.label || 'Your location');
     setLocationError('');
-    setFilters((prev) => ({ ...prev, radius: prev.radius || DEFAULT_RADIUS_KM }));
   }, [pickedLocation]);
 
   const onChange = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
@@ -189,7 +189,12 @@ export default function AdvocateListing({
         filters.court ||
         filters.city ||
         filters.availability
-    ) || filters.sort !== 'relevance' || Boolean(userLocation);
+    ) ||
+    filters.sort !== 'relevance' ||
+    // A known location is not a filter until a radius narrows by it — saying
+    // "filters applied" for a location that hides nothing sends people hunting
+    // for something to clear.
+    Boolean(userLocation && filters.radius);
 
   const results = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
@@ -220,11 +225,9 @@ export default function AdvocateListing({
         !filters.subService || a.subSpecializations?.includes(filters.subService);
       const matchesCourt =
         !filters.court || a.courts?.includes(filters.court);
-      // City matches the lawyer's base city OR any city they also work in.
-      const matchesCity =
-        !cityFilter ||
-        a.city?.toLowerCase() === cityFilter ||
-        a.practiceCities?.some((c) => c.toLowerCase() === cityFilter);
+      // Base city or any city they also work in — shared with the city pages
+      // so the two never disagree about who belongs to a city.
+      const matchesCity = !cityFilter || servesCity(a, cityFilter);
       const matchesAvailability =
         !filters.availability ||
         (filters.availability === 'online' ? isOnline(a) : !isOnline(a));

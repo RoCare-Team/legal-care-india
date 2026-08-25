@@ -1,7 +1,6 @@
 import { notFound, permanentRedirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
 import { SITE } from '@/constants/site';
-import { Container } from '@/components/ui';
 import {
   getAdvocateBySlug,
   getAdvocateByLegalCareId,
@@ -10,18 +9,7 @@ import {
   getAllAdvocateParams,
 } from '@/lib/advocates';
 import { parseAdvocateParam } from '@/utils/advocateUrl';
-import ProfileHeader from '@/components/profile/ProfileHeader';
-import ProfileContactCard from '@/components/profile/ProfileContactCard';
-import ProfileAbout from '@/components/profile/ProfileAbout';
-import ProfileLegalServices from '@/components/profile/ProfileLegalServices';
-import ProfileEducation from '@/components/profile/ProfileEducation';
-import ProfileOffice from '@/components/profile/ProfileOffice';
-import ProfileGallery from '@/components/profile/ProfileGallery';
-import ProfileCredentials from '@/components/profile/ProfileCredentials';
-import ProfileReviews from '@/components/profile/ProfileReviews';
-import ProfileFaq from '@/components/profile/ProfileFaq';
-import ProfileMobileBar from '@/components/profile/ProfileMobileBar';
-import RelatedAdvocates from '@/components/profile/RelatedAdvocates';
+import AdvocateProfileBody from '@/components/profile/AdvocateProfileBody';
 
 // Prebuild every known lawyer profile at build time; new slugs render
 // on-demand and are then cached (ISR). Data is tag-cached, so edits show up
@@ -128,7 +116,9 @@ export default async function AdvocateProfilePage({ params }) {
   if (!advocate) notFound();
 
   // Profiles awaiting admin approval are not public yet — treat as not found
-  // until an admin publishes them.
+  // until an admin publishes them. Admins preview them at
+  // /admin/advocates/<id>/preview instead: reading the admin cookie here would
+  // make this route dynamic and cost every published profile its prerender.
   if (advocate.status !== 'published') notFound();
 
   // Enforce a single canonical URL — legacy or renamed-slug URLs 308-redirect
@@ -146,29 +136,7 @@ export default async function AdvocateProfilePage({ params }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSchema(advocate)) }}
       />
 
-      <Container className="py-6 pb-28 sm:py-8 lg:pb-8">
-        <ProfileHeader advocate={advocate} />
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <ProfileAbout advocate={advocate} />
-            <ProfileLegalServices advocate={advocate} />
-            <ProfileEducation advocate={advocate} />
-            <ProfileOffice advocate={advocate} />
-            <ProfileGallery advocate={advocate} />
-            <ProfileCredentials advocate={advocate} />
-            <ProfileReviews advocate={advocate} />
-            <ProfileFaq advocate={advocate} />
-          </div>
-
-          <div className="lg:col-span-1">
-            <ProfileContactCard advocate={advocate} />
-          </div>
-        </div>
-      </Container>
-
-      <RelatedAdvocates advocates={related} />
-      <ProfileMobileBar advocate={advocate} />
+      <AdvocateProfileBody advocate={advocate} related={related} />
     </>
   );
 }

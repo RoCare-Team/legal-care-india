@@ -35,7 +35,12 @@ export default async function AdminAdvocateDetailPage({ params }) {
   const adv = await adminGetAdvocateById(id);
   if (!adv) notFound();
 
-  const publicUrl = `/lawyers/${advocateProfilePath(adv)}`;
+  // Unapproved profiles are not public yet — link to the preview so the
+  // button never lands on a 404.
+  const publicUrl =
+    adv.status === 'published'
+      ? `/lawyers/${advocateProfilePath(adv)}`
+      : `/admin/advocates/${id}/preview`;
   const location = [adv.city, adv.state].filter(Boolean).join(', ');
 
   return (

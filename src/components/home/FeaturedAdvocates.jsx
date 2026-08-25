@@ -2,6 +2,7 @@ import { UserPlus } from 'lucide-react';
 import { Section, Button } from '@/components/ui';
 import AdvocateGrid from './AdvocateGrid';
 import { getAllAdvocates } from '@/lib/advocates';
+import { servesCity } from '@/utils/advocateCity';
 
 /**
  * FeaturedAdvocates — the most recently registered verified lawyers,
@@ -18,7 +19,9 @@ import { getAllAdvocates } from '@/lib/advocates';
  */
 export default async function FeaturedAdvocates({ city }) {
   const all = await getAllAdvocates();
-  const advocates = (city ? all.filter((a) => a.city === city.name) : all).slice(0, 12);
+  // Includes lawyers who merely work here, not only those based here — see
+  // servesCity. Matching on the base city alone hid most of a city's lawyers.
+  const advocates = (city ? all.filter((a) => servesCity(a, city.name)) : all).slice(0, 12);
 
   return (
     <Section spacing="sm" className="bg-surface/55 pt-8 sm:pt-10">
