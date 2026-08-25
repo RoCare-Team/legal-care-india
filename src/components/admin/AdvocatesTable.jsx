@@ -8,6 +8,7 @@ import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
 import { formatDate } from '@/utils/formatters';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 
 /** Approve / unpublish control for a single lawyer row. */
 function StatusAction({ advocate }) {
@@ -234,7 +235,7 @@ export default function AdvocatesTable({ advocates }) {
             View <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <Link
-            href={`/lawyers/${a.slug}-${a.legalCareId.toLowerCase()}`}
+            href={`/lawyers/${advocateProfilePath(a)}`}
             target="_blank"
             title="Open public profile"
             className="text-ink/35 hover:text-primary"

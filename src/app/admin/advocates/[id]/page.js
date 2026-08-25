@@ -10,6 +10,7 @@ import {
   DetailBack, InfoCard, InfoRow, StatTile, ConsultationList, WalletList,
 } from '@/components/admin/DetailKit';
 import { formatDate } from '@/utils/formatters';
+import { advocateProfilePath } from '@/utils/advocateUrl';
 
 const ENQUIRY_TONE = {
   new: 'bg-blue-500/10 text-blue-600',
@@ -34,7 +35,7 @@ export default async function AdminAdvocateDetailPage({ params }) {
   const adv = await adminGetAdvocateById(id);
   if (!adv) notFound();
 
-  const publicUrl = `/lawyers/${adv.slug}-${adv.legalCareId.toLowerCase()}`;
+  const publicUrl = `/lawyers/${advocateProfilePath(adv)}`;
   const location = [adv.city, adv.state].filter(Boolean).join(', ');
 
   return (

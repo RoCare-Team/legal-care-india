@@ -12,10 +12,17 @@
  * nothing 404s and search engines are told where the page moved.
  */
 
-/** Build the canonical profile path segment for a lawyer. */
+/**
+ * Build the canonical profile path segment for a lawyer.
+ *
+ * The ID stays upper-case here — `…-JUSLD04`, not `…-jusld04` — so the address
+ * bar shows the same ID the profile badge does. Both parsers below are
+ * case-insensitive and the page redirects anything non-canonical, so a
+ * lower-case link someone already has still lands in the right place.
+ */
 export function advocateProfilePath(advocate) {
   if (advocate?.legalCareId) {
-    return `${advocate.slug}-${advocate.legalCareId.toLowerCase()}`;
+    return `${advocate.slug}-${advocate.legalCareId.toUpperCase()}`;
   }
   return advocate?.slug || '';
 }
