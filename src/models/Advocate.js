@@ -49,6 +49,7 @@ const AdvocateSchema = new Schema(
     // Identity
     name: { type: String, required: true, trim: true },
     // Permanent, unique public ID — the stable key behind every profile URL.
+    // Sequential: JUSLD01, JUSLD02, …
     legalCareId: {
       type: String,
       required: true,
@@ -56,6 +57,19 @@ const AdvocateSchema = new Schema(
       uppercase: true,
       trim: true,
       index: true,
+    },
+    // The random `LCI-XXXXXX` this profile was registered under, for the ones
+    // that predate the sequential scheme. Kept so their already-indexed URLs
+    // still resolve and can be redirected to the current address rather than
+    // 404ing. `sparse` because profiles created since have no old id, and
+    // without it every one of them would collide on the same missing value.
+    legacyLegalCareId: {
+      type: String,
+      default: undefined,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
     },
     // SEO slug — no longer unique (the legalCareId disambiguates), so two
     // lawyers with the same name can both be "manoj-sharma".

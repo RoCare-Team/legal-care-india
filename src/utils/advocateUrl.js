@@ -2,9 +2,14 @@
  * Lawyer public-profile URL helpers.
  *
  * Profile URLs combine an SEO slug with the permanent Justiceland ID:
- *   /lawyers/manoj-sharma-lci-8kq9pm
- * The `lci-xxxxxx` suffix is the stable identifier — the slug is cosmetic, so
+ *   /lawyers/manoj-sharma-jusld07
+ * The `jusldNN` suffix is the stable identifier — the slug is cosmetic, so
  * the profile keeps working even if the lawyer later changes their name.
+ *
+ * Profiles created before the sequential scheme carry a random `LCI-XXXXXX`
+ * id, and those URLs are already indexed and shared. Both forms are parsed
+ * here; the page then 308-redirects the old one to the canonical new URL, so
+ * nothing 404s and search engines are told where the page moved.
  */
 
 /** Build the canonical profile path segment for a lawyer. */
@@ -15,17 +20,37 @@ export function advocateProfilePath(advocate) {
   return advocate?.slug || '';
 }
 
+/** Current form: `…-jusld07`. */
+const CURRENT = /-(jusld\d+)$/i;
+/** Retired form: `…-lci-8kq9pm`. */
+const LEGACY = /-lci-([0-9a-z]{6})$/i;
+
 /**
  * Parse a `[slug]` route param into its Justiceland ID + slug portion.
- * Returns `{ legalCareId: null }` for legacy slug-only URLs.
+ *
+ * Returns `{ legalCareId, legacyLegalCareId, slug }`. Exactly one of the two
+ * id fields is set; both are null for a bare slug-only legacy URL.
  */
 export function parseAdvocateParam(param = '') {
-  const match = String(param).match(/-lci-([0-9a-z]{6})$/i);
-  if (match) {
+  const value = String(param);
+
+  const current = value.match(CURRENT);
+  if (current) {
     return {
-      legalCareId: `LCI-${match[1].toUpperCase()}`,
-      slug: param.slice(0, match.index),
+      legalCareId: current[1].toUpperCase(),
+      legacyLegalCareId: null,
+      slug: value.slice(0, current.index),
     };
   }
-  return { legalCareId: null, slug: param };
+
+  const legacy = value.match(LEGACY);
+  if (legacy) {
+    return {
+      legalCareId: null,
+      legacyLegalCareId: `LCI-${legacy[1].toUpperCase()}`,
+      slug: value.slice(0, legacy.index),
+    };
+  }
+
+  return { legalCareId: null, legacyLegalCareId: null, slug: value };
 }

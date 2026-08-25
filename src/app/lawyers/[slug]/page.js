@@ -5,6 +5,7 @@ import { Container } from '@/components/ui';
 import {
   getAdvocateBySlug,
   getAdvocateByLegalCareId,
+  getAdvocateByLegacyId,
   getRelatedAdvocates,
   getAllAdvocateParams,
 } from '@/lib/advocates';
@@ -38,8 +39,11 @@ export async function generateStaticParams() {
  * look up best-effort so we can 308-redirect it to the canonical path.
  */
 async function resolveAdvocate(param) {
-  const { legalCareId } = parseAdvocateParam(param);
+  const { legalCareId, legacyLegalCareId } = parseAdvocateParam(param);
   if (legalCareId) return getAdvocateByLegalCareId(legalCareId);
+  // A URL from before the sequential scheme. Resolving it lets the canonical
+  // check below redirect it instead of 404ing a page Google already knows.
+  if (legacyLegalCareId) return getAdvocateByLegacyId(legacyLegalCareId);
   return getAdvocateBySlug(param);
 }
 

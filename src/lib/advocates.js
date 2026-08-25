@@ -310,6 +310,31 @@ export async function getAdvocateByLegalCareId(legalCareId) {
   }
 }
 
+const _getAdvocateByLegacyId = unstable_cache(
+  async (legacyLegalCareId) => {
+    await connectDB();
+    const advocate = await Advocate.findOne({ legacyLegalCareId }).lean();
+    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
+  },
+  ['advocate-by-legacy-lci'],
+  { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
+);
+
+/**
+ * Full profile for a retired `LCI-XXXXXX` id, or null.
+ *
+ * Only reached by URLs that were shared or indexed before the sequential
+ * scheme. The caller redirects to the profile's current address.
+ */
+export async function getAdvocateByLegacyId(legacyLegalCareId) {
+  try {
+    return await _getAdvocateByLegacyId(legacyLegalCareId);
+  } catch (err) {
+    console.warn('getAdvocateByLegacyId: MongoDB unavailable', err);
+    return null;
+  }
+}
+
 const _getAllAdvocateParams = unstable_cache(
   async () => {
     await connectDB();

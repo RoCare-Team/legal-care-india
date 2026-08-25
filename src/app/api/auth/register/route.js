@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
 import { hashPassword, signToken, setAuthCookie } from '@/lib/auth';
-import { generateLegalCareId } from '@/lib/legalCareId';
+import { nextLegalCareId } from '@/lib/legalCareId';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { slugify } from '@/utils/slugify';
 import { normalizeRate } from '@/constants/callRates';
@@ -53,15 +53,6 @@ function safeDate(raw) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Generate a Justiceland ID that isn't already taken (retries on clash). */
-async function uniqueLegalCareId() {
-  for (let i = 0; i < 12; i += 1) {
-    const id = generateLegalCareId();
-    // eslint-disable-next-line no-await-in-loop
-    if (!(await Advocate.exists({ legalCareId: id }))) return id;
-  }
-  throw new Error('Could not generate a unique Justiceland ID');
-}
 
 /**
  * POST /api/auth/register
@@ -135,7 +126,7 @@ export async function POST(request) {
     // SEO slug (need not be unique — the Justiceland ID disambiguates).
     const slug = slugify(fullName) || 'advocate';
     // Permanent, unique public identifier.
-    const legalCareId = await uniqueLegalCareId();
+    const legalCareId = await nextLegalCareId();
 
     const passwordHash = await hashPassword(password);
     const digits = phone.replace(/[^0-9]/g, '');
