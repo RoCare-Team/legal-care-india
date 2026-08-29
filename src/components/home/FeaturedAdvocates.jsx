@@ -14,6 +14,12 @@ import { servesCity } from '@/utils/advocateCity';
  * a Delhi card under a Bengaluru heading is the wrong answer however it is
  * labelled.
  *
+ * Everywhere else — which in practice means the home page — the band narrows
+ * itself to wherever the visitor turns out to be, as soon as they allow the
+ * browser's location prompt. That swap happens in the client component below
+ * (see `locationAware`), because this page is static and shared by everyone;
+ * there is no visitor to render for at build time.
+ *
  * @param {object} props
  * @param {object} [props.city]  the city this page is scoped to, if any
  */
@@ -38,6 +44,9 @@ export default async function FeaturedAdvocates({ city }) {
           note="newest first"
           actionHref="/lawyers"
           actionLabel="Find all lawyers"
+          // A city page is already scoped to a place, and a visitor reading
+          // /bengaluru from Delhi wants Bengaluru — not their own doorstep.
+          locationAware={!city}
         />
       ) : (
         <div className="mt-10 grid place-items-center rounded-2xl border border-dashed border-ink/15 bg-surface px-6 py-14 text-center">

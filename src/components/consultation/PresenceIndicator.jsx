@@ -17,7 +17,7 @@ import { useIsOnline } from './PresenceProvider';
  *
  * @param {object} props
  * @param {string} props.id  lawyer _id
- * @param {'card'|'profile'|'dot'} [props.variant]
+ * @param {'card'|'profile'|'label'|'dot'} [props.variant]
  */
 export default function PresenceIndicator({ id, variant = 'card' }) {
   const online = useIsOnline(id, false);
@@ -34,6 +34,30 @@ export default function PresenceIndicator({ id, variant = 'card' }) {
           online ? 'bg-emerald-500' : 'bg-slate-300'
         }`}
       />
+    );
+  }
+
+  // The dot with the word beside it, sized for a directory card. A coloured
+  // dot alone asks the reader to know the convention and to be able to tell
+  // green from grey; the word does not. Small enough to sit on the card's top
+  // rule opposite the rate without becoming the loudest thing on it.
+  if (variant === 'label') {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] text-[11.5px] font-bold ${
+          online
+            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200'
+            : 'bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200'
+        }`}
+      >
+        <span
+          className={`h-[7px] w-[7px] rounded-full ${
+            online ? 'bg-emerald-500' : 'bg-slate-400'
+          }`}
+          aria-hidden="true"
+        />
+        {online ? 'Online' : 'Offline'}
+      </span>
     );
   }
 

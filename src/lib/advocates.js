@@ -137,6 +137,16 @@ const OFFICE_TIMING = [
  * @param {object} a base lawyer record
  */
 export function buildAdvocateProfile(a) {
+  // The account's own credential never leaves this function. Everything built
+  // here is handed to client components and to /api/advocates/nearby, so a
+  // field spread through `...a` below ends up in public HTML — and a bcrypt
+  // hash published beside the name it belongs to is an offline attack anyone
+  // can run at their leisure. Nothing needs it here: the login route reads the
+  // Advocate document straight from Mongo.
+  // eslint-disable-next-line no-unused-vars
+  const { passwordHash, ...rest } = a;
+  a = rest;
+
   const seed = hash(a.slug);
   const initials = a.name.replace(/^Adv\.?\s*/, '').charAt(0).toUpperCase();
   const area = pick(OFFICE_AREAS, seed);

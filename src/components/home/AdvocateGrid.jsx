@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
 import { advocateRates } from '@/constants/callRates';
+import { useLocation } from '@/components/location/LocationProvider';
 
 /**
  * Sort orders offered here, in the order they are shown. The same ones the
@@ -99,6 +100,46 @@ function sortAdvocates(list, sort) {
 }
 
 /**
+ * How many cards the band can hold, and so how many the location swap asks for.
+ * Six fill the desktop grid; the rail on a narrower screen slides through the
+ * rest, which is why this is not simply six.
+ */
+const LOCATION_LIMIT = 12;
+
+/**
+ * The heading for a band that has been narrowed to where the visitor is.
+ *
+ * `scope` comes back from the API and says how firm the match actually was, and
+ * the wording follows it exactly. A band that quietly says "in Gurgaon" while
+ * showing lawyers from three states along is worse than one that never
+ * mentioned the city — the visitor believes it, calls one of them, and finds
+ * out the hard way.
+ *
+ * @param {{scope: string, place: string}} nearby
+ * @param {{label?: string}} location
+ * @returns {{title: string, note: string}|null}  null → keep what the page sent
+ */
+function locationHeading(nearby, location) {
+  const here = location?.label || 'you';
+  switch (nearby?.scope) {
+    case 'city':
+    case 'state':
+      return { title: `Verified lawyers in ${nearby.place}`, note: 'nearest first' };
+    case 'nearby':
+      return { title: `Verified lawyers near ${here}`, note: 'nearest first' };
+    // 'all' — nobody within reach of this visitor. The band falls back to the
+    // whole directory, and says so rather than dressing it up as a local result.
+    case 'all':
+      return {
+        title: `No lawyer listed near ${here} yet — showing lawyers from across India`,
+        note: 'newest first',
+      };
+    default:
+      return null;
+  }
+}
+
+/**
  * AdvocateGrid — the home page's "Advocate listing" band, as a sliding rail.
  *
  * On a desktop it is a fixed shortlist: six lawyers, three across and two
@@ -121,6 +162,9 @@ function sortAdvocates(list, sort) {
  * @param {string} [props.note]         quiet qualifier after the title
  * @param {string} [props.actionHref]   the way out to the full directory
  * @param {string} [props.actionLabel]
+ * @param {boolean} [props.locationAware]  swap the list for the visitor's own
+ *   city once they allow the browser's location prompt. Off by default, and
+ *   off on a city page, where the band is already scoped to a place.
  */
 export default function AdvocateGrid({
   advocates,
@@ -129,6 +173,7 @@ export default function AdvocateGrid({
   note,
   actionHref,
   actionLabel,
+  locationAware = false,
 }) {
   const [sort, setSort] = useState('relevance');
   const trackRef = useRef(null);
@@ -155,12 +200,61 @@ export default function AdvocateGrid({
   const isDesktop = columns >= 3;
   const DESKTOP_SLOTS = 6;
 
+  // Where the visitor is, if they allowed the browser's prompt on arrival or
+  // picked a place in the header. Read even when this band is not location
+  // aware — the hook is safe outside the provider and must not be called
+  // conditionally.
+  const { location, openPicker } = useLocation();
+
+  // The visitor's own lawyers, once fetched. `null` until then, which is why
+  // the band paints the newest-first list the server sent and swaps rather
+  // than showing a spinner: the cards underneath are real lawyers, not a
+  // placeholder, and a band that is worth reading should not be blanked while
+  // a better version of it loads.
+  const [nearby, setNearby] = useState(null);
+
+  useEffect(() => {
+    if (!locationAware || !location) {
+      setNearby(null);
+      return undefined;
+    }
+
+    const params = new URLSearchParams({
+      city: location.city || '',
+      state: location.state || '',
+      limit: String(LOCATION_LIMIT),
+    });
+    // Coordinates order every answer and rescue the ones no place name matched
+    // — a phone reports "Gurugram" where the lawyer typed "Gurgaon".
+    if (Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
+      params.set('lat', String(location.lat));
+      params.set('lng', String(location.lng));
+    }
+
+    const controller = new AbortController();
+    fetch(`/api/advocates/nearby?${params}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data?.advocates) && data.advocates.length) setNearby(data);
+      })
+      .catch(() => {
+        /* offline or aborted — the band keeps the list the page shipped */
+      });
+
+    return () => controller.abort();
+  }, [locationAware, location]);
+
+  // From here on the band works off `list`, which is the visitor's city when
+  // there is one and the page's own list otherwise.
+  const list = nearby?.advocates?.length ? nearby.advocates : advocates;
+  const heading = nearby ? locationHeading(nearby, location) : null;
+
   // A second row only once the first is full. Below that a single row of two
   // or three cards is the whole band, and forcing two rows would leave an
   // empty one under it.
-  const rows = advocates.length > columns ? 2 : 1;
+  const rows = list.length > columns ? 2 : 1;
 
-  const sorted = useMemo(() => sortAdvocates(advocates, sort), [advocates, sort]);
+  const sorted = useMemo(() => sortAdvocates(list, sort), [list, sort]);
 
   // The desktop grid reads in its natural order; the rail has to be re-threaded
   // for a track that fills columns top-then-bottom.
@@ -171,10 +265,10 @@ export default function AdvocateGrid({
   );
 
   // Nothing to order with two cards on screen; the control would be furniture.
-  const showSort = advocates.length > 2;
+  const showSort = list.length > 2;
   // Only the rail slides, so only the rail gets arrows — including on a phone,
   // where a swipe is the least discoverable gesture on the page.
-  const showArrows = !isDesktop && advocates.length > columns * rows;
+  const showArrows = !isDesktop && list.length > columns * rows;
 
   // Scroll by exactly one card plus its gap, so a click always lands the next
   // card flush against the edge rather than halfway across it.
@@ -197,11 +291,28 @@ export default function AdvocateGrid({
           {eyebrow && (
             <p className="font-display text-xl font-bold text-ink sm:text-2xl">{eyebrow}</p>
           )}
-          {title && (
+          {(heading?.title || title) && (
             <p className="mt-0.5 text-[14px] text-ink/60">
-              {title}
-              {note && <span className="ml-1.5 text-ink/40">· {note}</span>}
+              {heading?.title || title}
+              {(heading ? heading.note : note) && (
+                <span className="ml-1.5 text-ink/40">· {heading ? heading.note : note}</span>
+              )}
             </p>
+          )}
+          {/* Where the band thinks the visitor is, and the way to say otherwise.
+              A list narrowed to somewhere the visitor did not type needs to name
+              that place and let them correct it — the location came from a
+              browser prompt they may have tapped through without reading. */}
+          {heading && location?.label && (
+            <button
+              type="button"
+              onClick={openPicker}
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/[0.07] px-2.5 py-1 text-[12px] font-semibold text-primary transition-colors hover:bg-primary/[0.12]"
+            >
+              <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+              {location.label}
+              <span className="font-medium text-primary/60">· Change</span>
+            </button>
           )}
         </div>
 

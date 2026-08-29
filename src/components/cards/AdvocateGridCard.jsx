@@ -36,6 +36,11 @@ const CARD_SHADOW_HOVER =
  * jump to the one it wants — place, standing, language — without reading all
  * three. The three hues are the ones the contact buttons already use, so the
  * card has one palette rather than two.
+ *
+ * The icons are also what separates one fact from the next. There used to be a
+ * "·" between them, which on a card narrow enough to wrap — most of them, once
+ * a city is spelled "Moradabad, Uttar Pradesh" — was left dangling at the end
+ * of a line, pointing at nothing.
  */
 function Fact({ icon: Icon, tone, children }) {
   return (
@@ -49,17 +54,22 @@ function Fact({ icon: Icon, tone, children }) {
 /**
  * AdvocateGridCard — the lawyer card for the directory grid.
  *
- * Laid out the way a client reads a person: the portrait and who they are on
- * the left, what they cost on the right, then what they practise, then how to
- * reach them. Everything above the rule is identity and credentials;
- * everything below it is an action.
+ * Read top to bottom it answers the questions in the order a client asks them:
+ * can I reach this person right now and what do they cost, who are they, where
+ * and how experienced, what do they practise, and finally how to start.
  *
- * The portrait is a circle with a live status dot on its corner — the same
- * shorthand every messaging app uses, so "is this lawyer here right now" is
- * answered before a single word is read. That dot is the only place presence
- * is shown; it carries its own label for anyone who cannot see the colour, so
- * a second "Online / Offline" pill beside the facts was saying the same thing
- * twice and costing the card a line to do it.
+ * The two things that decide whether a card is worth reading at all — the
+ * status and the rate — share a strip of their own above everything else.
+ * They used to be scattered: presence as a bare dot on the portrait's corner,
+ * the rate as a ticket wedged in beside the name. The dot asked the reader to
+ * know the convention and to be able to tell green from grey, and the ticket
+ * squeezed the name column so hard that anything longer than "Adv Manoj
+ * Sharma" was truncated. On the strip the status carries the word Online
+ * beside its dot, and the name gets the full width of its column back.
+ *
+ * Below the portrait everything runs the whole width of the card, so the
+ * facts and the practice areas share one left edge and one wrapping rule
+ * rather than being folded into the narrow column beside the photograph.
  *
  * Presentational: receives a single `advocate` record.
  *
@@ -101,9 +111,11 @@ export default function AdvocateGridCard({ advocate }) {
   // designation falls back rather than leaving the line half empty.
   const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
 
-  // Three tags and a counter. A lawyer listing eight practice areas would
-  // otherwise wrap to a second row and stand taller than the card beside it.
-  const tags = specializations.slice(0, 3);
+  // Two tags and a counter, which is what fits on one line beside the way in
+  // to the profile. Three fitted only when all three were short: "Criminal
+  // Law, Property Law, Civil Law, +4" wrapped, and the wrapped row pushed
+  // "View Profile" out of line with the tags it was sitting beside.
+  const tags = specializations.slice(0, 2);
   const extraTags = Math.max(0, specializations.length - tags.length);
 
   const experienceLabel = `${Math.max(0, Math.round(Number(experience) || 0))}+ yrs`;
@@ -127,122 +139,122 @@ export default function AdvocateGridCard({ advocate }) {
         <span className="sr-only">View {name}&apos;s profile</span>
       </Link>
 
-      {/* ── Identity + rate ───────────────────────────────────────────── */}
-      <div className="flex items-start gap-3.5">
-        <span className="relative shrink-0">
-          <span className="block h-[68px] w-[68px] overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80 sm:h-20 sm:w-20">
-            <Avatar
-              src={photo}
-              name={name}
-              size="lg"
-              className="!h-full !w-full !rounded-none !bg-slate-100 !text-2xl !text-slate-400"
+      {/* ── Status + rate ─────────────────────────────────────────────── */}
+      {/* The two facts that decide whether the rest of the card is worth
+          reading, on a strip of their own. Nothing else competes with them
+          here, and nothing below has to make room for them. */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <PresenceIndicator id={advocate._id} variant="label" />
+
+        {/* A torn ticket: dashed rule, tinted face, and a bite out of each
+            side. The label is gone — "₹24/min" beside a lawyer's name is
+            self-evidently what they charge, and spelling it out was a second
+            line of type for no second piece of information. */}
+        {feeQuoted && (
+          <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-1.5 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
+            {/* The notches are the card's own white punched over the border,
+                which is what makes the edge read as torn. */}
+            <span
+              aria-hidden="true"
+              className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
             />
-          </span>
-          <span className="absolute bottom-0 right-0">
-            <PresenceIndicator id={advocate._id} variant="dot" />
-          </span>
+            <span
+              aria-hidden="true"
+              className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
+            />
+            <p className="whitespace-nowrap text-[16px] font-bold leading-none text-emerald-700">
+              ₹{Number(feeAmount).toLocaleString('en-IN')}
+              <span className="text-[12px] font-semibold text-emerald-600/70">/{feeUnit}</span>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Identity ──────────────────────────────────────────────────── */}
+      {/* Centred against the portrait rather than hung from its top edge. Most
+          lawyers have no reviews yet, so the text beside the photograph is two
+          lines against a 68px circle — aligned to the top it left a wedge of
+          empty card under the name and the portrait looked dropped in. */}
+      <div className="flex items-center gap-3.5">
+        <span className="block h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80 sm:h-[72px] sm:w-[72px]">
+          <Avatar
+            src={photo}
+            name={name}
+            size="lg"
+            className="!h-full !w-full !rounded-none !bg-slate-100 !text-2xl !text-slate-400"
+          />
         </span>
 
+        {/* The name has the whole column now that the rate has moved up, which
+            is the difference between "Advocate Manoj Sharma" and "Advocate
+            Manoj …". It still truncates, but only when it genuinely runs out. */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <h3 className="truncate text-[16px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary sm:text-[17px]">
-                  {name}
-                </h3>
-                {/* A filled disc rather than an outlined tick: at this size an
-                    outline reads as decoration, a solid badge reads as a stamp. */}
-                {verified && (
-                  <span
-                    title="Verified lawyer"
-                    aria-label="Verified lawyer"
-                    className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-primary"
-                  >
-                    <Check className="h-3 w-3 text-white" strokeWidth={3.5} aria-hidden="true" />
-                  </span>
-                )}
-              </div>
-
-              <p className="mt-0.5 truncate text-[13px] font-medium text-slate-500">{standing}</p>
-
-              {rating > 0 && (
-                <p className="mt-1.5 flex items-center gap-1.5 text-[13px]">
-                  <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
-                  <span className="font-bold text-slate-900">{rating.toFixed(1)}</span>
-                  <span className="truncate text-slate-500">
-                    ({reviews} {reviews === 1 ? 'review' : 'reviews'})
-                  </span>
-                </p>
-              )}
-            </div>
-
-            {/* A torn ticket: dashed rule, tinted face, and a bite out of each
-                side. The label is gone — "₹24/min" beside a lawyer's name is
-                self-evidently what they charge, and spelling it out was a
-                second line of type for no second piece of information. */}
-            {feeQuoted && (
-              <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-2 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
-                {/* The notches are the card's own white punched over the
-                    border, which is what makes the edge read as torn. */}
-                <span
-                  aria-hidden="true"
-                  className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-                />
-                <p className="whitespace-nowrap text-[17px] font-bold leading-none text-emerald-700">
-                  ₹{Number(feeAmount).toLocaleString('en-IN')}
-                  <span className="text-[12px] font-semibold text-emerald-600/70">/{feeUnit}</span>
-                </p>
-              </div>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h3 className="truncate text-[16px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary sm:text-[17px]">
+              {name}
+            </h3>
+            {/* A filled disc rather than an outlined tick: at this size an
+                outline reads as decoration, a solid badge reads as a stamp. */}
+            {verified && (
+              <span
+                title="Verified lawyer"
+                aria-label="Verified lawyer"
+                className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-primary"
+              >
+                <Check className="h-3 w-3 text-white" strokeWidth={3.5} aria-hidden="true" />
+              </span>
             )}
           </div>
 
-          {/* ── Facts ─────────────────────────────────────────────────── */}
-          {/* Inside the name's column, not under the portrait: everything the
-              card says about this lawyer lines up on one left edge, and the
-              photograph is a photograph rather than the start of a hanging
-              indent nothing else respects. */}
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[12.5px] text-slate-600">
-            <Fact icon={MapPin} tone="text-primary">
-              {city}
-              {state ? `, ${state}` : ''}
-            </Fact>
-            <span className="text-slate-200" aria-hidden="true">·</span>
-            <Fact icon={CalendarDays} tone="text-[#B08D2A]">{experienceLabel}</Fact>
-            {languageLabel && (
-              <>
-                <span className="text-slate-200" aria-hidden="true">·</span>
-                <Fact icon={Languages} tone="text-emerald-600">{languageLabel}</Fact>
-              </>
-            )}
-          </div>
+          <p className="mt-1 truncate text-[13px] font-medium text-slate-500">{standing}</p>
 
+          {rating > 0 && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-[13px]">
+              <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
+              <span className="font-bold text-slate-900">{rating.toFixed(1)}</span>
+              <span className="truncate text-slate-500">
+                ({reviews} {reviews === 1 ? 'review' : 'reviews'})
+              </span>
+            </p>
+          )}
         </div>
       </div>
 
+      {/* ── Facts ─────────────────────────────────────────────────────── */}
+      {/* Full width under the portrait rather than folded into the column
+          beside it. In that column a city and its state — "Moradabad, Uttar
+          Pradesh" — took the line on its own and pushed the other two facts
+          onto a second one; across the card all three usually fit. */}
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12.5px] text-slate-600">
+        <Fact icon={MapPin} tone="text-primary">
+          {city}
+          {state ? `, ${state}` : ''}
+        </Fact>
+        <Fact icon={CalendarDays} tone="text-[#B08D2A]">{experienceLabel}</Fact>
+        {languageLabel && (
+          <Fact icon={Languages} tone="text-emerald-600">{languageLabel}</Fact>
+        )}
+      </div>
+
       {/* ── Expertise ─────────────────────────────────────────────────── */}
-      {/* Full width under the portrait, not beside the name. In that column
-          there was room for two before they wrapped, which cost the card a
-          whole row to show one more. */}
       {/* Tags on the left, the way in on the right. "View Profile" is a cue,
           not a control — the whole card already opens the profile — so it is
           plain text with no face of its own, and it moves with the card's own
-          hover rather than owning one. */}
+          hover rather than owning one. Both sides are held to a single line:
+          `min-w-0` plus `flex-nowrap` lets the tags shrink instead of wrapping
+          underneath and dragging the cue out of line with them. */}
       <div className="mb-1.5 mt-3.5 flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
           {tags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-slate-50 px-2.5 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-inset ring-slate-200"
+              className="truncate rounded-full bg-slate-50 px-2.5 py-1 text-[12px] font-semibold text-slate-700 ring-1 ring-inset ring-slate-200"
             >
               {tag}
             </span>
           ))}
           {extraTags > 0 && (
-            <span className="rounded-full bg-primary/[0.08] px-2.5 py-1 text-[12px] font-semibold text-primary">
+            <span className="shrink-0 rounded-full bg-primary/[0.08] px-2.5 py-1 text-[12px] font-semibold text-primary">
               +{extraTags}
             </span>
           )}
@@ -251,7 +263,7 @@ export default function AdvocateGridCard({ advocate }) {
         {/* Still no face of its own — the card is the button. Text and arrow
             both carry the site's own blue, the one every link on the site
             already uses, so this reads as a link rather than as a third
-            colour competing with the rate beside it. */}
+            colour competing with the rate above it. */}
         <span
           aria-hidden="true"
           className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-bold text-primary underline-offset-4 transition-colors duration-200 group-hover:text-primary-dark group-hover:underline"

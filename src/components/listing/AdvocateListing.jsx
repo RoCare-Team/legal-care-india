@@ -126,15 +126,21 @@ export default function AdvocateListing({
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState('');
 
-  // The location picked in the header is remembered here so distances can be
-  // shown and "within N km" works on the first click — but it does NOT filter
-  // anything on its own. It used to arrive with a 100 km radius already
-  // applied, which meant someone landing on the directory from Gurgaon was met
-  // with "0 lawyers found within 100 km": a filter they never set, hiding
-  // every lawyer on the site. The directory opens unfiltered; narrowing it is
-  // the visitor's move to make.
+  // The location picked in the header — or detected on arrival, when the
+  // visitor allowed the browser's prompt — sets the distances the cards show,
+  // orders the list nearest-first, and narrows it to the visitor's own city.
+  //
+  // That last step is deliberately conditional. An earlier version arrived with
+  // a 100 km radius already applied, which met someone landing from Gurgaon
+  // with "0 lawyers found within 100 km" — a filter they never set, hiding
+  // every lawyer on the site. So the city is only pre-selected when it still
+  // leaves lawyers on screen, and it goes into the City dropdown as an ordinary
+  // filter with a Clear beside it, not into a rule the visitor cannot see.
   const { location: pickedLocation } = useLocation();
   const appliedPickedRef = useRef('');
+  // A city carried in from the URL (/lawyers?city=jaipur, or a city page) is
+  // the visitor's own request and outranks wherever their device says they are.
+  const urlCityRef = useRef(Boolean(initial.city));
 
   useEffect(() => {
     if (!pickedLocation) return;
@@ -144,7 +150,20 @@ export default function AdvocateListing({
     setUserLocation({ lat: pickedLocation.lat, lng: pickedLocation.lng });
     setLocationLabel(pickedLocation.label || 'Your location');
     setLocationError('');
-  }, [pickedLocation]);
+
+    // Narrowing needs a filter bar to undo it in, and a city nobody asked for.
+    if (!showFilters || urlCityRef.current) return;
+    // The town first, then the state — the reverse geocoder leaves `city` empty
+    // for a union territory, where "Delhi" only ever comes back as the state.
+    // Whichever actually has lawyers wins; if neither does, nothing is applied
+    // and the directory stays whole, merely reordered nearest-first.
+    const cityWithLawyers = [pickedLocation.city, pickedLocation.state].find(
+      (name) => name && advocates.some((a) => servesCity(a, name))
+    );
+    if (cityWithLawyers) {
+      setFilters((prev) => (prev.city ? prev : { ...prev, city: cityWithLawyers }));
+    }
+  }, [pickedLocation, advocates, showFilters]);
 
   const onChange = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
   const onReset = () => {
