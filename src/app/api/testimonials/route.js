@@ -2,7 +2,23 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Testimonial from '@/models/Testimonial';
-import { TESTIMONIALS_TAG } from '@/lib/testimonials';
+import { TESTIMONIALS_TAG, getTestimonials } from '@/lib/testimonials';
+
+/**
+ * GET /api/testimonials — the platform reviews the home page carries.
+ *
+ * `getTestimonials()` is that page's own tag-cached read, so the app and the
+ * website show the same reviews and the "Refresh homepage list" button in
+ * /admin/testimonials clears them for both at once.
+ */
+export async function GET() {
+  try {
+    return NextResponse.json({ testimonials: await getTestimonials() });
+  } catch (err) {
+    console.error('GET /api/testimonials', err);
+    return NextResponse.json({ testimonials: [] });
+  }
+}
 
 /**
  * POST /api/testimonials  { name, role, city, rating, text }

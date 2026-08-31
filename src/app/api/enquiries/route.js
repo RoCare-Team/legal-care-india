@@ -4,6 +4,36 @@ import Enquiry from '@/models/Enquiry';
 import Advocate from '@/models/Advocate';
 import { getSession } from '@/lib/auth';
 import { logActivity } from '@/lib/activity';
+import { getEnquiriesForAdvocate, getEnquiriesForUser } from '@/lib/enquiries';
+
+/**
+ * GET /api/enquiries — the caller's own enquiries.
+ *
+ * A lawyer gets the enquiries sent to them; a client gets the ones they sent.
+ * Which of the two you get is decided by the session and never by a query
+ * parameter, because a parameter is something the caller can change.
+ *
+ * Both lists come from lib/enquiries, which is where /dashboard/enquiries and
+ * the account screen read them, so nothing here decides what an enquiry looks
+ * like — this is the same data the website renders, over HTTP.
+ */
+export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
+  }
+
+  try {
+    const enquiries =
+      session.role === 'advocate'
+        ? await getEnquiriesForAdvocate(session.id)
+        : await getEnquiriesForUser(session.id);
+    return NextResponse.json({ enquiries }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch (err) {
+    console.error('GET /api/enquiries', err);
+    return NextResponse.json({ error: 'Could not load enquiries.' }, { status: 500 });
+  }
+}
 
 /**
  * POST /api/enquiries

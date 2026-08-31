@@ -3,7 +3,7 @@ import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { slugify } from '@/utils/slugify';
-import { advocateProfilePath } from '@/utils/advocateUrl';
+import { advocateProfilePath, parseAdvocateParam } from '@/utils/advocateUrl';
 
 /**
  * Public lawyer reads are cached and tagged so pages can render statically
@@ -318,6 +318,36 @@ export async function getAdvocateByLegalCareId(legalCareId) {
     const base = ADVOCATES.find((a) => a.legalCareId === legalCareId);
     return base ? buildAdvocateProfile(base) : null;
   }
+}
+
+/**
+ * Resolve a lawyer from a public `[slug]` route param.
+ *
+ * The param can be any of the three shapes a profile link has ever had — the
+ * canonical `manoj-sharma-jusld07`, a bare `JUSLD07`, or a pre-sequential
+ * `manoj-sharma-lci-8kq9pm` — because all three are indexed and shared, and a
+ * link that used to work should keep working.
+ *
+ * Resolution is not the same thing as permission: an unpublished profile
+ * resolves here so the caller can tell "no such lawyer" apart from "not
+ * approved yet". Both the public page and GET /api/advocates/<param> then
+ * refuse anything that is not published, and the page additionally redirects a
+ * non-canonical param to the canonical one.
+ *
+ * @param {string} param
+ * @returns {Promise<object|null>}
+ */
+export async function resolveAdvocateByParam(param) {
+  const value = String(param || '');
+  const { legalCareId, legacyLegalCareId } = parseAdvocateParam(value);
+  if (legalCareId) return getAdvocateByLegalCareId(legalCareId);
+  if (legacyLegalCareId) return getAdvocateByLegacyId(legacyLegalCareId);
+  // A bare Justiceland ID — how the app addresses a lawyer it already holds a
+  // record for — then a slug-only URL from before the ids existed at all.
+  return (
+    (await getAdvocateByLegalCareId(value.toUpperCase())) ||
+    (await getAdvocateBySlug(value))
+  );
 }
 
 const _getAdvocateByLegacyId = unstable_cache(

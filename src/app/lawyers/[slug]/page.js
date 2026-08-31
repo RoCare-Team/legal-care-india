@@ -2,13 +2,10 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
 import { SITE } from '@/constants/site';
 import {
-  getAdvocateBySlug,
-  getAdvocateByLegalCareId,
-  getAdvocateByLegacyId,
+  resolveAdvocateByParam,
   getRelatedAdvocates,
   getAllAdvocateParams,
 } from '@/lib/advocates';
-import { parseAdvocateParam } from '@/utils/advocateUrl';
 import AdvocateProfileBody from '@/components/profile/AdvocateProfileBody';
 
 // Prebuild every known lawyer profile at build time; new slugs render
@@ -21,23 +18,9 @@ export async function generateStaticParams() {
   return params.map((slug) => ({ slug }));
 }
 
-/**
- * Resolve a lawyer from the route param. Primary lookup is by the permanent
- * Justiceland ID embedded in the URL; a bare slug is a legacy URL that we
- * look up best-effort so we can 308-redirect it to the canonical path.
- */
-async function resolveAdvocate(param) {
-  const { legalCareId, legacyLegalCareId } = parseAdvocateParam(param);
-  if (legalCareId) return getAdvocateByLegalCareId(legalCareId);
-  // A URL from before the sequential scheme. Resolving it lets the canonical
-  // check below redirect it instead of 404ing a page Google already knows.
-  if (legacyLegalCareId) return getAdvocateByLegacyId(legacyLegalCareId);
-  return getAdvocateBySlug(param);
-}
-
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const advocate = await resolveAdvocate(slug);
+  const advocate = await resolveAdvocateByParam(slug);
   if (!advocate) return createMetadata({ title: 'Lawyer Not Found', path: '/lawyers' });
 
   return createMetadata({
@@ -112,7 +95,7 @@ function buildSchema(advocate) {
 
 export default async function AdvocateProfilePage({ params }) {
   const { slug: param } = await params;
-  const advocate = await resolveAdvocate(param);
+  const advocate = await resolveAdvocateByParam(param);
   if (!advocate) notFound();
 
   // Profiles awaiting admin approval are not public yet — treat as not found

@@ -8,14 +8,43 @@ import { bridgeAudioCall } from '@/lib/phoneBridge';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
   markAdvocateOnline, isAdvocateOnline, cancelConsultation,
+  getUserConsultations, getAdvocateConsultations,
 } from '@/lib/consultations';
 
 /**
- * GET /api/consultations — lawyer's incoming feed (pending + active).
+ * GET /api/consultations — the lawyer's incoming feed (pending + active).
  * Polled by the global call listener; also serves as the presence heartbeat.
+ *
+ * GET /api/consultations?scope=mine — the caller's own consultation history
+ * instead: a client sees the sessions they booked, a lawyer the ones they took.
+ * The website renders both of those lists on the server (the account screen and
+ * /dashboard/consultations), which is why only the inbox ever needed an
+ * endpoint; a phone needs the history as JSON too, and it is the same read from
+ * lib/consultations that those pages perform.
+ *
+ * Which history you get is decided by the session and never by a parameter — a
+ * parameter only chooses between "my inbox" and "my history", both of which are
+ * already yours. Asking for a history without being signed in is a 401, and
+ * asking for the inbox as a client is the empty feed it has always been.
  */
-export async function GET() {
+export async function GET(request) {
   const session = await getSession();
+  const scope = new URL(request.url).searchParams.get('scope');
+
+  if (scope === 'mine') {
+    if (!session) {
+      return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
+    }
+    const consultations =
+      session.role === 'advocate'
+        ? await getAdvocateConsultations(session.id)
+        : await getUserConsultations(session.id);
+    return NextResponse.json(
+      { consultations },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
+  }
+
   if (!session || session.role !== 'advocate') {
     return NextResponse.json({ sessions: [] }, { status: session ? 200 : 401 });
   }

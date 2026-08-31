@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { servesCity } from '@/utils/advocateCity';
+import { filterAdvocates, sortAdvocates } from '@/lib/advocateSearch';
 import { SearchX, Loader2, Columns2, Columns3 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
@@ -34,22 +35,6 @@ const EMPTY = {
   sort: 'relevance',
   radius: '',
 };
-
-function sortAdvocates(list, sort) {
-  const copy = [...list];
-  switch (sort) {
-    case 'rating':
-      return copy.sort((a, b) => b.rating - a.rating);
-    case 'experience':
-      return copy.sort((a, b) => b.experience - a.experience);
-    case 'fee-low':
-      return copy.sort((a, b) => a.consultationFee - b.consultationFee);
-    case 'fee-high':
-      return copy.sort((a, b) => b.consultationFee - a.consultationFee);
-    default:
-      return copy.sort((a, b) => b.rating * b.reviews - a.rating * a.reviews);
-  }
-}
 
 /** Nearest-first, keeping lawyers without a known distance at the end. */
 function sortByDistance(list) {
@@ -216,8 +201,6 @@ export default function AdvocateListing({
     Boolean(userLocation && filters.radius);
 
   const results = useMemo(() => {
-    const q = filters.query.trim().toLowerCase();
-    const cityFilter = filters.city.trim().toLowerCase();
     const radius = Number(filters.radius) || 0;
 
     // Reachable right now, straight from the presence poll. Before it lands
@@ -229,36 +212,18 @@ export default function AdvocateListing({
       return Boolean(id) && presence.has(id);
     };
 
-    let filtered = advocates.filter((a) => {
-      // Free-text query matches name, tagline, legal services OR the courts the
-      // lawyer practises in (e.g. "supreme court").
-      const matchesQuery =
-        !q ||
-        a.name.toLowerCase().includes(q) ||
-        a.tagline?.toLowerCase().includes(q) ||
-        a.specializations?.some((s) => s.toLowerCase().includes(q)) ||
-        a.courts?.some((c) => c.toLowerCase().includes(q));
-      const matchesService =
-        !filters.service || a.specializations?.includes(filters.service);
-      const matchesSubService =
-        !filters.subService || a.subSpecializations?.includes(filters.subService);
-      const matchesCourt =
-        !filters.court || a.courts?.includes(filters.court);
-      // Base city or any city they also work in — shared with the city pages
-      // so the two never disagree about who belongs to a city.
-      const matchesCity = !cityFilter || servesCity(a, cityFilter);
-      const matchesAvailability =
-        !filters.availability ||
-        (filters.availability === 'online' ? isOnline(a) : !isOnline(a));
-      return (
-        matchesQuery &&
-        matchesService &&
-        matchesSubService &&
-        matchesCourt &&
-        matchesCity &&
-        matchesAvailability
-      );
-    });
+    // Name, service, matter, court and city are decided by the shared rules in
+    // lib/advocateSearch, which GET /api/advocates runs too — so the app's
+    // search and this one cannot answer the same query differently.
+    let filtered = filterAdvocates(advocates, filters);
+
+    // Availability is the exception, and stays here: on the web it is whatever
+    // the presence poll last said, which is a fact about this browser tab and
+    // not something a pure filter over a list could know.
+    if (filters.availability) {
+      const wantOnline = filters.availability === 'online';
+      filtered = filtered.filter((a) => isOnline(a) === wantOnline);
+    }
 
     // Distance: attach how far each lawyer is from the searcher, then (if a
     // radius is chosen) drop anyone outside it. Lawyers without geocoded
