@@ -27,8 +27,17 @@ export const ADVOCATE_SORTS = ['relevance', 'rating', 'experience', 'fee-low', '
  * the people who practise there, which is how someone with a matter in one
  * actually searches.
  *
+ * The last four narrow by things only a phone's filter screen currently asks
+ * for — a language, a floor on experience, a ceiling on the per-minute rate,
+ * and verified-only. The website's filter bar does not offer them, and because
+ * an absent filter is a no-op, adding them here changes nothing about how
+ * /lawyers behaves. They live here rather than in the API route so that the day
+ * the web bar does offer them, both clients already agree on what they mean.
+ *
  * @param {object} advocate
- * @param {{query?:string, service?:string, subService?:string, court?:string, city?:string}} filters
+ * @param {{query?:string, service?:string, subService?:string, court?:string,
+ *          city?:string, language?:string, minExperience?:number,
+ *          maxFee?:number, verifiedOnly?:boolean}} filters
  * @returns {boolean}
  */
 export function matchesAdvocate(advocate, filters = {}) {
@@ -47,11 +56,38 @@ export function matchesAdvocate(advocate, filters = {}) {
     return false;
   }
   if (filters.court && !advocate.courts?.includes(filters.court)) return false;
+  if (filters.language && !advocate.languages?.includes(filters.language)) return false;
+
+  if (filters.verifiedOnly && !advocate.verified) return false;
+
+  const minExperience = Number(filters.minExperience) || 0;
+  if (minExperience > 0 && (Number(advocate.experience) || 0) < minExperience) return false;
+
+  // A ceiling on the rate is a ceiling on the cheapest way to reach them, which
+  // is the figure their card quotes. A lawyer who has published no live rate at
+  // all has no price to compare, so a price filter cannot keep them: they are
+  // someone you have to ask, not someone who is cheap.
+  const maxFee = Number(filters.maxFee) || 0;
+  if (maxFee > 0) {
+    const rate = cheapestRate(advocate);
+    if (rate === null || rate > maxFee) return false;
+  }
 
   // Base city or any city they also work in — `servesCity` is the one rule the
   // city pages use too, so the directory and /bengaluru never disagree about
   // who belongs to a city.
   return servesCity(advocate, String(filters.city || '').trim());
+}
+
+/**
+ * The lowest per-minute rate a lawyer actually offers, or null when they offer
+ * no live channel at all. This is the number their card leads with.
+ */
+export function cheapestRate(advocate) {
+  const rates = [advocate?.chatRate, advocate?.audioRate, advocate?.videoRate]
+    .map((r) => Number(r) || 0)
+    .filter((r) => r > 0);
+  return rates.length ? Math.min(...rates) : null;
 }
 
 /** Every lawyer in `list` that matches. Never mutates the input. */

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2, ShieldCheck, ShieldOff, X } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
@@ -90,6 +90,155 @@ function DeleteAction({ advocate }) {
   );
 }
 
+/**
+ * The bar that appears once rows are ticked.
+ *
+ * Approving and verifying are deliberately two buttons, not one. Approving puts
+ * a lawyer in the public directory; verifying is a claim that somebody checked
+ * their Bar Council enrolment. They are usually done together and they are
+ * still not the same statement, so the panel makes an admin say which one they
+ * mean.
+ *
+ * @param {object} props
+ * @param {string[]} props.ids            the ticked lawyers
+ * @param {() => void} props.onClear
+ * @param {() => void} props.onDone       refresh once the write lands
+ */
+function BulkBar({ ids, onClear, onDone }) {
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [done, setDone] = useState('');
+
+  const run = async (action, confirmText) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+    setBusy(action);
+    setError('');
+    setDone('');
+    try {
+      const res = await fetch('/api/admin/advocates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Could not update those lawyers.');
+        return;
+      }
+
+      // Say what actually moved, not how many were selected. Ticking fifteen
+      // and being told "15 published" when fourteen already were reads as work
+      // that did not happen.
+      const changed = Number(data.changed ?? 0);
+      const verb = {
+        approve: 'published',
+        unpublish: 'unpublished',
+        verify: 'marked verified',
+        unverify: 'had the badge removed',
+      }[action];
+      setDone(
+        changed === 0
+          ? `Nothing to do — all ${ids.length} were already ${verb === 'published' ? 'live' : verb}.`
+          : `${changed} lawyer${changed === 1 ? '' : 's'} ${verb}.`
+      );
+      onDone();
+    } catch {
+      setError('Could not reach the server. Please try again.');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const Action = ({ action, icon: Icon, children, confirm, tone = 'text-ink/70 hover:bg-ink/5' }) => (
+    <button
+      type="button"
+      disabled={Boolean(busy)}
+      onClick={() => run(action, confirm)}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${tone}`}
+    >
+      {busy === action ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+      ) : (
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      )}
+      {children}
+    </button>
+  );
+
+  return (
+    <div className="mb-3 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold text-primary">
+          {ids.length} selected
+        </span>
+        <span className="h-4 w-px bg-primary/20" aria-hidden="true" />
+
+        <Action
+          action="approve"
+          icon={Check}
+          tone="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20"
+        >
+          Publish
+        </Action>
+        <Action
+          action="verify"
+          icon={ShieldCheck}
+          tone="bg-primary/10 text-primary hover:bg-primary/20"
+        >
+          Mark verified
+        </Action>
+        <Action
+          action="unverify"
+          icon={ShieldOff}
+          confirm={`Remove the verified badge from ${ids.length} lawyer(s)?`}
+        >
+          Remove badge
+        </Action>
+        <Action
+          action="unpublish"
+          icon={EyeOff}
+          confirm={`Take ${ids.length} lawyer(s) out of the public directory?`}
+          tone="text-ink/60 hover:bg-rose-500/10 hover:text-rose-600"
+        >
+          Unpublish
+        </Action>
+
+        <button
+          type="button"
+          onClick={onClear}
+          className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-ink/45 hover:text-ink"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+          Clear
+        </button>
+      </div>
+      {error && <p className="mt-2 text-xs font-medium text-rose-600">{error}</p>}
+      {done && !error && (
+        <p className="mt-2 text-xs font-medium text-emerald-700">{done}</p>
+      )}
+    </div>
+  );
+}
+
+/** A row's tick box, and the one in the header that takes the whole page. */
+function Tick({ checked, indeterminate = false, onChange, label }) {
+  return (
+    <input
+      type="checkbox"
+      aria-label={label}
+      checked={checked}
+      ref={(el) => {
+        // `indeterminate` is a DOM property, not an attribute — React cannot
+        // set it from JSX, so the half-ticked "some of these" state has to be
+        // written onto the node itself.
+        if (el) el.indeterminate = indeterminate && !checked;
+      }}
+      onChange={(e) => onChange(e.target.checked)}
+      className="h-4 w-4 cursor-pointer rounded border-ink/25 text-primary accent-[color:rgb(30_58_95)]"
+    />
+  );
+}
+
 function StatusBadge({ status }) {
   const map = {
     published: 'bg-emerald-500/12 text-emerald-700 ring-emerald-500/20',
@@ -110,10 +259,20 @@ function StatusBadge({ status }) {
  * @param {Array} props.advocates
  */
 export default function AdvocatesTable({ advocates }) {
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('all');
+  // Separate from `status` on purpose: being listed and being verified are two
+  // different facts, and filtering to "not verified yet" is exactly how an
+  // admin finds the rows a bulk verify should cover.
+  const [verification, setVerification] = useState('all');
   const [state, setState] = useState('all');
   const [field, setField] = useState('all');
+
+  // Ticked lawyers, by id. Held as a Set of ids rather than of rows so that a
+  // refresh — which hands us new objects for the same lawyers — does not lose
+  // the selection.
+  const [selected, setSelected] = useState(() => new Set());
 
   const states = useMemo(
     () => [...new Set(advocates.map((a) => a.state).filter(Boolean))].sort(),
@@ -130,6 +289,7 @@ export default function AdvocatesTable({ advocates }) {
     const term = q.trim().toLowerCase();
     return advocates.filter((a) => {
       if (status !== 'all' && a.status !== status) return false;
+      if (verification !== 'all' && a.verified !== (verification === 'verified')) return false;
       if (state !== 'all' && a.state !== state) return false;
       if (field !== 'all' && !(a.specializations || []).includes(field)) return false;
       if (term) {
@@ -140,11 +300,61 @@ export default function AdvocatesTable({ advocates }) {
       }
       return true;
     });
-  }, [advocates, q, status, state, field]);
+  }, [advocates, q, status, verification, state, field]);
 
-  const active = q || status !== 'all' || state !== 'all' || field !== 'all';
+  const active =
+    q || status !== 'all' || verification !== 'all' || state !== 'all' || field !== 'all';
+
+  // Selection is scoped to what the filters are showing. "Select all" on a
+  // page filtered to Pending has to mean those pending lawyers and nothing
+  // else — a tick box that quietly also published the rows you had filtered
+  // out would be the worst kind of bulk action.
+  const visibleIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
+  const selectedVisible = useMemo(
+    () => visibleIds.filter((id) => selected.has(id)),
+    [visibleIds, selected]
+  );
+  const allVisibleTicked =
+    visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+
+  const toggleOne = (id, on) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const toggleAllVisible = (on) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleIds) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
 
   const columns = [
+    {
+      key: 'select',
+      label: (
+        <Tick
+          checked={allVisibleTicked}
+          indeterminate={selectedVisible.length > 0}
+          onChange={toggleAllVisible}
+          label={allVisibleTicked ? 'Clear selection' : 'Select all shown'}
+        />
+      ),
+      className: 'w-10',
+      render: (a) => (
+        <Tick
+          checked={selected.has(a.id)}
+          onChange={(on) => toggleOne(a.id, on)}
+          label={`Select ${a.name}`}
+        />
+      ),
+    },
     {
       key: 'name',
       label: 'Lawyer',
@@ -274,6 +484,16 @@ export default function AdvocatesTable({ advocates }) {
           ]}
         />
         <FilterSelect
+          value={verification}
+          onChange={setVerification}
+          label="Verification"
+          options={[
+            { value: 'all', label: 'All lawyers' },
+            { value: 'verified', label: 'Verified' },
+            { value: 'unverified', label: 'Not verified' },
+          ]}
+        />
+        <FilterSelect
           value={state}
           onChange={setState}
           label="State"
@@ -289,6 +509,14 @@ export default function AdvocatesTable({ advocates }) {
           {filtered.length} of {advocates.length}
         </span>
       </div>
+
+      {selectedVisible.length > 0 && (
+        <BulkBar
+          ids={selectedVisible}
+          onClear={() => setSelected(new Set())}
+          onDone={() => router.refresh()}
+        />
+      )}
 
       <DataTable
         columns={columns}

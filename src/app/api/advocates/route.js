@@ -15,7 +15,13 @@ import Advocate from '@/models/Advocate';
  * runs. A query typed here and the same query typed on /lawyers return the
  * same lawyers in the same order.
  *
- * Query: q, city, service, subService, court, availability, sort, page, perPage
+ * Query: q, city, service, subService, court, language, minExperience, maxFee,
+ * verified, availability, sort, page, perPage
+ *
+ * The website's filter bar sends the first five and `availability`; the app's
+ * filter screen sends the rest as well. Every one of them is optional and an
+ * absent filter matches everyone, so the two clients share a route without
+ * either constraining the other.
  *
  * `availability` is read live rather than from the cached records, because
  * `available` inside an hour-old cache entry is a lawyer's answer from an hour
@@ -45,6 +51,10 @@ export async function GET(request) {
     service: searchParams.get('service') || '',
     subService: searchParams.get('subService') || '',
     court: searchParams.get('court') || '',
+    language: searchParams.get('language') || '',
+    minExperience: Number(searchParams.get('minExperience')) || 0,
+    maxFee: Number(searchParams.get('maxFee')) || 0,
+    verifiedOnly: searchParams.get('verified') === 'true',
   };
   const availability = (searchParams.get('availability') || '').trim();
   const requested = (searchParams.get('sort') || '').trim();
