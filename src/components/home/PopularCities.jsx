@@ -1,4 +1,4 @@
-import { Section, Button } from '@/components/ui';
+import { Section } from '@/components/ui';
 import CityTileRail from './CityTileRail';
 import { getAllCities } from '@/lib/cities';
 import { getLawyerCountsByCity } from '@/lib/stats';
@@ -25,13 +25,8 @@ export default async function PopularCities() {
 
   return (
     <Section spacing="sm" className="pb-6 sm:pb-8">
-      <div className="flex justify-end">
-        <Button href="/cities" variant="outline" size="sm">
-          View all cities
-        </Button>
-      </div>
-
-      {/* The rail's own heading and arrows live inside it, beside each other. */}
+      {/* The rail carries its own heading, its way out and its arrows, all on
+          one row — see CityTileRail. */}
       <CityTileRail cities={cities.slice(0, RAIL_LIMIT)} counts={counts} />
     </Section>
   );

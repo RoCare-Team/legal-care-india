@@ -108,12 +108,16 @@ function BulkBar({ ids, onClear, onDone }) {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
+  // The approval can succeed while its email does not. That is not an error —
+  // nothing needs retrying — but it is not a clean green tick either.
+  const [warn, setWarn] = useState(false);
 
   const run = async (action, confirmText) => {
     if (confirmText && !window.confirm(confirmText)) return;
     setBusy(action);
     setError('');
     setDone('');
+    setWarn(false);
     try {
       const res = await fetch('/api/admin/advocates', {
         method: 'PATCH',
@@ -136,11 +140,24 @@ function BulkBar({ ids, onClear, onDone }) {
         verify: 'marked verified',
         unverify: 'had the badge removed',
       }[action];
-      setDone(
+
+      let message =
         changed === 0
           ? `Nothing to do — all ${ids.length} were already ${verb === 'published' ? 'live' : verb}.`
-          : `${changed} lawyer${changed === 1 ? '' : 's'} ${verb}.`
-      );
+          : `${changed} lawyer${changed === 1 ? '' : 's'} ${verb}.`;
+
+      // The "profile is live" notice, reported separately from the approval
+      // itself: the lawyers are published either way, and an admin who is told
+      // only "15 published" would never learn the email silently did not go.
+      if (data.email) {
+        if (data.email.sent > 0) {
+          message += ` ${data.email.sent} notified by email.`;
+        } else {
+          message += ` Email not sent — ${data.email.error || 'unknown reason'}.`;
+          setWarn(true);
+        }
+      }
+      setDone(message);
       onDone();
     } catch {
       setError('Could not reach the server. Please try again.');
@@ -214,7 +231,13 @@ function BulkBar({ ids, onClear, onDone }) {
       </div>
       {error && <p className="mt-2 text-xs font-medium text-rose-600">{error}</p>}
       {done && !error && (
-        <p className="mt-2 text-xs font-medium text-emerald-700">{done}</p>
+        <p
+          className={`mt-2 text-xs font-medium ${
+            warn ? 'text-amber-700' : 'text-emerald-700'
+          }`}
+        >
+          {done}
+        </p>
       )}
     </div>
   );

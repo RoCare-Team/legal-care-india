@@ -6,6 +6,7 @@ import { Button } from '@/components/ui';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
 import { advocateRates } from '@/constants/callRates';
 import { useLocation } from '@/components/location/LocationProvider';
+import { usePresence } from '@/components/consultation/PresenceProvider';
 
 /**
  * Sort orders offered here, in the order they are shown. The same ones the
@@ -140,6 +141,22 @@ function locationHeading(nearby, location) {
 }
 
 /**
+ * The same heading with "online" worked into it.
+ *
+ * Rewriting the caller's words rather than taking a second prop, because the
+ * two forms have to stay one sentence: "Verified lawyers in Delhi" becomes
+ * "Top online lawyers in Delhi", and a band with no city keeps its own name
+ * with "online" simply added.
+ *
+ * @param {string} eyebrow
+ * @returns {string}
+ */
+function onlineHeading(eyebrow) {
+  const inCity = eyebrow.match(/\bin\s+(.+)$/i);
+  return inCity ? `Top online lawyers in ${inCity[1]}` : 'Top online lawyers';
+}
+
+/**
  * AdvocateGrid — the home page's "Advocate listing" band, as a sliding rail.
  *
  * On a desktop it is a fixed shortlist: six lawyers, three across and two
@@ -254,7 +271,34 @@ export default function AdvocateGrid({
   // empty one under it.
   const rows = list.length > columns ? 2 : 1;
 
-  const sorted = useMemo(() => sortAdvocates(list, sort), [list, sort]);
+  // Who is reachable this second. The same poll the cards' own badges read, so
+  // the heading and the badges can never disagree — and `null` until the first
+  // one lands, which is what keeps the band from claiming anyone is online
+  // before it has been told.
+  const presence = usePresence();
+
+  // How many of these lawyers that actually is.
+  const onlineCount = useMemo(() => {
+    if (!presence) return 0;
+    return list.filter((a) => presence.has(String(a._id || a.id || ''))).length;
+  }, [list, presence]);
+
+  const sorted = useMemo(() => {
+    const byChosenOrder = sortAdvocates(list, sort);
+    // Online first, but only while the visitor has not asked for an order of
+    // their own: someone who picked "Highest rated" wants the highest rated at
+    // the top, not the highest rated who happens to be at their desk.
+    //
+    // Within each group the chosen order is untouched, so this is a partition
+    // rather than a re-sort — and before the first poll lands nobody counts as
+    // online, which leaves the order exactly as it was.
+    if (sort !== 'relevance' || !presence) return byChosenOrder;
+    const isOnline = (a) => presence.has(String(a._id || a.id || ''));
+    return [
+      ...byChosenOrder.filter(isOnline),
+      ...byChosenOrder.filter((a) => !isOnline(a)),
+    ];
+  }, [list, sort, presence]);
 
   // The desktop grid reads in its natural order; the rail has to be re-threaded
   // for a track that fills columns top-then-bottom.
@@ -263,6 +307,14 @@ export default function AdvocateGrid({
       : railOrder(sorted, columns, rows)),
     [sorted, isDesktop, columns, rows]
   );
+
+  // The order actually on screen, in the band's own words.
+  const orderNote =
+    onlineCount > 0 && sort === 'relevance'
+      ? 'online first'
+      : heading
+        ? heading.note
+        : note;
 
   // Nothing to order with two cards on screen; the control would be furniture.
   const showSort = list.length > 2;
@@ -288,15 +340,39 @@ export default function AdvocateGrid({
           left, the way out on the right — rather than crowding the title. */}
       <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          {eyebrow && (
-            <p className="font-display text-xl font-bold text-ink sm:text-2xl">{eyebrow}</p>
-          )}
-          {(heading?.title || title) && (
-            <p className="mt-0.5 text-[14px] text-ink/60">
-              {heading?.title || title}
-              {(heading ? heading.note : note) && (
-                <span className="ml-1.5 text-ink/40">· {heading ? heading.note : note}</span>
+          {(heading?.title || eyebrow) && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <h2 className="font-display text-xl font-bold text-ink sm:text-2xl">
+                {/* "Top online lawyers" only while some of them are. The claim
+                    is checked against the presence poll rather than assumed:
+                    a heading promising online lawyers over a row of grey
+                    Offline badges is the one thing a directory cannot afford
+                    to get wrong. */}
+                {onlineCount > 0
+                  ? onlineHeading(heading?.title || eyebrow)
+                  : heading?.title || eyebrow}
+              </h2>
+              {onlineCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-emerald-600">
+                  <span
+                    className="h-2 w-2 rounded-full bg-emerald-500"
+                    aria-hidden="true"
+                  />
+                  {onlineCount} online now
+                </span>
               )}
+            </div>
+          )}
+          {/* What order these are actually in. Once online-first has moved
+              anyone, saying "newest first" or "nearest first" would describe an
+              order the visitor is not looking at. */}
+          {(orderNote || title) && (
+            <p className="mt-0.5 text-[14px] text-ink/60">
+              {title && !heading ? title : ''}
+              {title && !heading && orderNote && (
+                <span className="ml-1.5 text-ink/40">· {orderNote}</span>
+              )}
+              {(!title || heading) && orderNote}
             </p>
           )}
           {/* Where the band thinks the visitor is, and the way to say otherwise.

@@ -1,15 +1,6 @@
 import Image from 'next/image';
-import { ShieldCheck, BadgeCheck, Lock } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
-import { CATEGORIES } from '@/data/categories';
-import { cityServicePath } from '@/lib/serviceRoutes';
-
-const TRUST = [
-  { icon: ShieldCheck, label: '100% Anonymous' },
-  { icon: BadgeCheck, label: 'Verified Lawyers' },
-  { icon: Lock, label: 'Secure & Confidential' },
-];
 
 /**
  * Hero — the opening band, used by both the homepage and every city page.
@@ -24,12 +15,10 @@ const TRUST = [
  * @param {string} [props.intro]  opening paragraph written for that city
  */
 export default function Hero({ city, intro }) {
-  const popular = CATEGORIES.slice(0, 5);
-  const chipHref = (c) => (city ? cityServicePath(c, city) : `/${c.slug}`);
-
-  // The chip that used to sit above the title was also what pushed the heading
-  // clear of the header — with it gone, the section's top padding carries that
-  // job on its own.
+  // The band carries the promise and the one control, and stops there. The
+  // practice-area chips and the trust strip that used to be crowded in under
+  // the search box are now sections of their own below it — PopularLegalAreas
+  // and AnonymousBand — where each has room to be read rather than glanced at.
   return (
     // The header is `fixed` over this band on the homepage, so the top padding
     // is what keeps the heading clear of it — not decoration. Shrinking the
@@ -141,50 +130,19 @@ export default function Hero({ city, intro }) {
           )}
           </div>
 
-          {/* Search Bar — begins where the picture ends, never across its edge */}
-          <div className="animate-fade-up w-full max-w-2xl sm:mt-5" style={{ animationDelay: '0.15s' }}>
+          {/* The search bar begins where the picture ends, never across its
+              edge. It is the last thing in the band now — what used to follow
+              it here has become the two sections below the hero. */}
+          <div
+            className="animate-fade-up w-full max-w-2xl sm:mt-5"
+            style={{ animationDelay: '0.15s' }}
+          >
             {/* The glass frame is a desktop flourish. On a phone it drew a
                 second outline a few pixels outside the white card's own, which
                 read as a rendering fault and cost height the hero cannot spare. */}
             <div className="sm:rounded-2xl sm:border sm:border-white/15 sm:bg-white/5 sm:p-1 sm:shadow-2xl sm:backdrop-blur-md">
-              <SearchBar />
+              <SearchBar city={city} />
             </div>
-
-            {/* Popular Specializations Tags — one scrolling line on a phone,
-                where five wrapping chips took three rows of the hero. */}
-            <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto text-xs [scrollbar-width:none] sm:mt-4 sm:flex-wrap sm:text-sm [&::-webkit-scrollbar]:hidden">
-              <span className="font-semibold text-[#D4AF37]/90 tracking-wide uppercase text-[11px]">Popular:</span>
-              {popular.length > 0 ? (
-                popular.map((c) => (
-                  <a
-                    key={c.slug}
-                    href={chipHref(c)}
-                    className="shrink-0 whitespace-nowrap rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-slate-100 font-medium backdrop-blur-sm transition-all hover:bg-white/10 hover:border-[#D4AF37]/60 hover:text-white shadow-sm"
-                  >
-                    {c.name}
-                  </a>
-                ))
-              ) : (
-                ['Civil Law', 'Criminal Law', 'Family Law', 'Property Law', 'Corporate Law'].map((name) => (
-                  <span key={name} className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-slate-100 font-medium shadow-sm">
-                    {name}
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Trust strip — reassurance cues, spaced clear of the search block.
-              Left off a phone: three chips wrapping onto two rows pushed the
-              search box and everything below it down a screen, for reassurance
-              the visitor has not yet asked for. */}
-          <div className="animate-fade-up mt-4 hidden flex-wrap items-center gap-x-6 gap-y-3 sm:mt-6 sm:flex" style={{ animationDelay: '0.2s' }}>
-            {TRUST.map(({ icon: Icon, label }) => (
-              <span key={label} className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                <Icon className="h-4 w-4 text-[#D4AF37]" aria-hidden="true" />
-                {label}
-              </span>
-            ))}
           </div>
         </div>
       </Container>

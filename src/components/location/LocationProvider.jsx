@@ -143,6 +143,11 @@ export default function LocationProvider({ children, cities = [] }) {
       // it does not navigate. Whoever asked the visitor to choose decides
       // whether choosing should also move them.
       cityPathFor: (place) => cityPathFor(cities, place),
+      // The cities themselves, for anything that has to offer them as a
+      // choice. They already come down from the root layout for the matching
+      // above, so handing them on costs nothing — the alternative is every
+      // search box on the site fetching the same list again.
+      cities,
     }),
     [location, save, pickerOpen, cities]
   );
@@ -162,6 +167,7 @@ export function useLocation() {
       openPicker: () => {},
       closePicker: () => {},
       cityPathFor: () => null,
+      cities: [],
     }
   );
 }

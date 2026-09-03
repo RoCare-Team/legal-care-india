@@ -4,6 +4,8 @@ import { getAdminSession } from '@/lib/admin';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
+import { sendCampaign } from '@/lib/campaignMail';
+import { advocateApprovedEmail } from '@/lib/emails/advocateApproved';
 
 /**
  * What each action writes. Two separate things live here and they are not the
@@ -65,15 +67,19 @@ export async function PATCH(request) {
   try {
     await connectDB();
 
-    // Counted before the write, because afterwards it cannot be. The schema
+    // Read before the write, because afterwards it cannot be. The schema
     // stamps `updatedAt` on every save, so Mongo reports every matched
     // document as modified whether or not its status or badge actually moved —
     // "15 updated" when fourteen were already published is a lie the panel
     // would tell every time.
-    const changed = await Advocate.countDocuments({
-      _id: { $in: ids },
-      ...update.notYet,
-    });
+    //
+    // The same query supplies the recipients: exactly the lawyers this action
+    // is about to change, so re-approving someone already live cannot email
+    // them a second time.
+    const affected = await Advocate.find({ _id: { $in: ids }, ...update.notYet })
+      .select('name email')
+      .lean();
+    const changed = affected.length;
 
     const result = await Advocate.updateMany({ _id: { $in: ids } }, { $set: update.set });
     if (!result.matchedCount) {
@@ -87,7 +93,32 @@ export async function PATCH(request) {
     revalidatePath('/');
     revalidatePath('/lawyers');
 
-    return NextResponse.json({ ok: true, matched: result.matchedCount, changed });
+    // Tell the newly published lawyers their profile is live. Only on approve,
+    // and only to the ones that actually moved — this is the one action of the
+    // four that changes something the recipient would want to hear about.
+    //
+    // A mail failure must not fail the approval: the lawyers ARE published by
+    // this point, and reporting an error would invite the admin to click again
+    // and mail everyone twice. It comes back as `email` instead, so the panel
+    // can say the approval worked and the notice did not.
+    let email = null;
+    if (action === 'approve' && changed > 0) {
+      const { subject, html } = advocateApprovedEmail();
+      try {
+        const result$ = await sendCampaign({
+          name: `Profile approved — ${new Date().toISOString().slice(0, 10)}`,
+          subject,
+          html,
+          contacts: affected.map((a) => ({ email: a.email, name: a.name })),
+        });
+        email = { sent: result$.sent, error: result$.skipped };
+      } catch (err) {
+        console.error('approval email failed', err);
+        email = { sent: 0, error: 'Approved, but the notification email failed.' };
+      }
+    }
+
+    return NextResponse.json({ ok: true, matched: result.matchedCount, changed, email });
   } catch (err) {
     console.error('advocate status update error', err);
     return NextResponse.json({ error: 'Could not update the lawyer. Please try again.' }, { status: 500 });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import CityCard from '@/components/cards/CityCard';
 
@@ -43,10 +44,22 @@ export default function CityTileRail({ cities = [], counts = {} }) {
         <h2 className="font-display text-lg font-bold text-ink sm:text-xl">
           Browse lawyers by city
         </h2>
+
+        {/* The way out sits with the heading rather than in a bar above it: it
+            is about these tiles, and a lone right-aligned button over the row
+            read as belonging to whatever came before. */}
+        <Link
+          href="/cities"
+          className="group ml-auto inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary-dark"
+        >
+          View all cities
+          <ChevronRight
+            className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+            aria-hidden="true"
+          />
+        </Link>
         {showArrows && (
-          // `ml-auto` holds the arrows hard right even if the heading pushes
-          // them onto a line of their own on a narrow screen.
-          <div className="ml-auto flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => scroll(-1)}

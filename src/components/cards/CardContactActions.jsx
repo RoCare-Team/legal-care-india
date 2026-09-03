@@ -130,24 +130,23 @@ export default function CardContactActions({
       video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
       chat: 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow',
     },
-    // Three outlined buttons on a white face — for a card that carries its own
-    // filled CTA beside them. Equal and quiet on purpose: the three are ways of
-    // reaching the same person, so none of them outranks another, and none of
-    // them should outrank the profile link they sit next to.
+    // Three tinted buttons, one hue each — for a card that carries its own
+    // filled CTA beside them. Equal in weight on purpose: these are three ways
+    // of reaching the same person, so none outranks another, and none should
+    // outrank the profile link beside them.
+    //
+    // The hue is the point. At this size the three labels are eight pixels of
+    // type and the icons are near-identical silhouettes; colour is what lets
+    // the eye go straight to the one it wants, and it is the same three the
+    // rest of the product uses — green for a call, blue for a chat, violet for
+    // video. Kept pale so a row of six cards is not a wall of colour: the tint
+    // identifies the button, it does not shout.
     quiet: {
-      base: 'inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-1.5 text-[12px] font-semibold text-slate-700 transition-colors duration-200 hover:border-primary/35 hover:bg-primary/[0.04] hover:text-primary',
+      base: 'inline-flex h-9 items-center justify-center gap-1 rounded-xl border px-1.5 text-[12px] font-semibold transition-colors duration-200',
       icon: 'h-3.5 w-3.5 shrink-0',
-      call: '',
-      chat: '',
-      video: '',
-      // One hue per channel, on the icon only. The buttons stay white so the
-      // three read as one group beside the profile link, but the colours are
-      // the ones the rest of the site already uses for these actions — green
-      // for a phone call, navy for chat, the brand gold for video — so each is
-      // recognised before its label is read.
-      callIcon: 'text-emerald-600',
-      chatIcon: 'text-primary',
-      videoIcon: 'text-[#B08D2A]',
+      call: 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50',
+      chat: 'border-blue-200/80 bg-blue-50/70 text-blue-700 hover:border-blue-300 hover:bg-blue-50',
+      video: 'border-violet-200/80 bg-violet-50/70 text-violet-700 hover:border-violet-300 hover:bg-violet-50',
     },
     // 44px tall — the minimum comfortable tap target, so the row never needs a
     // second attempt on a 360px phone.

@@ -1,9 +1,10 @@
 import { createMetadata } from '@/lib/metadata';
 import Hero from '@/components/home/Hero';
+import PopularLegalAreas from '@/components/home/PopularLegalAreas';
+import AnonymousBand from '@/components/home/AnonymousBand';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
-import LawyerBanner from '@/components/home/LawyerBanner';
 import HowItWorks from '@/components/home/HowItWorks';
 import PopularCities from '@/components/home/PopularCities';
 import Testimonials from '@/components/home/Testimonials';
@@ -19,11 +20,22 @@ export const revalidate = 3600;
  */
 export default function HomePage() {
   return (
+    // The order is the order a visitor's own questions arrive in: where and
+    // what kind of lawyer (hero), the four areas most matters fall under, then
+    // actual people they could call — before anything about the platform
+    // itself. The anonymity promise comes after those lawyers rather than
+    // before, because "can I do this without giving my name" is the question
+    // that stops someone who has just found a lawyer they want to call.
     <>
       <Hero />
-      <PopularCities />
+      <PopularLegalAreas />
       <FeaturedAdvocates />
-      <LawyerBanner />
+      <AnonymousBand />
+      <PopularCities />
+      {/* No LawyerBanner here. It makes the anonymity pitch a second time —
+          same promise, same two links — one screen below AnonymousBand, and
+          two pitches in a row read as a page that does not know what it has
+          already said. The city pages still use it; they have no such band. */}
       <Categories />
       <Stats />
       <HowItWorks />

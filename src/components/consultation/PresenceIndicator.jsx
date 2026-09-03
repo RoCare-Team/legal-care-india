@@ -1,5 +1,6 @@
 'use client';
 
+import { Check, X } from 'lucide-react';
 import { useIsOnline } from './PresenceProvider';
 
 /**
@@ -17,7 +18,7 @@ import { useIsOnline } from './PresenceProvider';
  *
  * @param {object} props
  * @param {string} props.id  lawyer _id
- * @param {'card'|'profile'|'label'|'dot'} [props.variant]
+ * @param {'card'|'profile'|'label'|'check'|'dot'} [props.variant]
  */
 export default function PresenceIndicator({ id, variant = 'card' }) {
   const online = useIsOnline(id, false);
@@ -34,6 +35,33 @@ export default function PresenceIndicator({ id, variant = 'card' }) {
           online ? 'bg-emerald-500' : 'bg-slate-300'
         }`}
       />
+    );
+  }
+
+  // A mark for the corner of a portrait: a tick when the lawyer is reachable,
+  // a cross when they are not. A bare coloured dot needs the reader to know
+  // which colour means what; a tick and a cross are the same two states with
+  // the answer drawn in, and they survive being seen by someone who cannot
+  // tell green from grey.
+  //
+  // The white ring is what keeps it legible over a photograph rather than only
+  // over the grey placeholder — without it a green disc on a green shirt is
+  // gone.
+  if (variant === 'check') {
+    return (
+      <span
+        title={online ? 'Online now' : 'Offline'}
+        aria-label={online ? 'Online now' : 'Offline'}
+        className={`grid h-[18px] w-[18px] place-items-center rounded-full ring-2 ring-white ${
+          online ? 'bg-emerald-500' : 'bg-slate-400'
+        }`}
+      >
+        {online ? (
+          <Check className="h-3 w-3 text-white" strokeWidth={3.5} aria-hidden="true" />
+        ) : (
+          <X className="h-3 w-3 text-white" strokeWidth={3.5} aria-hidden="true" />
+        )}
+      </span>
     );
   }
 

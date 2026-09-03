@@ -37,13 +37,16 @@ export default async function FeaturedAdvocates({ city }) {
       {advocates.length > 0 ? (
         <AdvocateGrid
           advocates={advocates}
-          eyebrow="Advocate listing"
-          title={
+          // The heading names the place, because that is what the band is
+          // about. It is also what the online-aware rewrite works on: with
+          // lawyers reachable right now it becomes "Top online lawyers in
+          // Bengaluru", and without them it stays this.
+          eyebrow={
             city ? `Verified lawyers in ${city.name}` : 'Verified lawyers on Justiceland'
           }
           note="newest first"
           actionHref="/lawyers"
-          actionLabel="Find all lawyers"
+          actionLabel="View all lawyers"
           // A city page is already scoped to a place, and a visitor reading
           // /bengaluru from Delhi wants Bengaluru — not their own doorstep.
           locationAware={!city}

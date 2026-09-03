@@ -176,13 +176,22 @@ export default function AdvocateGridCard({ advocate }) {
           lines against a 68px circle — aligned to the top it left a wedge of
           empty card under the name and the portrait looked dropped in. */}
       <div className="flex items-center gap-3.5">
-        <span className="block h-[68px] w-[68px] shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80 sm:h-[72px] sm:w-[72px]">
-          <Avatar
-            src={photo}
-            name={name}
-            size="lg"
-            className="!h-full !w-full !rounded-none !bg-slate-100 !text-2xl !text-slate-400"
-          />
+        {/* The portrait, with whether this lawyer can be reached right now
+            marked on its corner — the shorthand every messaging app uses, so
+            the answer is there before a word is read. The strip above still
+            spells it out for anyone who wants it in words. */}
+        <span className="relative block h-[68px] w-[68px] shrink-0 sm:h-[72px] sm:w-[72px]">
+          <span className="block h-full w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80">
+            <Avatar
+              src={photo}
+              name={name}
+              size="lg"
+              className="!h-full !w-full !rounded-none !bg-slate-100 !text-2xl !text-slate-400"
+            />
+          </span>
+          <span className="absolute bottom-0 right-0">
+            <PresenceIndicator id={advocate._id} variant="check" />
+          </span>
         </span>
 
         {/* The name has the whole column now that the rate has moved up, which
