@@ -251,15 +251,63 @@ export function buildAdvocateProfile(a) {
  * next request fetches fresh data instead of serving a stale empty list.
  * A successful-but-empty result is still cached (it's a real "no lawyers").
  */
+/**
+ * The URL a lawyer's photograph is served from.
+ *
+ * The list hands out this path instead of the image itself — see below for why.
+ * Same-origin, so it needs no entry in next.config's remotePatterns, and it is
+ * stable per lawyer so a browser caches it once and never asks again.
+ */
+export function advocatePhotoUrl(id) {
+  return `/api/advocates/${String(id)}/photo`;
+}
+
+/**
+ * Every published lawyer, for the directory and the home page bands.
+ *
+ * The three image fields are deliberately left in the database. Photographs are
+ * stored inline as base64 data URIs, and across the published set they are
+ * 21.8 MB of the collection's 22.3 MB — `gallery` alone is 8.6 MB, `photo` 8.0,
+ * `coverImage` 5.2. Reading them all to render a list of names was survivable
+ * at twenty lawyers and fatal at 286: each request pulled 22 MB, `serialize`
+ * copied it, `buildAdvocateProfile` spread it twice more, and the cache
+ * serialised the result again — a few hundred megabytes per call, for pages
+ * that show a 68-pixel avatar. Every route that called this stopped answering
+ * at all.
+ *
+ * Excluding them takes the read from 22.3 MB to about half a megabyte. The
+ * avatar is not lost: `photo` comes back as the URL of a route that serves that
+ * one lawyer's image, which the browser then caches per lawyer rather than
+ * re-downloading inside every list payload.
+ *
+ * Single-lawyer reads below are untouched and still return the stored image —
+ * the lawyer's own edit form round-trips that value back on save, and handing
+ * it a URL would overwrite the photograph with a link to itself.
+ */
 const _getAllAdvocates = unstable_cache(
   async () => {
     await connectDB();
-    // Newest registrations first, so a freshly registered lawyer shows up
-    // at the start of the directory and the featured slider.
-    const rows = await Advocate.find({ status: 'published' })
-      .sort({ createdAt: -1 })
-      .lean();
-    return rows.map((r) => buildAdvocateProfile(serialize(r)));
+    const rows = await Advocate.aggregate([
+      { $match: { status: 'published' } },
+      // Newest registrations first, so a freshly registered lawyer shows up
+      // at the start of the directory and the featured slider.
+      { $sort: { createdAt: -1 } },
+      // Whether there is a photograph, without reading it: a lawyer with none
+      // must come back with an empty `photo` so the card falls back to their
+      // initials rather than pointing at an image that 404s.
+      {
+        $addFields: {
+          hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
+        },
+      },
+      { $project: { photo: 0, coverImage: 0, gallery: 0, passwordHash: 0 } },
+    ]);
+
+    return rows.map((r) => {
+      const profile = buildAdvocateProfile(serialize(r));
+      profile.photo = r.hasPhoto ? advocatePhotoUrl(r._id) : '';
+      return profile;
+    });
   },
   ['all-advocates'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }

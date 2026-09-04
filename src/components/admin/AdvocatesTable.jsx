@@ -146,17 +146,24 @@ function BulkBar({ ids, onClear, onDone }) {
           ? `Nothing to do — all ${ids.length} were already ${verb === 'published' ? 'live' : verb}.`
           : `${changed} lawyer${changed === 1 ? '' : 's'} ${verb}.`;
 
-      // The "profile is live" notice, reported separately from the approval
-      // itself: the lawyers are published either way, and an admin who is told
-      // only "15 published" would never learn the email silently did not go.
-      if (data.email) {
-        if (data.email.sent > 0) {
-          message += ` ${data.email.sent} notified by email.`;
+      // The "profile is live" notices, reported apart from the approval
+      // itself and apart from each other: the lawyers are published either
+      // way, and an admin told only "15 published" would never learn that one
+      // of the two channels silently did not go.
+      const notices = [];
+      for (const [channel, result] of [
+        ['email', data.email],
+        ['WhatsApp', data.whatsapp],
+      ]) {
+        if (!result) continue;
+        if (result.sent > 0) {
+          notices.push(`${result.sent} by ${channel}`);
         } else {
-          message += ` Email not sent — ${data.email.error || 'unknown reason'}.`;
+          notices.push(`no ${channel} (${result.error || 'unknown reason'})`);
           setWarn(true);
         }
       }
+      if (notices.length) message += ` Notified: ${notices.join(', ')}.`;
       setDone(message);
       onDone();
     } catch {

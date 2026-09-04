@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllAdvocates } from '@/lib/advocates';
 import { filterAdvocates, sortAdvocates, ADVOCATE_SORTS } from '@/lib/advocateSearch';
+import { getServiceByAnySlug, getSubServiceByAnySlug } from '@/data/categories';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 
@@ -45,11 +46,25 @@ async function onlineIds() {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
 
+  // A practice area arrives either as its name ("Corporate Law") or as the slug
+  // a link carries ("corporate-lawyer"). Lawyers store the name, so the slug has
+  // to be resolved or it silently matches nobody — which is exactly what
+  // /lawyers?service=corporate-lawyer did before this: a real search, a real
+  // page, and an empty list. `getServiceByAnySlug` is the same resolver the web
+  // page uses, so a shared link means the same thing to both.
+  const requestedService = (searchParams.get('service') || '').trim();
+  const service = getServiceByAnySlug(requestedService)?.name || requestedService;
+
+  const requestedSub = (searchParams.get('subService') || '').trim();
+  const subService = service
+    ? getSubServiceByAnySlug(service, requestedSub) || requestedSub
+    : requestedSub;
+
   const filters = {
     query: searchParams.get('q') || '',
     city: searchParams.get('city') || '',
-    service: searchParams.get('service') || '',
-    subService: searchParams.get('subService') || '',
+    service,
+    subService,
     court: searchParams.get('court') || '',
     language: searchParams.get('language') || '',
     minExperience: Number(searchParams.get('minExperience')) || 0,

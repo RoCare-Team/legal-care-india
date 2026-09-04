@@ -6,6 +6,7 @@ import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
 import { sendCampaign } from '@/lib/campaignMail';
 import { advocateApprovedEmail } from '@/lib/emails/advocateApproved';
+import { sendWhatsAppCampaign, APPROVED_CAMPAIGN, firstName } from '@/lib/whatsapp';
 
 /**
  * What each action writes. Two separate things live here and they are not the
@@ -77,7 +78,7 @@ export async function PATCH(request) {
     // is about to change, so re-approving someone already live cannot email
     // them a second time.
     const affected = await Advocate.find({ _id: { $in: ids }, ...update.notYet })
-      .select('name email')
+      .select('name email phone')
       .lean();
     const changed = affected.length;
 
@@ -102,23 +103,59 @@ export async function PATCH(request) {
     // and mail everyone twice. It comes back as `email` instead, so the panel
     // can say the approval worked and the notice did not.
     let email = null;
+    let whatsapp = null;
     if (action === 'approve' && changed > 0) {
       const { subject, html } = advocateApprovedEmail();
-      try {
-        const result$ = await sendCampaign({
-          name: `Profile approved — ${new Date().toISOString().slice(0, 10)}`,
+      const day = new Date().toISOString().slice(0, 10);
+
+      // Both channels, and each answers for itself. A lawyer with no email on
+      // file should still get the WhatsApp message, and a WhatsApp gateway
+      // having a bad afternoon should not cost everyone else the email — so
+      // they are settled independently and reported separately.
+      const [emailResult, whatsappResult] = await Promise.allSettled([
+        sendCampaign({
+          name: `Profile approved — ${day}`,
           subject,
           html,
           contacts: affected.map((a) => ({ email: a.email, name: a.name })),
-        });
-        email = { sent: result$.sent, error: result$.skipped };
-      } catch (err) {
-        console.error('approval email failed', err);
-        email = { sent: 0, error: 'Approved, but the notification email failed.' };
+        }),
+        sendWhatsAppCampaign({
+          campaign: APPROVED_CAMPAIGN,
+          // One positional parameter, which is the {{1}} the approved template
+          // greets them by. An honorific is stripped first: "Hello Adv" reads
+          // worse than no name at all.
+          recipients: affected.map((a) => ({
+            phone: a.phone,
+            params: [firstName(a.name)],
+          })),
+        }),
+      ]);
+
+      if (emailResult.status === 'fulfilled') {
+        email = { sent: emailResult.value.sent, error: emailResult.value.skipped };
+      } else {
+        console.error('approval email failed', emailResult.reason);
+        email = { sent: 0, error: 'the email gateway refused it' };
+      }
+
+      if (whatsappResult.status === 'fulfilled') {
+        whatsapp = {
+          sent: whatsappResult.value.sent,
+          error: whatsappResult.value.skipped,
+        };
+      } else {
+        console.error('approval whatsapp failed', whatsappResult.reason);
+        whatsapp = { sent: 0, error: 'the WhatsApp gateway refused it' };
       }
     }
 
-    return NextResponse.json({ ok: true, matched: result.matchedCount, changed, email });
+    return NextResponse.json({
+      ok: true,
+      matched: result.matchedCount,
+      changed,
+      email,
+      whatsapp,
+    });
   } catch (err) {
     console.error('advocate status update error', err);
     return NextResponse.json({ error: 'Could not update the lawyer. Please try again.' }, { status: 500 });
