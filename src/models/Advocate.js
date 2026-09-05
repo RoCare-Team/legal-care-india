@@ -267,4 +267,18 @@ const AdvocateSchema = new Schema(
   { timestamps: true }
 );
 
+/**
+ * The directory's own query: published lawyers, newest first.
+ *
+ * Without this the read was a collection scan followed by an in-memory sort of
+ * whole documents — and because photographs are stored inline, "whole
+ * documents" meant tens of megabytes. MongoDB refuses an in-memory sort past
+ * 32 MB, so the directory did not merely get slow as lawyers registered, it
+ * started failing outright and every page went blank.
+ *
+ * The index removes the sort stage rather than making it cheaper, so that
+ * ceiling stops applying instead of being pushed a little further away.
+ */
+AdvocateSchema.index({ status: 1, createdAt: -1 });
+
 export default mongoose.models.Advocate || mongoose.model('Advocate', AdvocateSchema);

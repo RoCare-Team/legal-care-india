@@ -287,20 +287,28 @@ export function advocatePhotoUrl(id) {
 const _getAllAdvocates = unstable_cache(
   async () => {
     await connectDB();
+    // Stage order is load-bearing, not stylistic. The images have to be
+    // dropped BEFORE the sort: MongoDB sorts in memory and refuses at 32 MB,
+    // and sorting whole documents hit that ceiling the moment the directory
+    // passed roughly 400 lawyers at ~78 KB each. The aggregation then failed,
+    // the catch below swallowed it, and every page quietly showed no lawyers
+    // at all. Sorting the trimmed documents is about 1.5 KB each, so the same
+    // ceiling is now thousands of lawyers away instead of a few dozen.
     const rows = await Advocate.aggregate([
       { $match: { status: 'published' } },
-      // Newest registrations first, so a freshly registered lawyer shows up
-      // at the start of the directory and the featured slider.
-      { $sort: { createdAt: -1 } },
       // Whether there is a photograph, without reading it: a lawyer with none
       // must come back with an empty `photo` so the card falls back to their
-      // initials rather than pointing at an image that 404s.
+      // initials rather than pointing at an image that 404s. This reads
+      // `photo`, so it has to come before the stage that drops it.
       {
         $addFields: {
           hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
         },
       },
       { $project: { photo: 0, coverImage: 0, gallery: 0, passwordHash: 0 } },
+      // Newest registrations first, so a freshly registered lawyer shows up
+      // at the start of the directory and the featured slider.
+      { $sort: { createdAt: -1 } },
     ]);
 
     return rows.map((r) => {
@@ -313,12 +321,29 @@ const _getAllAdvocates = unstable_cache(
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
-/** All lean lawyer records (falls back to static data if the DB is down). */
+/**
+ * All lean lawyer records.
+ *
+ * The fallback is `src/data/advocates.js`, which is empty — the seed records
+ * were removed once real lawyers registered. So this catch is not a graceful
+ * degrade: it is the whole directory going blank, on every page, behind an
+ * HTTP 200. That is precisely how a broken aggregation went unnoticed here for
+ * a day; the old message blamed MongoDB while MongoDB was answering every
+ * other query on the site.
+ *
+ * So it shouts, and it says what actually happened. Whatever reads this still
+ * gets an array and still renders — a lawyer directory should not 500 because
+ * one query is sick — but nobody should have to guess again.
+ */
 export async function getAllAdvocates() {
   try {
     return await _getAllAdvocates();
   } catch (err) {
-    console.warn('getAllAdvocates: MongoDB unavailable, falling back to static advocates', err);
+    console.error(
+      `getAllAdvocates FAILED — the directory will render EMPTY (${ADVOCATES.length} static fallback records). ` +
+        'This is not necessarily a connection problem; check the error before assuming the database is down.',
+      err
+    );
     return ADVOCATES;
   }
 }
