@@ -5,8 +5,41 @@ import Advocate from '@/models/Advocate';
 import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
 import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
 import { normalizeRate } from '@/constants/callRates';
+import {
+  CONSULTATION_SLOTS, CONSULTATION_CHANNELS, normalizeSlotPrice, slotKey,
+} from '@/constants/consultationSlots';
+import { activePlan, checkPlanLimits } from '@/constants/membershipPlans';
 import { slugify } from '@/utils/slugify';
 import { geocodeAddress } from '@/lib/geocode';
+
+/**
+ * The lawyer's own slot prices, as a Map keyed by minutes.
+ *
+ * Only the slots we actually offer, and only real figures — a blank or junk
+ * entry is dropped rather than stored as 0, because 0 and "not set" have to
+ * stay distinguishable: an unset slot falls back to the platform default.
+ */
+function slotPriceMap(raw) {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const out = {};
+
+  const take = (key) => {
+    const price = normalizeSlotPrice(raw[key] ?? raw[String(key)]);
+    if (price > 0) out[String(key)] = price;
+  };
+
+  for (const slot of CONSULTATION_SLOTS) {
+    // The shared price, kept because every account created before channels
+    // existed has one and it is still the fallback for any channel left blank.
+    take(slot.minutes);
+    // And one per channel. Built from our own lists rather than from whatever
+    // keys the body happened to carry, so a request cannot invent a channel or
+    // a slot length and have it stored.
+    for (const channel of CONSULTATION_CHANNELS) take(slotKey(channel.key, slot.minutes));
+  }
+
+  return Object.keys(out).length ? out : undefined;
+}
 
 /**
  * GET /api/dashboard/profile — the logged-in lawyer's full profile.
@@ -42,7 +75,7 @@ export async function PUT(request) {
     cases, clients, successRate,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
-    phone, whatsapp, email, fee, social, chatRate, audioRate, videoRate,
+    phone, whatsapp, email, fee, social, chatRate, audioRate, videoRate, slotPrices,
   } = body || {};
 
   const update = {};
@@ -64,10 +97,49 @@ export async function PUT(request) {
   if (city !== undefined) update.city = city;
   if (state !== undefined) update.state = state;
   if (about !== undefined) update.about = about;
-  if (Array.isArray(services)) update.specializations = services;
-  if (Array.isArray(subServices)) update.subSpecializations = subServices;
-  if (Array.isArray(languages)) update.languages = languages;
+  // How much of their practice this lawyer may list is decided by their
+  // membership, and it is decided here rather than only in the form. The form
+  // stops at the limit and offers an upgrade, which is the right experience —
+  // but the form is a page anyone can edit, and this route is the only place
+  // that actually holds the line.
+  /** Trim + dedupe a raw string array, dropping empties. */
   const cleanList = (arr) => [...new Set(arr.map((s) => String(s || '').trim()).filter(Boolean))];
+
+  if (Array.isArray(services) || Array.isArray(subServices) || Array.isArray(practiceCities)) {
+    const current = await Advocate.findById(id)
+      .select('specializations subSpecializations practiceCities city planId planExpiresAt')
+      .lean();
+    if (!current) {
+      return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
+    }
+
+    const areas = Array.isArray(services) ? services : current.specializations || [];
+    const matters = Array.isArray(subServices)
+      ? subServices
+      : current.subSpecializations || [];
+    const allCities = Array.isArray(practiceCities)
+      ? cleanList(practiceCities)
+      : current.practiceCities || [];
+
+    // The lawyer's own city is where they are, not a city they chose to add,
+    // so it never counts against the allowance. Otherwise a free plan of two
+    // would really be one, and the number in the pricing table would be wrong.
+    const base = String(city ?? current.city ?? '').trim().toLowerCase();
+    const extraCities = allCities.filter((c) => String(c).trim().toLowerCase() !== base);
+
+    const plan = activePlan(current);
+    const check = checkPlanLimits(plan, { areas, matters, cities: extraCities });
+    if (!check.ok) {
+      return NextResponse.json(
+        { error: check.error, upgradeTo: check.upgradeTo, plan: plan.id },
+        { status: 402 }
+      );
+    }
+
+    if (Array.isArray(services)) update.specializations = services;
+    if (Array.isArray(subServices)) update.subSpecializations = subServices;
+  }
+  if (Array.isArray(languages)) update.languages = languages;
   if (Array.isArray(courts)) update.courts = cleanList(courts);
   if (Array.isArray(practiceCities)) update.practiceCities = cleanList(practiceCities);
   if (barCouncil !== undefined) update.barCouncilNumber = barCouncil;
@@ -89,6 +161,11 @@ export async function PUT(request) {
   // Saving a rate also clears that channel's legacy fixed plans: they are only
   // read as a fallback, and leaving them behind would let a stale package
   // outlive the rate that replaced it.
+  // Sent whole or not at all: the form always posts all three, so a partial
+  // object means a slot was cleared and should fall back to the default rather
+  // than keep an old figure the lawyer has just deleted.
+  if (slotPrices !== undefined) update.slotPrices = slotPriceMap(slotPrices);
+
   if (chatRate !== undefined) {
     update.chatRate = normalizeRate(chatRate);
     update.consultationPlans = [];

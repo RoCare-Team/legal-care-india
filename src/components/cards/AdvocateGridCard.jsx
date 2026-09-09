@@ -3,6 +3,7 @@ import { MapPin, Check, Star, ArrowRight, CalendarDays, Languages } from 'lucide
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
+import { slotsFor, CARD_SLOT_MINUTES } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -89,22 +90,21 @@ export default function AdvocateGridCard({ advocate }) {
     designation,
     specializations = [],
     languages = [],
-    consultationFee,
     contact,
   } = advocate;
 
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
-  // The headline figure is the cheapest live rate on offer — what it actually
-  // costs to reach this lawyer. Only one with no live channel falls back to
-  // their flat office fee, and one with neither shows nothing rather than "₹0",
-  // which would read as a free consultation.
-  const liveRates = [chatRate, audioRate, videoRate].filter((r) => r > 0);
-  const cheapestRate = liveRates.length ? Math.min(...liveRates) : 0;
-  const feeAmount = cheapestRate || consultationFee;
-  const feeUnit = cheapestRate ? 'min' : 'consult';
-  const feeQuoted = Number(feeAmount) > 0;
+  // The two blocks the card quotes. Every lawyer has a price for these — their
+  // own if they set one, the platform's if they did not — so unlike the old
+  // per-minute figure there is no case where the ticket is simply absent, and
+  // no card that silently offers nothing because a rate was left at zero.
+  // Chat prices, because that is the channel CONSULTATION_CHANNELS marks for
+  // the card — a card has one line and there are nine figures behind it.
+  const cardSlots = slotsFor(advocate, 'chat').filter((s) =>
+    CARD_SLOT_MINUTES.includes(s.minutes)
+  );
 
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say. Every advocate is at least an Advocate, so the
@@ -146,28 +146,41 @@ export default function AdvocateGridCard({ advocate }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <PresenceIndicator id={advocate._id} variant="label" />
 
-        {/* A torn ticket: dashed rule, tinted face, and a bite out of each
-            side. The label is gone — "₹24/min" beside a lawyer's name is
-            self-evidently what they charge, and spelling it out was a second
-            line of type for no second piece of information. */}
-        {feeQuoted && (
-          <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-1.5 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
-            {/* The notches are the card's own white punched over the border,
-                which is what makes the edge read as torn. */}
-            <span
-              aria-hidden="true"
-              className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-            />
-            <span
-              aria-hidden="true"
-              className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-            />
-            <p className="whitespace-nowrap text-[16px] font-bold leading-none text-emerald-700">
-              ₹{Number(feeAmount).toLocaleString('en-IN')}
-              <span className="text-[12px] font-semibold text-emerald-600/70">/{feeUnit}</span>
-            </p>
+        {/* What it costs to book this lawyer, as the two blocks a client
+            actually chooses between. A per-minute figure asked the reader to
+            multiply before they could compare anybody; "10 min ₹200" is the
+            price of the thing on offer.
+
+            The dashed rule and the bitten-out sides are a torn ticket — the
+            notches are the card's own white punched over the border, which is
+            what makes the edge read as torn rather than merely dotted. */}
+        <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-1.5 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
+          <span
+            aria-hidden="true"
+            className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
+          />
+          <div className="flex items-baseline gap-2 whitespace-nowrap">
+            {cardSlots.map((slot, i) => (
+              <span key={slot.minutes} className="flex items-baseline gap-1">
+                {i > 0 && (
+                  <span className="mr-1 text-emerald-600/40" aria-hidden="true">
+                    ·
+                  </span>
+                )}
+                <span className="text-[11px] font-semibold text-emerald-600/70">
+                  {slot.label}
+                </span>
+                <span className="text-[15px] font-bold leading-none text-emerald-700">
+                  ₹{slot.price.toLocaleString('en-IN')}
+                </span>
+              </span>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────── */}
@@ -297,6 +310,7 @@ export default function AdvocateGridCard({ advocate }) {
           contact={contact}
           name={name}
           advocateId={advocate._id}
+          slotPrices={advocate.slotPrices}
           chatRate={chatRate}
           videoRate={videoRate}
           audioRate={audioRate}

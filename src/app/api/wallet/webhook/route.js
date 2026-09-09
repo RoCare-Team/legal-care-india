@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { creditWalletForPayment } from '@/lib/users';
+import { grantMembership } from '@/lib/membership';
 import { verifyWebhookSignature, hasWebhookSecret, toRupees } from '@/lib/razorpay';
 
 export const dynamic = 'force-dynamic';
@@ -7,11 +8,16 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/wallet/webhook — Razorpay server-to-server callback.
  *
- * The safety net. /api/wallet/verify only runs if the user's browser survives
- * long enough to come back from checkout; a closed tab or a dead connection
- * would otherwise mean money taken and no balance added. Razorpay retries this
- * endpoint until it gets a 2xx, and crediting is keyed on the payment id, so
- * whichever path arrives first wins and the other is a no-op.
+ * The safety net, for both things this site charges for. /api/wallet/verify
+ * and /api/membership/verify only run if the payer's browser survives long
+ * enough to come back from checkout; a closed tab or a dead connection would
+ * otherwise mean money taken and no balance added, or a lawyer charged for a
+ * plan they never received. Razorpay retries this endpoint until it gets a
+ * 2xx, and both a wallet credit and a membership are keyed on the payment id,
+ * so whichever path arrives first wins and the other is a no-op.
+ *
+ * Which of the two a payment is comes off `notes.purpose`, set when the order
+ * was opened — the one place that knows what the money was for.
  *
  * Configure in the dashboard for the `payment.captured` event and set
  * paste the same secret into /admin/payments. There is no session here — the
@@ -47,10 +53,39 @@ export async function POST(request) {
   }
 
   const payment = event?.payload?.payment?.entity;
-  const userId = payment?.notes?.userId;
   const paymentId = payment?.id;
+  const purpose = payment?.notes?.purpose;
 
-  if (!payment || !paymentId || !userId || payment.notes?.purpose !== 'wallet_topup') {
+  if (!payment || !paymentId) {
+    return NextResponse.json({ ok: true, ignored: 'no payment on event' });
+  }
+
+  if (purpose === 'membership') {
+    try {
+      const result = await grantMembership({
+        advocateId: payment.notes?.advocateId,
+        planId: payment.notes?.planId,
+        paymentId,
+        orderId: payment.order_id || '',
+        amountPaise: payment.amount,
+      });
+      // A rejected payment is answered 2xx on purpose: it will be rejected the
+      // same way every retry, and Razorpay would keep sending it forever.
+      if (!result.ok) {
+        console.warn('razorpay webhook: membership refused', { paymentId, error: result.error });
+        return NextResponse.json({ ok: true, ignored: result.error });
+      }
+      return NextResponse.json({ ok: true, membership: result.planId, applied: result.applied });
+    } catch (err) {
+      console.error('razorpay webhook: membership error', err);
+      // 500 so Razorpay retries — a transient DB blip must not cost a lawyer
+      // the plan they have already paid for.
+      return NextResponse.json({ error: 'Could not process.' }, { status: 500 });
+    }
+  }
+
+  const userId = payment?.notes?.userId;
+  if (!userId || purpose !== 'wallet_topup') {
     return NextResponse.json({ ok: true, ignored: 'not a wallet top-up' });
   }
 

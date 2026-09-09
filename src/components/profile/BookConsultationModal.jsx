@@ -10,6 +10,8 @@ import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { affordableMinutes, formatRate } from '@/constants/callRates';
 import { refreshAuth } from '@/utils/authEvents';
+import { slotPrice } from '@/constants/consultationSlots';
+import SlotPicker from './SlotPicker';
 
 /**
  * BookConsultationModal — the user side of the live-chat flow:
@@ -23,7 +25,7 @@ import { refreshAuth } from '@/utils/authEvents';
  * @param {number} props.rate  the lawyer's ₹/min for chat; 0 ⇒ not offered
  */
 export default function BookConsultationModal({
-  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0,
+  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0, slotPrices,
 }) {
   const [sessionId, setSessionId] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -56,6 +58,18 @@ export default function BookConsultationModal({
   }, [open, setSession]);
 
   const status = session?.status;
+
+  // Only the slot prices are needed here, so only they are passed — the modal
+  // has no business holding a whole lawyer record to read three numbers.
+  const advocate = { slotPrices };
+
+  // The block the client is booking. Ten minutes by default: it is the
+  // cheapest way in, and someone unsure whether this lawyer is the right one
+  // should not have to commit an hour to find out.
+  const [slotMinutes, setSlotMinutes] = useState(10);
+
+  // Bookable only once the wallet covers the block that is selected.
+  const canBook = Number(walletBalance) >= slotPrice(advocate, slotMinutes, 'chat');
 
   // How long this wallet can keep the chat going at the lawyer's rate. Shown
   // up front so nobody is surprised by the cut-off mid-conversation.
@@ -109,7 +123,7 @@ export default function BookConsultationModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, type: 'chat' }),
+        body: JSON.stringify({ advocateId, type: 'chat', slotMinutes }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -285,32 +299,17 @@ export default function BookConsultationModal({
               minutes the conversation actually runs — end it whenever you like.
             </p>
 
-            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-ink/60">
-                  <Timer className="h-4 w-4 text-primary" /> Chat rate
-                </span>
-                <span className="font-display text-xl font-bold text-ink">{formatRate(rate)}</span>
-              </div>
-              {budgetMinutes > 0 && (
-                <p className="mt-2 border-t border-primary/15 pt-2 text-xs text-ink/55">
-                  Your balance covers about{' '}
-                  <strong className="font-semibold text-ink/75">{budgetMinutes} minutes</strong> —
-                  the chat ends on its own at that point.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
-              <span className="flex items-center gap-2 text-sm text-ink/60">
-                <Wallet className="h-4 w-4 text-primary" /> Wallet balance
-              </span>
-              <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
-            </div>
+            <SlotPicker
+              channel="chat"
+              advocate={advocate}
+              value={slotMinutes}
+              onChange={setSlotMinutes}
+              walletBalance={walletBalance}
+            />
 
             <button
               type="button"
-              disabled={creating || !rate}
+              disabled={creating || !canBook}
               onClick={book}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
             >

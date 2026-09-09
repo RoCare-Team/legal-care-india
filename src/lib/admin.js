@@ -9,6 +9,7 @@ import Consultation from '@/models/Consultation';
 import Activity from '@/models/Activity';
 import ContactMessage from '@/models/ContactMessage';
 import { advocateRates } from '@/constants/callRates';
+import { completionOf } from '@/lib/profileCompletion';
 
 /**
  * Admin access + read-only data for the /admin panel.
@@ -48,29 +49,96 @@ function iso(v) {
   return v ? new Date(v).toISOString() : null;
 }
 
-/** Every lawyer (all statuses), newest first. */
+/** Whether a string field has anything in it, decided in the database. */
+const filled = (path) => ({ $gt: [{ $strLenCP: { $trim: { input: { $ifNull: [path, ''] } } } }, 0] });
+/** Length of an array field, tolerating documents that never had it. */
+const count = (path) => ({ $size: { $ifNull: [path, []] } });
+
+/**
+ * Every lawyer (all statuses), newest first, with how complete each profile is.
+ *
+ * The completion figure is computed in the database rather than by reading the
+ * documents, and that is not a micro-optimisation: photographs and gallery
+ * images are stored as base64 inside the document, so fetching the fields the
+ * score depends on would pull tens of megabytes across for a table that shows
+ * a percentage. `$addFields` reduces each one to the boolean or count the
+ * score actually needs, and `$project` then keeps only those.
+ *
+ * The scoring itself still comes from lib/profileCompletion, so the number an
+ * admin sees is the same number the lawyer is shown on their own dashboard.
+ * Two different answers to "how complete is this profile" would make every
+ * conversation about it useless.
+ */
 export async function adminGetAdvocates() {
   await connectDB();
-  const rows = await Advocate.find({})
-    .sort({ createdAt: -1 })
-    .select('name email phone city state legalCareId slug status verified specializations consultationFee experience createdAt')
-    .lean();
-  return rows.map((r) => ({
-    id: String(r._id),
-    name: r.name || '',
-    email: r.email || '',
-    phone: r.phone || '',
-    city: r.city || '',
-    state: r.state || '',
-    legalCareId: r.legalCareId || '',
-    slug: r.slug || '',
-    status: r.status || 'published',
-    verified: Boolean(r.verified),
-    specializations: r.specializations || [],
-    consultationFee: r.consultationFee || 0,
-    experience: r.experience || 0,
-    createdAt: iso(r.createdAt),
-  }));
+
+  // Stage order is load-bearing, and this exact pipeline has been got wrong
+  // before: sorting first means MongoDB sorts whole documents — base64
+  // photographs included — and blows the 32 MB in-memory sort limit at this
+  // collection's size, taking the admin list down with a server error. Reduce
+  // to `_flat`, drop the heavy fields, and only then sort.
+  const rows = await Advocate.aggregate([
+    {
+      $addFields: {
+        _flat: {
+          hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
+          about: filled('$about'),
+          tagline: filled('$tagline'),
+          areas: count('$specializations'),
+          matters: count('$subSpecializations'),
+          courts: count('$courts'),
+          languages: count('$languages'),
+          barCouncil: filled('$barCouncilNumber'),
+          experience: { $ifNull: ['$experience', 0] },
+          education: count('$education'),
+          // A Map is stored as a sub-document; its entry count is its size.
+          slotPrices: {
+            $size: { $objectToArray: { $ifNull: ['$slotPrices', {}] } },
+          },
+          officeAddress: filled('$office.address'),
+          timing: count('$timing'),
+          gallery: {
+            $size: {
+              $filter: {
+                input: { $ifNull: ['$gallery', []] },
+                as: 'g',
+                cond: { $gt: [{ $strLenBytes: { $ifNull: ['$$g.url', ''] } }, 0] },
+              },
+            },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        name: 1, email: 1, phone: 1, city: 1, state: 1, legalCareId: 1, slug: 1,
+        status: 1, verified: 1, specializations: 1, consultationFee: 1,
+        experience: 1, createdAt: 1, _flat: 1,
+      },
+    },
+    { $sort: { createdAt: -1 } },
+  ]);
+
+  return rows.map((r) => {
+    const { percent, done, total } = completionOf(r._flat || {});
+    return {
+      id: String(r._id),
+      name: r.name || '',
+      email: r.email || '',
+      phone: r.phone || '',
+      city: r.city || '',
+      state: r.state || '',
+      legalCareId: r.legalCareId || '',
+      slug: r.slug || '',
+      status: r.status || 'published',
+      verified: Boolean(r.verified),
+      specializations: r.specializations || [],
+      consultationFee: r.consultationFee || 0,
+      experience: r.experience || 0,
+      createdAt: iso(r.createdAt),
+      completion: { percent, done, total },
+    };
+  });
 }
 
 /** Every registered user (client), newest first. */

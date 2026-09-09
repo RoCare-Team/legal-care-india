@@ -9,6 +9,8 @@ import { useIsOnline } from '@/components/consultation/PresenceProvider';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { affordableMinutes, formatRate } from '@/constants/callRates';
 import { refreshAuth } from '@/utils/authEvents';
+import { slotPrice } from '@/constants/consultationSlots';
+import SlotPicker from './SlotPicker';
 
 /**
  * VideoConsultModal — the user side of a *video* consultation: start →
@@ -23,7 +25,7 @@ import { refreshAuth } from '@/utils/authEvents';
  * @param {number} props.rate  the lawyer's ₹/min for video; 0 ⇒ not offered
  */
 export default function VideoConsultModal({
-  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0,
+  open, onClose, advocateId, advocateName, walletBalance = 0, rate = 0, slotPrices,
 }) {
   const [sessionId, setSessionId] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -48,6 +50,17 @@ export default function VideoConsultModal({
   }, [open, setSession]);
 
   const status = session?.status;
+  // Only the slot prices are needed here, so only they are passed — the modal
+  // has no business holding a whole lawyer record to read three numbers.
+  const advocate = { slotPrices };
+
+  // The block the client is booking. Ten minutes by default: the cheapest way
+  // in, for someone still deciding whether this is the right lawyer.
+  const [slotMinutes, setSlotMinutes] = useState(10);
+
+  // Bookable only once the wallet covers the block that is selected.
+  const canBook = Number(walletBalance) >= slotPrice(advocate, slotMinutes, 'video');
+
   const budgetMinutes = affordableMinutes(walletBalance, rate);
 
   // A lawyer who has switched themselves offline isn't taking video calls, so
@@ -94,7 +107,7 @@ export default function VideoConsultModal({
       const res = await fetch('/api/consultations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ advocateId, type: 'video' }),
+        body: JSON.stringify({ advocateId, type: 'video', slotMinutes }),
       });
       const data = await res.json();
       if (res.status === 409 && data.error === 'offline') {
@@ -244,32 +257,17 @@ export default function VideoConsultModal({
               minutes it actually runs — hang up whenever you like.
             </p>
 
-            <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-ink/60">
-                  <Timer className="h-4 w-4 text-primary" /> Video rate
-                </span>
-                <span className="font-display text-xl font-bold text-ink">{formatRate(rate)}</span>
-              </div>
-              {budgetMinutes > 0 && (
-                <p className="mt-2 border-t border-primary/15 pt-2 text-xs text-ink/55">
-                  Your balance covers about{' '}
-                  <strong className="font-semibold text-ink/75">{budgetMinutes} minutes</strong> —
-                  the call ends on its own at that point.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between rounded-xl bg-muted/50 px-3.5 py-2.5">
-              <span className="flex items-center gap-2 text-sm text-ink/60">
-                <Wallet className="h-4 w-4 text-primary" /> Wallet balance
-              </span>
-              <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
-            </div>
+            <SlotPicker
+              channel="video"
+              advocate={advocate}
+              value={slotMinutes}
+              onChange={setSlotMinutes}
+              walletBalance={walletBalance}
+            />
 
             <button
               type="button"
-              disabled={creating}
+              disabled={creating || !canBook}
               onClick={book}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
             >

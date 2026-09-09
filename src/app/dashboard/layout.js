@@ -20,7 +20,11 @@ export default async function DashboardLayout({ children }) {
   if (!id) redirect('/login');
 
   const advocate = await getAdvocateById(id);
-  if (!advocate) redirect('/login');
+  // A valid token whose account is gone. Redirecting straight to /login would
+  // bounce back here — that page sends a signed-in lawyer to the dashboard —
+  // so the cookie has to be cleared on the way, which only a route handler can
+  // do. This is the exact loop that showed a blank page.
+  if (!advocate) redirect('/api/auth/logout?next=/login');
 
   const session = await getSession();
 

@@ -37,7 +37,7 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  */
 export default function CardContactActions({
   contact = {}, name, advocateId, chatRate = 0, videoRate = 0, audioRate = 0,
-  variant = 'default', iconOnly = false,
+  slotPrices, variant = 'default', iconOnly = false,
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -82,11 +82,14 @@ export default function CardContactActions({
       setGateOpen(true);
       return;
     }
-    if (role === 'user' && advocateId && chatRate > 0) {
+    // Not gated on a per-minute rate any more: consultations are booked as
+    // slots, and every lawyer has a price for those — their own or the
+    // platform's — so there is no lawyer for whom chat is unavailable.
+    if (role === 'user' && advocateId) {
       e.preventDefault();
       setBookOpen(true);
     }
-    // else: let the WhatsApp link proceed.
+    // else: an advocate or a signed-out visitor follows the WhatsApp link.
   };
 
   /**
@@ -206,6 +209,7 @@ export default function CardContactActions({
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
       <AudioConsultModal
+        slotPrices={slotPrices}
         open={audioOpen}
         onClose={() => setAudioOpen(false)}
         advocateId={advocateId}
@@ -214,6 +218,7 @@ export default function CardContactActions({
         rate={audioRate}
       />
       <BookConsultationModal
+        slotPrices={slotPrices}
         open={bookOpen}
         onClose={() => setBookOpen(false)}
         advocateId={advocateId}
@@ -222,6 +227,7 @@ export default function CardContactActions({
         rate={chatRate}
       />
       <VideoConsultModal
+        slotPrices={slotPrices}
         open={videoOpen}
         onClose={() => setVideoOpen(false)}
         advocateId={advocateId}

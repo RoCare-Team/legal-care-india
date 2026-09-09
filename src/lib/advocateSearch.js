@@ -1,4 +1,5 @@
 import { servesCity } from '@/utils/advocateCity';
+import { activePlan } from '@/constants/membershipPlans';
 
 /**
  * The directory's filter and sort rules, in one place.
@@ -96,11 +97,28 @@ export function filterAdvocates(list, filters = {}) {
 }
 
 /**
+ * Where a lawyer's membership puts them: Premium above Professional above
+ * Starter. Read through `activePlan`, so a lapsed membership ranks as Starter
+ * from the moment it lapses.
+ */
+export function planRank(advocate) {
+  return activePlan(advocate).rank;
+}
+
+/**
  * Order a copy of the list.
  *
  * "Relevance" is rating × reviews: a lawyer with 4.9 from forty clients is a
  * better answer than one with a lone five-star review, and sorting on the
  * average alone puts them the other way round.
+ *
+ * Membership decides the default order and only the default order. A paid
+ * listing is placed above an unpaid one when nobody has asked for anything in
+ * particular — which is what almost every visitor sees, and what the plan is
+ * sold on. It is deliberately NOT applied to the explicit sorts: someone who
+ * chooses "Rate: low to high" and is shown a ₹500 lawyer above a ₹5 one has
+ * been handed a sorted list that is not sorted, and a directory that lies
+ * about its own controls is worth less than the placement it sold.
  *
  * @param {Array} list
  * @param {string} sort  one of ADVOCATE_SORTS
@@ -117,6 +135,10 @@ export function sortAdvocates(list, sort) {
     case 'fee-high':
       return copy.sort((a, b) => b.consultationFee - a.consultationFee);
     default:
-      return copy.sort((a, b) => b.rating * b.reviews - a.rating * a.reviews);
+      return copy.sort(
+        (a, b) =>
+          planRank(b) - planRank(a) ||
+          b.rating * b.reviews - a.rating * a.reviews
+      );
   }
 }

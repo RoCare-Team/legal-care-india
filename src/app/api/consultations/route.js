@@ -3,7 +3,8 @@ import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
-import { advocateRate, affordableMinutes, formatRate } from '@/constants/callRates';
+import { affordableMinutes } from '@/constants/callRates';
+import { findSlot, slotPrice, rateFor } from '@/constants/consultationSlots';
 import { bridgeAudioCall } from '@/lib/phoneBridge';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
@@ -91,7 +92,7 @@ export async function POST(request) {
   const [user, advocate] = await Promise.all([
     getUserById(session.id),
     Advocate.findById(advocateId)
-      .select('name chatRate audioRate videoRate consultationPlans videoPlans audioPlans phone contact')
+      .select('name slotPrices chatRate audioRate videoRate consultationPlans videoPlans audioPlans phone contact')
       .lean(),
   ]);
   if (!advocate) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
@@ -147,30 +148,46 @@ export async function POST(request) {
   }
 
   // ── Fresh booking (chat, audio or video) ─────────────────────────────────
-  // The rate always comes from the lawyer's own profile, never from the
-  // client. A rate of 0 means they don't offer this channel at all.
-  const rate = advocateRate(advocate, type);
-  if (!rate) {
-    const label = type === 'video' ? 'video calls' : type === 'audio' ? 'audio calls' : 'live chat';
+  // The client books a block of time. Which block is theirs to choose; what it
+  // costs is the lawyer's, read from their profile and never from the request.
+  const slot = findSlot(body?.slotMinutes);
+  if (!slot) {
     return NextResponse.json(
-      { error: `This lawyer does not offer ${label}.` },
+      { error: 'Choose how long you want to book.' },
       { status: 400 }
     );
   }
 
-  // Nothing is charged now — but the wallet has to cover at least the first
-  // minute, and what it covers becomes the session's ceiling. Better to say so
-  // here than to cut a client off thirty seconds in.
-  const maxMinutes = affordableMinutes(user?.walletBalance, rate);
-  if (maxMinutes < 1) {
+  // Priced for the channel actually being booked. `type` is already narrowed
+  // to chat, audio or video above, so this cannot ask for a channel that does
+  // not exist — and quoting the client one figure while charging another is
+  // the one failure this must not have.
+  const price = slotPrice(advocate, slot.minutes, type);
+  // Per minute, floored to the paisa so a fully used slot can never bill above
+  // the price the client was quoted. The session still charges only what it
+  // runs — the slot is the ceiling, not the ticket.
+  const rate = rateFor(price, slot.minutes);
+
+  // The wallet has to cover the whole block, because that is what booking one
+  // means: a client who chose thirty minutes should get thirty minutes rather
+  // than being cut off at eleven because that is where their balance ran out.
+  // Anything they do not use is simply never charged.
+  if ((user?.walletBalance || 0) < price) {
     return NextResponse.json(
       {
         error: 'insufficient',
-        message: `This lawyer charges ${formatRate(rate)}. Add at least ₹${rate} to your wallet and try again.`,
+        message:
+          `A ${slot.label} consultation with ${advocate.name} is ₹${price}. ` +
+          `Add ₹${Math.max(1, price - (user?.walletBalance || 0))} to your wallet and try again.`,
       },
       { status: 402 }
     );
   }
+
+  // Never more than the block that was booked, and never more than the wallet
+  // can actually pay for — normally the same number, since the balance was
+  // just checked against the whole slot.
+  const maxMinutes = Math.min(slot.minutes, affordableMinutes(user?.walletBalance, rate));
 
   const created = await createConsultation({
     userId: session.id,

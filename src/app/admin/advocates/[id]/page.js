@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { adminGetAdvocateById } from '@/lib/admin';
 import { AdminAvatar } from '@/components/admin/DataTable';
+import AdvocatePhoneEditor from '@/components/admin/AdvocatePhoneEditor';
 import {
   DetailBack, InfoCard, InfoRow, StatTile, ConsultationList, WalletList,
 } from '@/components/admin/DetailKit';
@@ -83,7 +84,7 @@ export default async function AdminAdvocateDetailPage({ params }) {
       <div className="grid gap-6 lg:grid-cols-2">
         <InfoCard title="Contact & identity">
           <InfoRow label="Email"><span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />{adv.email}</span></InfoRow>
-          <InfoRow label="Phone"><span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />{adv.phone}</span></InfoRow>
+          <InfoRow label="Phone"><AdvocatePhoneEditor id={id} phone={adv.phone} /></InfoRow>
           <InfoRow label="Location">{location && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />{location}</span>}</InfoRow>
           <InfoRow label="Bar Council #">{adv.barCouncilNumber}</InfoRow>
           <InfoRow label="Experience">{adv.experience ? `${adv.experience} years` : ''}</InfoRow>

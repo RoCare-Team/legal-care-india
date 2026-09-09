@@ -10,12 +10,22 @@ import DashboardSection from '../DashboardSection';
 import SmartImage from '@/components/shared/SmartImage';
 
 /**
- * SectionBasic — photo/cover, name, tagline and location.
+ * SectionBasic — photo, cover, tagline, and (in the full editor) identity.
+ *
+ * `identity` is what makes this usable in two places. The guided setup already
+ * takes a lawyer's name and city on its first step — that step is what creates
+ * the account — so asking for them again three steps later is the same
+ * question twice, and a lawyer who answers differently the second time has no
+ * way of knowing which one their profile kept. With `identity={false}` this
+ * section is only what the name of its step promises: how you appear.
+ *
+ * The full editor keeps them. A name or a city does change, and there has to
+ * be somewhere to change it.
  *
  * `cities` merges the built-in list with admin-added cities; it falls back to
  * the built-ins when the prop isn't supplied.
  */
-export default function SectionBasic({ data, set, cities = CITIES }) {
+export default function SectionBasic({ data, set, cities = CITIES, identity = true }) {
   const [error, setError] = useState('');
 
   // Suggestions for whichever state is selected, plus any city an admin added.
@@ -42,8 +52,12 @@ export default function SectionBasic({ data, set, cities = CITIES }) {
   return (
     <DashboardSection
       id="basic"
-      title="Basic Details"
-      description="Your identity as shown at the top of your public profile."
+      title={identity ? 'Basic Details' : 'Photo & Headline'}
+      description={
+        identity
+          ? 'Your identity as shown at the top of your public profile.'
+          : 'The picture and the one line clients see at the top of your profile.'
+      }
       icon={UserRound}
     >
       {/* Cover preview */}
@@ -79,34 +93,52 @@ export default function SectionBasic({ data, set, cities = CITIES }) {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <FormField label="Full Name" htmlFor="d-name" className="sm:col-span-2">
-          <Input id="d-name" value={data.fullName} onChange={(e) => set('fullName', e.target.value)} />
-        </FormField>
-        <FormField label="Headline / Tagline" htmlFor="d-tagline" className="sm:col-span-2">
-          <Input id="d-tagline" value={data.tagline} onChange={(e) => set('tagline', e.target.value)} />
-        </FormField>
-        {/* Suggestions, not a closed list — the same reason registration takes
-            a typed city: the built-in list is a few dozen per state against
-            India's several thousand towns, and a lawyer whose town is missing
-            was being asked to claim one they don't practise in. */}
-        <FormField label="City" htmlFor="d-city" hint="Pick from the list or type your own.">
+        {identity && (
+          <FormField label="Full Name" htmlFor="d-name" className="sm:col-span-2">
+            <Input id="d-name" value={data.fullName} onChange={(e) => set('fullName', e.target.value)} />
+          </FormField>
+        )}
+
+        <FormField
+          label="Headline / Tagline"
+          htmlFor="d-tagline"
+          className="sm:col-span-2"
+          hint="One line under your name — what you do, in a few words."
+        >
           <Input
-            id="d-city"
-            list="d-city-options"
-            value={data.city}
-            onChange={(e) => set('city', e.target.value)}
-            placeholder="Start typing your city"
-            autoComplete="off"
+            id="d-tagline"
+            value={data.tagline}
+            onChange={(e) => set('tagline', e.target.value)}
+            placeholder="Criminal defence and bail matters"
           />
-          <datalist id="d-city-options">
-            {cityOptions.map((name) => (
-              <option key={name} value={name} />
-            ))}
-          </datalist>
         </FormField>
-        <FormField label="State" htmlFor="d-state">
-          <Select id="d-state" value={data.state} onChange={(e) => set('state', e.target.value)} options={STATES} />
-        </FormField>
+
+        {identity && (
+          <>
+            {/* Suggestions, not a closed list — the same reason registration
+                takes a typed city: the built-in list is a few dozen per state
+                against India's several thousand towns, and a lawyer whose town
+                is missing was being asked to claim one they don't practise in. */}
+            <FormField label="City" htmlFor="d-city" hint="Pick from the list or type your own.">
+              <Input
+                id="d-city"
+                list="d-city-options"
+                value={data.city}
+                onChange={(e) => set('city', e.target.value)}
+                placeholder="Start typing your city"
+                autoComplete="off"
+              />
+              <datalist id="d-city-options">
+                {cityOptions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </FormField>
+            <FormField label="State" htmlFor="d-state">
+              <Select id="d-state" value={data.state} onChange={(e) => set('state', e.target.value)} options={STATES} />
+            </FormField>
+          </>
+        )}
       </div>
     </DashboardSection>
   );

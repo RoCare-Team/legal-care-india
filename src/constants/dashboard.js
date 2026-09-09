@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
   Clock, IndianRupee, FileBadge, Award, GraduationCap, Briefcase, Languages,
-  Share2, Settings, MessagesSquare,
+  Share2, Settings, MessagesSquare, BadgeIndianRupee,
 } from 'lucide-react';
 
 /**
@@ -17,6 +17,10 @@ export const DASHBOARD_NAV = [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       { label: 'Consultations', href: '/dashboard/consultations', icon: MessagesSquare },
       { label: 'Edit Profile', href: '/dashboard/profile', icon: UserRound },
+      // Sits with the overview rather than under Profile Sections: a plan is
+      // not part of describing your practice, it is what decides how much of
+      // it you may describe.
+      { label: 'Your Plan', href: '/dashboard/plan', icon: BadgeIndianRupee },
       { label: 'Settings', href: '/dashboard/settings', icon: Settings },
     ],
   },
@@ -27,8 +31,8 @@ export const DASHBOARD_NAV = [
       { label: 'Office Details', href: '/dashboard/profile#office', icon: Building2 },
       { label: 'Office Timing', href: '/dashboard/profile#timing', icon: Clock },
       { label: 'Contact Details', href: '/dashboard/profile#contact', icon: Phone },
+      { label: 'Bookable Slots', href: '/dashboard/profile#slots', icon: Clock },
       { label: 'Fees', href: '/dashboard/profile#fees', icon: IndianRupee },
-      { label: 'Chat Rates', href: '/dashboard/profile#chat-rates', icon: MessagesSquare },
       { label: 'Education', href: '/dashboard/profile#education', icon: GraduationCap },
       { label: 'Experience', href: '/dashboard/profile#experience', icon: Briefcase },
       { label: 'Languages', href: '/dashboard/profile#languages', icon: Languages },

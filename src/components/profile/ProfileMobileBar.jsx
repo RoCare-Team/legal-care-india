@@ -82,6 +82,7 @@ export default function ProfileMobileBar({ advocate }) {
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
       <AudioConsultModal
+        slotPrices={advocate.slotPrices}
         open={audioOpen}
         onClose={() => setAudioOpen(false)}
         advocateId={advocateId}

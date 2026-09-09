@@ -22,7 +22,7 @@ import AudioConsultModal from './AudioConsultModal';
  * @param {number} [props.audioRate] the lawyer's ₹/min for audio calls
  */
 export default function ProfileContactActions({
-  contact = {}, name, waText, advocateId, chatRate = 0, audioRate = 0,
+  contact = {}, name, waText, advocateId, chatRate = 0, audioRate = 0, slotPrices,
 }) {
   const { role, user, loading } = useAuth();
   const [gateOpen, setGateOpen] = useState(false);
@@ -93,8 +93,10 @@ export default function ProfileContactActions({
   return (
     <>
       <div className="space-y-2">
-        {/* Primary CTA — book a paid live chat, shown when the lawyer offers it. */}
-        {role !== 'advocate' && chatRate > 0 && (
+        {/* Primary CTA — book a live chat. Shown for every lawyer now that
+            consultations are booked as slots: each has a price for those,
+            their own or the platform's, so none is unbookable. */}
+        {role !== 'advocate' && (
           <Button
             type="button"
             onClick={onBook}
@@ -143,6 +145,7 @@ export default function ProfileContactActions({
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
       <AudioConsultModal
+        slotPrices={slotPrices}
         open={audioOpen}
         onClose={() => setAudioOpen(false)}
         advocateId={advocateId}
@@ -151,6 +154,7 @@ export default function ProfileContactActions({
         rate={audioRate}
       />
       <BookConsultationModal
+        slotPrices={slotPrices}
         open={bookOpen}
         onClose={() => setBookOpen(false)}
         advocateId={advocateId}

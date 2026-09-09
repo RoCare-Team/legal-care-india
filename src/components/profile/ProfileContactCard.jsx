@@ -54,6 +54,7 @@ export default function ProfileContactCard({ advocate }) {
         )}
 
         <ProfileContactActions
+          slotPrices={advocate.slotPrices}
           contact={contact}
           name={name}
           waText={waText}

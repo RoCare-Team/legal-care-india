@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { unstable_cache } from 'next/cache';
 import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
@@ -475,6 +476,62 @@ export async function getAdvocateById(id) {
   await connectDB();
   const advocate = await Advocate.findById(id).lean();
   return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
+}
+
+/**
+ * The lawyer's own record, exactly as it is stored.
+ *
+ * `getAdvocateById` runs the document through `buildAdvocateProfile`, which
+ * invents an about paragraph, an office address, education, certificates and a
+ * gallery for any profile that has none — good for a public page that must not
+ * look half-built, useless for asking "what has this lawyer actually filled
+ * in?". Anything measuring completeness has to read the record, not the
+ * presentation of it, or a brand-new account reports itself as finished.
+ *
+ * Photographs are dropped: they are base64 in the document and nothing that
+ * counts fields needs the bytes, only whether there are any.
+ */
+export async function getRawAdvocateById(id, { withImages = false } = {}) {
+  await connectDB();
+  if (!mongoose.isValidObjectId(id)) return null;
+
+  // The photograph is base64 in the document and can be megabytes. Whether one
+  // exists is decided in the database and the bytes are then dropped, so a
+  // caller that only counts filled-in fields pays a boolean instead of an
+  // image. `$addFields` has to run before `$project` removes the field it
+  // reads, which is the order this pipeline exists to get right.
+  //
+  // `withImages` is for the editor, and it is not an optimisation switch: the
+  // save endpoint writes `photo` whenever it is present in the body, so a form
+  // seeded without the image would send an empty one back and erase it. An
+  // editor must load what it is capable of overwriting.
+  const [doc] = await Advocate.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(String(id)) } },
+    {
+      $addFields: {
+        hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
+      },
+    },
+    { $project: withImages ? { passwordHash: 0 } : { photo: 0, coverImage: 0, passwordHash: 0 } },
+  ]);
+
+  return doc ? serialize(doc) : null;
+}
+
+/**
+ * Does this id still belong to a lawyer?
+ *
+ * A session token is signed for seven days and says nothing about whether the
+ * account behind it is still there. When an account is removed — by an admin,
+ * or during testing — every page that trusts the token alone starts disagreeing
+ * with every page that loads the record, and two such pages redirecting to each
+ * other is an infinite loop that shows the visitor a blank screen. Cheap enough
+ * to call on the pages that make that decision.
+ */
+export async function advocateExists(id) {
+  if (!id || !mongoose.isValidObjectId(id)) return false;
+  await connectDB();
+  return Boolean(await Advocate.exists({ _id: id }));
 }
 
 /** Related lawyers: same specialization or city, excluding the given one. */

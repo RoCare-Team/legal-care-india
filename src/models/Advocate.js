@@ -38,7 +38,10 @@ const AdvocateSchema = new Schema(
   {
     // Auth
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
+    // Optional since signing in became a one-time code sent to the mobile
+    // number. Accounts created before that still carry their hash and the
+    // field is left alone; nothing writes a new one.
+    passwordHash: { type: String, default: '' },
 
     // Password reset via OTP (SHA-256 hash of the 6-digit code + expiry).
     // `resetOtpAttempts` guards against brute-forcing the code.
@@ -75,6 +78,26 @@ const AdvocateSchema = new Schema(
     // lawyers with the same name can both be "manoj-sharma".
     slug: { type: String, required: true, index: true },
     phone: { type: String, required: true },
+    /**
+     * The same number as `phone`, reduced to bare 10 digits.
+     *
+     * `phone` is what a lawyer typed and what a client sees, so it carries
+     * whatever they wrote — "+91 98765 43210", "098765 43210". That is no use
+     * as a login key, and it is signing in that needs one: the code goes to a
+     * number, so the number has to identify exactly one account. Hence a
+     * second field that is normalised and unique, rather than rewriting what
+     * the lawyer entered.
+     *
+     * `sparse` so the accounts that predate it do not all collide on a missing
+     * value — they are backfilled, but the index must tolerate the gap.
+     */
+    phoneNormalized: {
+      type: String,
+      default: undefined,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
 
     // Profile basics
     photo: { type: String, default: '' },
@@ -136,6 +159,19 @@ const AdvocateSchema = new Schema(
     chatRate: { type: Number, default: 0, min: 0 },
     audioRate: { type: Number, default: 0, min: 0 },
     videoRate: { type: Number, default: 0, min: 0 },
+
+    // ── Bookable slots ───────────────────────────────────────────────────
+    // What the lawyer charges for a 10, 30 or 60 minute booking, keyed by the
+    // number of minutes. A missing or zero entry means they have not set one
+    // and the platform default applies — see constants/consultationSlots, and
+    // note that a slot is a ceiling on the charge, not the charge itself: the
+    // session still bills the minutes it actually ran.
+    //
+    // A Map rather than three fields so a fourth slot length needs no
+    // migration, and one price per slot rather than one per channel — the
+    // directory card quotes "10 min ₹200 · 30 min ₹500" and a lawyer with nine
+    // different figures could not be summarised in a line.
+    slotPrices: { type: Map, of: Number, default: undefined },
 
     // Live-chat consultation plans the lawyer defines themselves — both the
     // duration and the price. Empty ⇒ they don't offer live chat.
@@ -263,6 +299,45 @@ const AdvocateSchema = new Schema(
     // Visibility
     status: { type: String, enum: ['pending', 'published'], default: 'published' },
     verified: { type: Boolean, default: false },
+
+    // ── Membership ─────────────────────────────────────────────────────────
+    // What the lawyer is paying for: how much of their practice they may list,
+    // and where they sit in a search. See constants/membershipPlans.
+    //
+    // The plan is stored with its expiry rather than as a live boolean, and
+    // `activePlan()` reads the two together — a membership that has lapsed is
+    // Starter from the moment it lapses, with no job to run and no window in
+    // which an unpaid listing keeps its placement.
+    planId: {
+      type: String,
+      enum: ['free', 'professional', 'premium'],
+      default: 'free',
+    },
+    planExpiresAt: { type: Date, default: null },
+
+    // Every membership payment, newest last. Kept on the lawyer because it is
+    // their billing history: what they paid, for which plan, and the Razorpay
+    // ids that prove it — which is also what makes crediting idempotent when
+    // the browser callback and the webhook both report the same payment.
+    planPayments: {
+      type: [
+        new Schema(
+          {
+            planId: { type: String, required: true },
+            months: { type: Number, default: 12 },
+            base: { type: Number, required: true },
+            gst: { type: Number, required: true },
+            total: { type: Number, required: true },
+            razorpayOrderId: { type: String, default: '' },
+            razorpayPaymentId: { type: String, default: '' },
+            startedAt: { type: Date, default: Date.now },
+            expiresAt: { type: Date, required: true },
+          },
+          { _id: true }
+        ),
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

@@ -173,7 +173,11 @@ export default function UserLoginForm() {
         if (i < OTP_LENGTH - 1) setTimeout(() => boxes.current[i + 1]?.focus(), 0);
       }
       const code = next.join('');
-      if (code.length === OTP_LENGTH && !code.includes('')) {
+      // Length alone is the test. An empty box contributes nothing to a
+      // join(''), so a short code means a gap — and the `!code.includes('')`
+      // that used to be here could never be true, because every string
+      // contains the empty string. Auto-submit had simply never fired.
+      if (code.length === OTP_LENGTH) {
         setTimeout(() => verifyOtp(code), 0);
       }
       return next;

@@ -36,8 +36,6 @@ export default function robots() {
           '/login',
           '/user/login',
           '/user/signup',
-          '/forgot-password',
-          '/reset-password',
         ],
       },
     ],

@@ -288,6 +288,48 @@ function StatusBadge({ status }) {
  * @param {object} props
  * @param {Array} props.advocates
  */
+/**
+ * How much of a lawyer's profile is filled in.
+ *
+ * Put beside Status on purpose: the question an admin is answering on this row
+ * is whether to approve the profile, and a half-filled one is the commonest
+ * reason not to. The bar makes the outliers findable at a glance in a list of
+ * four hundred, which a bare number in a column does not.
+ *
+ * It is the same figure the lawyer sees on their own dashboard — one scorer,
+ * in lib/profileCompletion — so an admin telling a lawyer "your profile is at
+ * 40%" is quoting what the lawyer is looking at.
+ */
+function CompletionCell({ completion }) {
+  if (!completion) return <span className="text-ink/30">—</span>;
+  const { percent, done, total } = completion;
+
+  const tone =
+    percent === 100
+      ? { bar: 'bg-emerald-500', text: 'text-emerald-700' }
+      : percent >= 60
+        ? { bar: 'bg-primary', text: 'text-ink/70' }
+        : percent >= 30
+          ? { bar: 'bg-amber-400', text: 'text-amber-700' }
+          : { bar: 'bg-rose-400', text: 'text-rose-700' };
+
+  return (
+    <div className="min-w-[5.5rem]" title={`${done} of ${total} details filled in`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className={`text-[12.5px] font-semibold tabular-nums ${tone.text}`}>
+          {percent}%
+        </span>
+        <span className="text-[11px] tabular-nums text-ink/35">
+          {done}/{total}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+        <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function AdvocatesTable({ advocates }) {
   const router = useRouter();
   const [q, setQ] = useState('');
@@ -461,6 +503,11 @@ export default function AdvocatesTable({ advocates }) {
       label: 'Fee',
       render: (a) =>
         a.consultationFee ? <span className="font-semibold text-ink">₹{a.consultationFee}</span> : <span className="text-ink/30">—</span>,
+    },
+    {
+      key: 'completion',
+      label: 'Profile',
+      render: (a) => <CompletionCell completion={a.completion} />,
     },
     { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
     { key: 'action', label: 'Approval', render: (a) => <StatusAction advocate={a} /> },

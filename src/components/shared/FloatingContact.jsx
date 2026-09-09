@@ -14,6 +14,10 @@ import { CONTACT, SITE } from '@/constants/site';
  *   /admin, /dashboard   these are working tools for staff and for lawyers, not
  *                        the shopfront. A support-chat bubble over a data table
  *                        is only ever in the way.
+ *   /setup               the guided profile setup asks for one thing at a time
+ *                        and has a sticky action bar of its own at the bottom
+ *                        right. Two floating controls in the same corner is a
+ *                        misclick waiting to happen.
  *   /lawyers/[slug]      on a phone the profile already pins its own Call /
  *                        WhatsApp / Video bar to the bottom of the screen. Two
  *                        sets of call buttons a centimetre apart, going to two
@@ -29,6 +33,8 @@ export default function FloatingContact() {
   const hidden =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/dashboard') ||
+    pathname === '/setup' ||
+    pathname.startsWith('/setup/') ||
     // A single lawyer's profile — not the /lawyers listing, which has no bar.
     /^\/lawyers\/[^/]+/.test(pathname);
 

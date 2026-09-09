@@ -1,65 +1,21 @@
 import { redirect } from 'next/navigation';
 import EditProfileForm from '@/components/dashboard/EditProfileForm';
 import { getSessionAdvocateId } from '@/lib/auth';
-import { getAdvocateById } from '@/lib/advocates';
+import { getRawAdvocateById } from '@/lib/advocates';
 import { getAllCities } from '@/lib/cities';
 import { advocateProfilePath } from '@/utils/advocateUrl';
-import { advocateRate } from '@/constants/callRates';
-
-/** Flatten a full lawyer profile into the editable form snapshot. */
-function toSnapshot(a) {
-  return {
-    fullName: a.name,
-    photo: a.photo || '',
-    coverImage: a.coverImage || '',
-    gallery: (a.gallery || []).filter((g) => g && g.url),
-    tagline: a.tagline || '',
-    city: a.city,
-    state: a.state,
-    about: a.about || '',
-    services: a.specializations || [],
-    subServices: a.subSpecializations || [],
-    languages: a.languages || [],
-    courts: a.courts || [],
-    practiceCities: a.practiceCities || [],
-    barCouncil: a.barCouncilNumber || '',
-    experience: String(a.experience || ''),
-    cases: String(a.metrics?.cases || ''),
-    clients: String(a.metrics?.clients || ''),
-    successRate: String(a.metrics?.successRate || ''),
-    education: a.education || [],
-    officeName: a.office?.name || '',
-    officeAddress: a.office?.address || '',
-    pincode: a.office?.pincode || '',
-    timing: a.timing || [],
-    phone: a.contact?.phone || '',
-    whatsapp: a.contact?.whatsapp || '',
-    email: a.contact?.email || '',
-    fee: String(a.consultationFee || ''),
-    // Per-minute rate per live channel, as form strings. Lawyers who still
-    // have the old fixed plans and no rate of their own see the converted
-    // equivalent, so the form opens with a sensible number rather than blank.
-    chatRate: String(advocateRate(a, 'chat') || ''),
-    audioRate: String(advocateRate(a, 'audio') || ''),
-    videoRate: String(advocateRate(a, 'video') || ''),
-    certificates: a.certificates || [],
-    awards: a.awards || [],
-    social: {
-      linkedin: a.social?.linkedin || '',
-      website: a.social?.website || '',
-      facebook: a.social?.facebook || '',
-      twitter: a.social?.twitter || '',
-    },
-  };
-}
+import { toEditableSnapshot } from '@/lib/advocateSnapshot';
 
 export default async function EditProfilePage() {
   const id = await getSessionAdvocateId();
   if (!id) redirect('/login');
-  const advocate = await getAdvocateById(id);
+  // The stored record, with its images: the save endpoint writes `photo`
+  // whenever the body carries one, so a form seeded without it would post an
+  // empty string back and erase the lawyer's photograph.
+  const advocate = await getRawAdvocateById(id, { withImages: true });
   if (!advocate) redirect('/login');
 
-  const initial = toSnapshot(advocate);
+  const initial = toEditableSnapshot(advocate);
   // Built-in cities PLUS the ones an admin added, so a newly added city is
   // immediately pickable here instead of only on the public site.
   const cities = await getAllCities();

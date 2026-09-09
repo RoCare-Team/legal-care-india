@@ -5,6 +5,9 @@
 
 # next.js
 /.next/
+# Alternate dist dir used when a build has to run without touching the dev
+# server's .next — same build output, same reason to stay out of git.
+/.next-build/
 /out/
 
 # production

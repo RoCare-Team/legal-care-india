@@ -29,35 +29,47 @@ export function normalizePhone(input) {
 }
 
 /**
- * The test number, if one is configured and allowed to work right now.
+ * The test numbers, if any are configured and allowed to work right now.
  *
  * A number that always accepts a known code is a login with the lock taken
- * off, so it is deliberately awkward to leave switched on: it needs a number
+ * off, so it is deliberately awkward to leave switched on: it needs numbers
  * AND a code in the environment, and in production it needs
  * OTP_TEST_ALLOW_PROD=true on top of that. Forgetting to remove it from a
  * deploy is the failure this guards against — anyone who knows the pair could
- * otherwise sign in as that user.
+ * otherwise sign in as that lawyer.
+ *
+ * This is why the pair lives in the environment rather than in this file. A
+ * number written into the source is in the repository, in every clone, and in
+ * every deploy that ever ships it; a number in `.env` is only wherever someone
+ * deliberately put it, and can be removed without a release.
+ *
+ * OTP_TEST_PHONE takes a comma-separated list, so several people can test
+ * without taking the bypass away from each other:
+ *   OTP_TEST_PHONE="7740847114,7988140115"
  */
 function testLoginConfig() {
-  const phone = normalizePhone(process.env.OTP_TEST_PHONE);
+  const phones = String(process.env.OTP_TEST_PHONE || '')
+    .split(',')
+    .map((p) => normalizePhone(p))
+    .filter(Boolean);
   const code = String(process.env.OTP_TEST_CODE || '').trim();
-  if (!phone || !code) return null;
+  if (!phones.length || !code) return null;
   if (process.env.NODE_ENV === 'production' && process.env.OTP_TEST_ALLOW_PROD !== 'true') {
     return null;
   }
-  return { phone, code };
+  return { phones, code };
 }
 
-/** Whether this number is the configured test number. */
+/** Whether this number is one of the configured test numbers. */
 export function isTestPhone(phone) {
   const cfg = testLoginConfig();
-  return Boolean(cfg && cfg.phone === phone);
+  return Boolean(cfg && cfg.phones.includes(phone));
 }
 
-/** Whether this code is the fixed one for the test number. */
+/** Whether this code is the fixed one, for a number allowed to use it. */
 export function isTestCode(phone, otp) {
   const cfg = testLoginConfig();
-  return Boolean(cfg && cfg.phone === phone && cfg.code === String(otp).trim());
+  return Boolean(cfg && cfg.phones.includes(phone) && cfg.code === String(otp).trim());
 }
 
 /** Common request shape for both gateway calls. */
@@ -134,4 +146,162 @@ export async function checkOtp(phone, otp) {
     console.error('[login-otp] verify request failed', err);
     return { ok: false, message: 'Could not reach the SMS service. Please try again.' };
   }
+}
+
+/* -------------------------------------------------------------------------
+   Throttled send / check, shared by the client and lawyer login routes.
+
+   Both need the same guards — a resend cooldown, an hourly ceiling per number
+   and a wrong-guess limit — and the reason is the same for both: the gateway's
+   verify endpoint is unauthenticated and does not rate-limit, so a 4-digit
+   code is a few thousand requests away from anyone, and its send endpoint
+   costs money per SMS. Two copies of that logic would be two places for it to
+   drift, and the one that drifts is the one nobody is looking at.
+   ------------------------------------------------------------------------- */
+
+/** How long a throttle row outlives its last use. */
+export const OTP_ROW_TTL_MS = 2 * LOGIN_OTP_WINDOW_MS;
+
+/**
+ * Send a code to `phone`, refusing if this number has asked too recently or
+ * too often. Does not touch the database for the configured test number.
+ *
+ * @param {import('mongoose').Model} LoginOtp
+ * @param {string} phone normalised 10-digit number
+ * @returns {Promise<{ok: boolean, status?: number, body: object}>}
+ *   `body` is the JSON to return either way, so callers stay a one-liner.
+ */
+export async function sendThrottledOtp(LoginOtp, phone) {
+  const masked = `••••••${phone.slice(-4)}`;
+
+  // The test number never touches the gateway: no SMS, no throttle row, so it
+  // can be hammered while developing without a cooldown getting in the way.
+  if (isTestPhone(phone)) {
+    console.warn(`[otp/send] TEST NUMBER ${phone} — no SMS sent, fixed code accepted.`);
+    return { ok: true, body: { ok: true, sentTo: masked, resendIn: 0, test: true } };
+  }
+
+  const now = Date.now();
+  const record = await LoginOtp.findOne({ phone });
+
+  if (record) {
+    // Resend cooldown — stops a held-down button turning into an SMS bill.
+    const since = now - new Date(record.lastSentAt).getTime();
+    const wait = Math.ceil((LOGIN_OTP_RESEND_SECONDS * 1000 - since) / 1000);
+    if (wait > 0) {
+      return {
+        ok: false,
+        status: 429,
+        body: {
+          error: 'too-soon',
+          retryAfter: wait,
+          message: `Please wait ${wait}s before asking for another code.`,
+        },
+      };
+    }
+
+    // Hourly ceiling per number, so one phone cannot be used to send SMS at
+    // someone else's expense all day.
+    const fresh = now - new Date(record.windowStartedAt).getTime() > LOGIN_OTP_WINDOW_MS;
+    if (!fresh && record.sendCount >= LOGIN_OTP_MAX_PER_HOUR) {
+      return {
+        ok: false,
+        status: 429,
+        body: {
+          error: 'rate-limited',
+          message: 'Too many codes requested for this number. Please try again in an hour.',
+        },
+      };
+    }
+  }
+
+  const result = await requestOtp(phone);
+  if (!result.ok) {
+    console.error('[otp/send] gateway refused', result.message);
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: 'send-failed',
+        message: result.message || 'We could not send the code right now. Please try again.',
+      },
+    };
+  }
+
+  // Only count a code that actually went out, so a gateway outage does not
+  // burn the caller's hourly allowance.
+  const fresh =
+    !record || now - new Date(record.windowStartedAt).getTime() > LOGIN_OTP_WINDOW_MS;
+  await LoginOtp.updateOne(
+    { phone },
+    {
+      $set: {
+        lastSentAt: new Date(now),
+        // A new code resets the guess counter — the old code is gone.
+        attempts: 0,
+        expiresAt: new Date(now + OTP_ROW_TTL_MS),
+        ...(fresh ? { windowStartedAt: new Date(now), sendCount: 1 } : {}),
+      },
+      ...(fresh ? {} : { $inc: { sendCount: 1 } }),
+    },
+    { upsert: true }
+  );
+
+  return {
+    ok: true,
+    body: { ok: true, sentTo: masked, resendIn: LOGIN_OTP_RESEND_SECONDS },
+  };
+}
+
+/**
+ * Check a submitted code, counting wrong guesses against the number.
+ *
+ * On success the throttle row is deleted, so the next sign-in starts clean.
+ *
+ * @returns {Promise<{ok: boolean, status?: number, body?: object}>}
+ */
+export async function checkThrottledOtp(LoginOtp, phone, otp) {
+  const throttle = await LoginOtp.findOne({ phone });
+  if (throttle && throttle.attempts >= LOGIN_OTP_MAX_ATTEMPTS) {
+    return {
+      ok: false,
+      status: 429,
+      body: { error: 'locked', message: 'Too many wrong attempts. Please request a new code.' },
+    };
+  }
+
+  // The test number's code is checked here rather than at the gateway, which
+  // has never heard of it. Everything after this point is the ordinary path,
+  // so what gets tested is the real flow and not a second one that only
+  // exists in development.
+  const result = isTestCode(phone, otp)
+    ? { ok: true, message: 'test-code' }
+    : await checkOtp(phone, otp);
+
+  if (result.ok && isTestPhone(phone)) {
+    console.warn(`[otp/verify] TEST NUMBER ${phone} signed in with the fixed code.`);
+  }
+
+  if (!result.ok) {
+    if (throttle) {
+      throttle.attempts += 1;
+      await throttle.save();
+    }
+    const left = throttle
+      ? Math.max(0, LOGIN_OTP_MAX_ATTEMPTS - throttle.attempts)
+      : LOGIN_OTP_MAX_ATTEMPTS;
+    return {
+      ok: false,
+      status: 400,
+      body: {
+        error: 'invalid',
+        message: left > 0
+          ? `Incorrect code. ${left} ${left === 1 ? 'attempt' : 'attempts'} left.`
+          : 'Incorrect code. Please request a new one.',
+      },
+    };
+  }
+
+  await LoginOtp.deleteOne({ phone });
+  return { ok: true };
 }
