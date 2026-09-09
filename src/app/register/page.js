@@ -1,11 +1,9 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { advocateExists } from '@/lib/advocates';
 import { createMetadata } from '@/lib/metadata';
-import { Container } from '@/components/ui';
 import AdvocateAuthForm from '@/components/auth/AdvocateAuthForm';
-import RegisterAside from '@/components/register/RegisterAside';
+import AuthLayout, { LAWYER_BENEFITS } from '@/components/auth/AuthLayout';
 
 export const metadata = createMetadata({
   title: 'Register as a Lawyer',
@@ -40,29 +38,17 @@ export default async function RegisterPage() {
   if (id && (await advocateExists(id))) redirect('/setup');
 
   return (
-    <Container className="py-5 sm:py-7">
-      {/* One line, not a hero. This page's job is the form below it, and a
-          four-line masthead pushed the first field off the fold on a laptop. */}
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="font-display text-xl font-semibold text-ink sm:text-2xl">
-          
-        </h1>
-        <p className="text-sm text-ink/60">
-          Already registered?{' '}
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Log in
-          </Link>
-        </p>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AdvocateAuthForm intent="register" />
-        </div>
-        <div className="lg:col-span-1">
-          <RegisterAside />
-        </div>
-      </div>
-    </Container>
+    // The same shell the client sign-in uses, with the panel speaking to a
+    // different audience: a client asks whether the site can be trusted, a
+    // lawyer asks whether it is worth their time, so the promise and the four
+    // points change while everything around them stays put.
+    <AuthLayout
+      headline={`Join Our Legal Network
+Make a Bigger Impact.`}
+      benefits={LAWYER_BENEFITS}
+      image="/lawyer-register.png"
+    >
+      <AdvocateAuthForm intent="register" />
+    </AuthLayout>
   );
 }

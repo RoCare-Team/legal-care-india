@@ -120,7 +120,7 @@ export default function CardContactActions({
   // length than two identical tints either side of the filled one.
   const SETS = {
     default: {
-      base: 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-[14px] sm:text-sm',
+      base: 'flex h-11 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-all duration-200 sm:h-12 sm:gap-2 sm:rounded-xl sm:text-sm',
       icon: 'h-4 w-4',
       call: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
       video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',

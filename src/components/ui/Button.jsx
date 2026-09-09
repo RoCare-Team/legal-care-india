@@ -6,7 +6,7 @@ import { cn } from '@/utils/cn';
  * Renders a Next.js <Link> when `href` is provided, otherwise a <button>.
  *
  * @param {object} props
- * @param {string} [props.variant='primary']  'primary'|'secondary'|'outline'|'ghost'|'accent'
+ * @param {string} [props.variant='primary']  'primary'|'navy'|'secondary'|'outline'|'ghost'|'accent'
  * @param {string} [props.size='md']           'sm'|'md'|'lg'
  * @param {string} [props.href]                render as a link when set
  * @param {boolean} [props.fullWidth=false]
@@ -20,14 +20,26 @@ const BASE =
 
 /**
  * Filled buttons lift on hover instead of just darkening — a flat colour swap
- * reads as a state change, a lift reads as something you can press. The navy
+ * reads as a state change, a lift reads as something you can press. Each
  * carries a faint gradient so it doesn't look like a printed block.
+ *
+ * `primary` is the brand gold. It reads as the thing to press on a white page
+ * and on the navy bands alike, which the old navy could not — a navy button on
+ * a navy band is an outline, not an action. Gold needs dark type rather than
+ * white: white on #D4AF37 is about 1.9:1, nowhere near legible, while the near
+ * black below is over 9:1.
+ *
+ * `navy` keeps the old treatment for the few places that still want it — a
+ * second action beside a gold one, or a control on a gold surface.
  */
 const VARIANTS = {
   primary:
+    'bg-gradient-to-b from-[#E7C766] via-accent to-[#BC9A2E] text-[#241B02] shadow-gold hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.98]',
+  navy:
     'bg-gradient-to-b from-primary-light/95 via-primary to-primary-dark text-white shadow-brand hover:-translate-y-0.5 hover:shadow-brand-hover active:translate-y-0 active:scale-[0.98]',
   secondary:
     'bg-gradient-to-b from-secondary-light/90 via-secondary to-secondary-dark text-white shadow-brand hover:-translate-y-0.5 hover:shadow-brand-hover active:translate-y-0 active:scale-[0.98]',
+  // Kept as a name for the call sites that already ask for it by hand.
   accent:
     'bg-gradient-to-b from-[#E7C766] via-accent to-[#BC9A2E] text-[#241B02] shadow-gold hover:-translate-y-0.5 hover:brightness-[1.03] active:translate-y-0 active:scale-[0.98]',
   outline:

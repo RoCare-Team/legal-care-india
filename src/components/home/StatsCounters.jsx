@@ -32,22 +32,23 @@ function StatItem({ value, suffix, label, icon }) {
   return (
     <div
       ref={ref}
-      className="group rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-4 text-center backdrop-blur-sm transition-colors duration-300 hover:border-accent/40 hover:bg-white/[0.09]"
+      className="group flex items-center justify-center gap-3 px-2 py-1 sm:gap-4"
     >
-      <span className="mx-auto grid h-9 w-9 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-inset ring-accent/25 transition-transform duration-300 group-hover:scale-105">
-        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+      <span className="shrink-0 text-accent transition-transform duration-300 group-hover:scale-105">
+        <Icon className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.5} aria-hidden="true" />
       </span>
 
-      <p className="mt-2.5 font-display text-[28px] font-bold leading-none text-white sm:text-[32px]">
+      <div className="min-w-0 text-left">
+      <p className="font-display text-[26px] font-bold leading-none text-white sm:text-[30px]">
         {formatStat(count)}
         <span className="text-gold">{suffix}</span>
       </p>
 
-      <span className="rule-gold mx-auto mt-2 block h-px w-8" aria-hidden="true" />
 
-      <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/60 sm:text-[11px]">
+      <p className="mt-1 text-[12px] font-medium text-white/65 sm:text-[13px]">
         {label}
       </p>
+      </div>
     </div>
   );
 }
@@ -61,7 +62,7 @@ function StatItem({ value, suffix, label, icon }) {
  */
 export default function StatsCounters({ stats = [] }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-y-6 divide-white/10 sm:grid-cols-4 sm:gap-y-0 sm:divide-x">
       {stats.map((stat) => (
         <StatItem key={stat.id} {...stat} />
       ))}

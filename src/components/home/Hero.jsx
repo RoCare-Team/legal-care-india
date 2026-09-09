@@ -1,6 +1,18 @@
 import Image from 'next/image';
+import { Zap, BadgeCheck, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
+
+/**
+ * The four promises under the search bar — the objections a visitor arrives
+ * with, answered where they are about to act on them.
+ */
+const TRUST = [
+  { icon: UserRoundCheck, label: '100% Anonymous' },
+  { icon: BadgeCheck, label: 'Verified Lawyers' },
+  { icon: ShieldCheck, label: 'Secure & Private' },
+  { icon: Zap, label: 'Instant Consultation' },
+];
 
 /**
  * Hero — the opening band, used by both the homepage and every city page.
@@ -17,7 +29,7 @@ import SearchBar from './SearchBar';
 export default function Hero({ city, intro }) {
   // The band carries the promise and the one control, and stops there. The
   // practice-area chips and the trust strip that used to be crowded in under
-  // the search box are now sections of their own below it — PopularLegalAreas
+  // the search box are now sections of their own below it
   // and AnonymousBand — where each has room to be read rather than glanced at.
   return (
     // The header is `fixed` over this band on the homepage, so the top padding
@@ -29,7 +41,7 @@ export default function Hero({ city, intro }) {
     // it stays a tall band but no longer a full viewport — with the copy
     // centred in `min-h-screen` there was a dead stretch above the heading and
     // another below the trust strip, and the first lawyer sat off-screen.
-    <section className="relative flex items-start overflow-hidden bg-[#0F172A] pb-10 pt-20 sm:items-center sm:pb-16 sm:pt-28 md:min-h-[34rem] md:pb-16 md:pt-28 lg:min-h-[38rem]">
+    <section className="relative flex items-start overflow-hidden bg-[#F6F8FB] pb-8 pt-20 sm:items-center sm:pb-12 sm:pt-24 md:min-h-[26rem] md:pb-12 md:pt-24 lg:min-h-[28rem]">
       {/* The banner. On a phone it is `contain`ed and pinned to the top so the
           whole photograph is visible: the artwork is 1376×768, and behind a
           390px screen `cover` had to scale it until only a narrow vertical
@@ -37,25 +49,34 @@ export default function Hero({ city, intro }) {
 
           From `sm` there is width enough for `cover` to crop sensibly, so it
           fills the band as before. */}
-      <Image
-        src="/banner-n.png"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="pointer-events-none object-contain object-top brightness-[0.88] sm:object-cover sm:object-center"
-      />
-      {/* Navy overlay, weighted to the left where the text sits. Light enough
-          now that the photograph reads as a photograph, but the left third
-          stays dark enough to keep white type legible over it. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#0F172A]/75 via-[#0F172A]/40 to-[#0F172A]/15" />
-      {/* A phone has no left third to hide the type in — the copy runs the full
-          width — so it gets a vertical wash as well, and this also fades the
-          contained picture's lower edge into the navy below it. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0F172A]/25 via-[#0F172A]/50 to-[#0F172A] sm:hidden" />
+      {/* The right half only, from sm. On a phone there is no right half to
+          give it, so it sits across the top and the copy runs underneath. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[55vw] sm:inset-y-0 sm:left-[42%] sm:right-0 sm:h-auto lg:left-[46%]">
+        <Image
+          src="/banner-n.png"
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 639px) 100vw, 58vw"
+          className="object-cover object-center"
+        />
+        {/* Feathered into the page rather than cut against it — a hard
+            vertical seam down the middle of a hero reads as a broken image.
+
+            The stops matter: the fade is finished by 12% and the remaining
+            nine tenths of the picture are untouched. Without them the
+            gradient ran the full width and put a haze over the whole
+            photograph, which is the thing it was there to avoid. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F6F8FB] from-0% to-transparent to-12%" />
+        {/* A short fade at the foot on a phone, where the picture sits above
+            the copy and would otherwise end on a hard horizontal line. */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#F6F8FB] to-transparent sm:hidden" />
+      </div>
+
+
 
       <Container className="relative z-10">
-        <div className="flex max-w-3xl flex-col items-start text-left">
+        <div className="flex max-w-3xl flex-col items-start text-left sm:max-w-[52%] lg:max-w-[50%]">
           {/* The heading and lead sit on the picture; the search box must clear
               it, rather than straddling its lower edge.
 
@@ -64,13 +85,22 @@ export default function Hero({ city, intro }) {
               this block is held to whatever height is left, and the search block
               after it therefore starts at the picture's bottom edge on any
               screen width, without a hard pixel figure to go stale. */}
-          <div className="flex min-h-[calc(55.81vw-5rem)] flex-col justify-start sm:min-h-0">
-          <h1 className="font-display text-[1.4rem] sm:text-[2.3rem] lg:text-[2.9rem] font-extrabold tracking-tight leading-[1.12] text-white drop-shadow-lg">
+          <div className="flex min-h-[calc(55vw-4rem)] flex-col justify-start sm:min-h-0">
+          {/* Three words for what the service is, before the heading says
+              what it does. They are the objections a visitor arrives with —
+              will this take days, is it safe, will anyone know — answered
+              before the pitch rather than after it. */}
+          <p className="animate-fade-up mb-2.5 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#9A7B1C] sm:text-[11.5px]">
+            <Zap className="h-3.5 w-3.5 shrink-0 fill-accent text-accent" aria-hidden="true" />
+            Fast. Secure. Confidential.
+          </p>
+
+          <h1 className="font-display text-[1.4rem] sm:text-[2.3rem] lg:text-[2.9rem] font-extrabold tracking-tight leading-[1.12] text-primary-dark">
             {city ? (
               <>
                 <span className="sm:whitespace-nowrap">Get Anonymous Legal Help </span>{' '}
                 <br className="hidden sm:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E7C766] to-[#D4AF37]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#B8912A] via-[#D4AF37] to-[#A67C1F]">
                   in {city.name}
                 </span>
               </>
@@ -78,7 +108,7 @@ export default function Hero({ city, intro }) {
               <>
                 <span className="sm:whitespace-nowrap">Get Anonymous Legal Help </span>{' '}
                 <br className="hidden sm:block" />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#E7C766] to-[#D4AF37]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#B8912A] via-[#D4AF37] to-[#A67C1F]">
                    in Just 10 Minutes
                 </span>
               </>
@@ -95,7 +125,7 @@ export default function Hero({ city, intro }) {
               cost legibility across the whole block for the sake of one word.
               The first sentence carries the offer on its own. */}
           <p
-            className="animate-fade-up mt-2 max-w-xl text-[12.5px] font-normal leading-[1.5] text-slate-200 drop-shadow sm:text-base sm:leading-relaxed"
+            className="animate-fade-up mt-2 max-w-xl text-[12.5px] font-normal leading-[1.5] text-ink/70 sm:text-base sm:leading-relaxed"
             style={{ animationDelay: '0.1s' }}
           >
             {city ? (
@@ -122,7 +152,7 @@ export default function Hero({ city, intro }) {
               court it answers to, and how matters move there. */}
           {intro && (
             <p
-              className="animate-fade-up mt-3 max-w-2xl text-[13px] sm:text-[15px] text-slate-300/90 leading-relaxed drop-shadow"
+              className="animate-fade-up mt-3 max-w-2xl text-[13px] sm:text-[15px] text-ink/60 leading-relaxed"
               style={{ animationDelay: '0.12s' }}
             >
               {intro}
@@ -134,15 +164,34 @@ export default function Hero({ city, intro }) {
               edge. It is the last thing in the band now — what used to follow
               it here has become the two sections below the hero. */}
           <div
-            className="animate-fade-up w-full max-w-2xl sm:mt-5"
+            className="animate-fade-up w-full sm:mt-5"
             style={{ animationDelay: '0.15s' }}
           >
-            {/* The glass frame is a desktop flourish. On a phone it drew a
-                second outline a few pixels outside the white card's own, which
-                read as a rendering fault and cost height the hero cannot spare. */}
-            <div className="sm:rounded-2xl sm:border sm:border-white/15 sm:bg-white/5 sm:p-1 sm:shadow-2xl sm:backdrop-blur-md">
+            {/* The frame is a desktop flourish. On a phone it drew a second
+                outline a few pixels outside the white card's own, which read as
+                a rendering fault and cost height the hero cannot spare. */}
+            <div className="sm:rounded-2xl sm:border sm:border-ink/8 sm:bg-white sm:p-1 sm:shadow-[0_18px_50px_-20px_rgba(15,23,42,0.35)]">
               <SearchBar city={city} />
             </div>
+
+            {/* Four promises under the box that acts on them. Hairlines
+                rather than boxes: these are one claim in four parts, and four
+                cards would read as four things to click. Hidden on a phone,
+                where they wrap to three rows and push the fold past the
+                search bar — the thing they are meant to encourage. */}
+            <ul className="mt-4 hidden flex-wrap items-center gap-x-5 gap-y-2 sm:flex">
+              {TRUST.map(({ icon: Icon, label }, i) => (
+                <li
+                  key={label}
+                  className={`flex items-center gap-2 text-[12.5px] font-medium text-ink/65 ${
+                    i > 0 ? 'border-l border-ink/12 pl-5' : ''
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                  {label}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </Container>

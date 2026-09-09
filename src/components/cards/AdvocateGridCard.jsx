@@ -115,6 +115,11 @@ export default function AdvocateGridCard({ advocate }) {
   // to the profile. Three fitted only when all three were short: "Criminal
   // Law, Property Law, Civil Law, +4" wrapped, and the wrapped row pushed
   // "View Profile" out of line with the tags it was sitting beside.
+  // The cheapest block on offer — what "starts at" means.
+  const cheapestSlot = cardSlots.length
+    ? cardSlots.reduce((a, b) => (b.price < a.price ? b : a))
+    : null;
+
   const tags = specializations.slice(0, 2);
   const extraTags = Math.max(0, specializations.length - tags.length);
 
@@ -146,41 +151,18 @@ export default function AdvocateGridCard({ advocate }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <PresenceIndicator id={advocate._id} variant="label" />
 
-        {/* What it costs to book this lawyer, as the two blocks a client
-            actually chooses between. A per-minute figure asked the reader to
-            multiply before they could compare anybody; "10 min ₹200" is the
-            price of the thing on offer.
-
-            The dashed rule and the bitten-out sides are a torn ticket — the
-            notches are the card's own white punched over the border, which is
-            what makes the edge read as torn rather than merely dotted. */}
-        <div className="relative shrink-0 rounded-lg border border-dashed border-emerald-300 bg-gradient-to-b from-emerald-50 to-emerald-100/70 px-3 py-1.5 shadow-[0_1px_2px_rgba(16,185,129,0.12)]">
-          <span
-            aria-hidden="true"
-            className="absolute -left-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute -right-[6px] top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-white"
-          />
-          <div className="flex items-baseline gap-2 whitespace-nowrap">
-            {cardSlots.map((slot, i) => (
-              <span key={slot.minutes} className="flex items-baseline gap-1">
-                {i > 0 && (
-                  <span className="mr-1 text-emerald-600/40" aria-hidden="true">
-                    ·
-                  </span>
-                )}
-                <span className="text-[11px] font-semibold text-emerald-600/70">
-                  {slot.label}
-                </span>
-                <span className="text-[15px] font-bold leading-none text-emerald-700">
-                  ₹{slot.price.toLocaleString('en-IN')}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
+        {/* What it costs to start, as one figure. The card used to quote
+            both blocks — "10 min ₹200 · 30 min ₹500" — which is a price
+            list, and a card in a row of three is scanned rather than read:
+            what a scan wants is the number to compare. The full list is on
+            the profile, one click away. */}
+        {cheapestSlot && (
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            Starts at{' '}
+            <span className="text-[13.5px] font-bold">₹{cheapestSlot.price.toLocaleString('en-IN')}</span>
+            <span className="ml-1 font-medium text-emerald-600/70">· {cheapestSlot.minutes} mins</span>
+          </span>
+        )}
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────── */}
@@ -194,7 +176,7 @@ export default function AdvocateGridCard({ advocate }) {
             the answer is there before a word is read. The strip above still
             spells it out for anyone who wants it in words. */}
         <span className="relative block h-[68px] w-[68px] shrink-0 sm:h-[72px] sm:w-[72px]">
-          <span className="block h-full w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-slate-200/80">
+          <span className="block h-full w-full overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200/80">
             <Avatar
               src={photo}
               name={name}
@@ -253,10 +235,20 @@ export default function AdvocateGridCard({ advocate }) {
           {state ? `, ${state}` : ''}
         </Fact>
         <Fact icon={CalendarDays} tone="text-[#B08D2A]">{experienceLabel}</Fact>
-        {languageLabel && (
-          <Fact icon={Languages} tone="text-emerald-600">{languageLabel}</Fact>
-        )}
       </div>
+
+      {languages.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {languages.slice(0, 3).map((l) => (
+            <span
+              key={l}
+              className="rounded-md bg-primary/[0.06] px-2 py-0.5 text-[11.5px] font-semibold text-primary"
+            >
+              {l}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* ── Expertise ─────────────────────────────────────────────────── */}
       {/* Tags on the left, the way in on the right. "View Profile" is a cue,
@@ -265,7 +257,12 @@ export default function AdvocateGridCard({ advocate }) {
           hover rather than owning one. Both sides are held to a single line:
           `min-w-0` plus `flex-nowrap` lets the tags shrink instead of wrapping
           underneath and dragging the cue out of line with them. */}
-      <div className="mb-1.5 mt-3.5 flex items-center gap-3">
+      {/* Tags on the left, the way in on the right — one line rather than two.
+          Given a line of its own the button was right-aligned against an empty
+          left half, which is a strip of card doing nothing. `min-w-0` plus
+          `flex-nowrap` lets the tags shrink instead of wrapping underneath and
+          dragging the button out of line with them. */}
+      <div className="mb-1.5 mt-3 flex items-center gap-2">
         <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-hidden">
           {tags.map((tag) => (
             <span
@@ -282,21 +279,14 @@ export default function AdvocateGridCard({ advocate }) {
           )}
         </div>
 
-        {/* Still no face of its own — the card is the button. Text and arrow
-            both carry the site's own blue, the one every link on the site
-            already uses, so this reads as a link rather than as a third
-            colour competing with the rate above it. */}
-        <span
-          aria-hidden="true"
-          className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-bold text-primary underline-offset-4 transition-colors duration-200 group-hover:text-primary-dark group-hover:underline"
+        <Link
+          href={profileHref}
+          className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ink/12 bg-surface px-2.5 text-[12px] font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
         >
-          View Profile
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
-            <ArrowRight className="h-3 w-3" />
-          </span>
-        </span>
+          Profile
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+        </Link>
       </div>
-
       {/* ── Actions ───────────────────────────────────────────────────── */}
       {/* Lifted above the stretched link so these three are still buttons and
           not part of the card's own click target. `mt-auto` pins the row to
@@ -316,6 +306,7 @@ export default function AdvocateGridCard({ advocate }) {
           audioRate={audioRate}
         />
       </div>
+
     </article>
   );
 }

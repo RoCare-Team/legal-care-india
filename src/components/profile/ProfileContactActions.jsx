@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, MessageCircle, Mail, CalendarCheck } from 'lucide-react';
+import { Phone, MessageCircle, Mail, CalendarCheck, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import AuthGateModal from './AuthGateModal';
@@ -21,6 +21,24 @@ import AudioConsultModal from './AudioConsultModal';
  * @param {number} [props.chatRate]  the lawyer's ₹/min for live chat
  * @param {number} [props.audioRate] the lawyer's ₹/min for audio calls
  */
+/**
+ * One of the three direct ways to reach a lawyer: an icon over a label, in a
+ * box small enough that it never competes with Consult Now above it.
+ */
+function DirectAction({ href, external, onClick, icon: Icon, label, tone }) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className={`flex h-[52px] flex-col items-center justify-center gap-1 rounded-xl border text-[11.5px] font-semibold transition-colors ${tone}`}
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      {label}
+    </a>
+  );
+}
+
 export default function ProfileContactActions({
   contact = {}, name, waText, advocateId, chatRate = 0, audioRate = 0, slotPrices,
 }) {
@@ -93,53 +111,71 @@ export default function ProfileContactActions({
   return (
     <>
       <div className="space-y-2">
-        {/* Primary CTA — book a live chat. Shown for every lawyer now that
-            consultations are booked as slots: each has a price for those,
-            their own or the platform's, so none is unbookable. */}
+        {/* Two decisions, in the order they are made: talk now, or put it in
+            the diary. They used to be four buttons of equal weight — Book,
+            Call, WhatsApp, Email — which is a menu, not a call to action, and
+            gave a paid consultation the same prominence as an email nobody
+            answers on a Sunday.
+
+            The direct ways to reach the lawyer are still here, underneath, as
+            a row of three. Nothing was removed; it was ranked. */}
         {role !== 'advocate' && (
           <Button
             type="button"
             onClick={onBook}
             fullWidth
-            leftIcon={<CalendarCheck className="h-4 w-4" />}
+            size="lg"
+            leftIcon={<MessagesSquare className="h-4 w-4" />}
           >
-            Book Chat Consultation
+            Consult Now
           </Button>
         )}
-        {contact.phone && (
+
+        {role !== 'advocate' && (
           <Button
-            href={`tel:${contact.phone.replace(/\s/g, '')}`}
-            onClick={onCall}
-            variant={chatRate > 0 ? 'outline' : 'primary'}
-            fullWidth
-            leftIcon={<Phone className="h-4 w-4" />}
-          >
-            Call Now
-          </Button>
-        )}
-        {contact.whatsapp && (
-          <Button
-            href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={gate('whatsapp')}
-            fullWidth
-            className="bg-emerald-600 hover:bg-emerald-700"
-            leftIcon={<MessageCircle className="h-4 w-4" />}
-          >
-            WhatsApp
-          </Button>
-        )}
-        {contact.email && (
-          <Button
-            href={`mailto:${contact.email}`}
-            onClick={gate('email')}
+            type="button"
+            onClick={onBook}
             variant="outline"
             fullWidth
-            leftIcon={<Mail className="h-4 w-4" />}
+            leftIcon={<CalendarCheck className="h-4 w-4" />}
           >
-            Send Email
+            Book Appointment
           </Button>
+        )}
+
+        {/* Phone, WhatsApp and email — the ways to reach this lawyer that do
+            not start a paid session, so they are labelled but small. */}
+        {(contact.phone || contact.whatsapp || contact.email) && (
+          <div className="grid grid-cols-3 gap-2 pt-0.5">
+            {contact.phone && (
+              <DirectAction
+                href={`tel:${contact.phone.replace(/s/g, "")}`}
+                onClick={onCall}
+                icon={Phone}
+                label="Call"
+                tone="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:border-emerald-400"
+              />
+            )}
+            {contact.whatsapp && (
+              <DirectAction
+                href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
+                external
+                onClick={gate('whatsapp')}
+                icon={MessageCircle}
+                label="WhatsApp"
+                tone="border-emerald-200 bg-emerald-50/60 text-emerald-700 hover:border-emerald-400"
+              />
+            )}
+            {contact.email && (
+              <DirectAction
+                href={`mailto:${contact.email}`}
+                onClick={gate('email')}
+                icon={Mail}
+                label="Email"
+                tone="border-ink/12 bg-surface text-primary hover:border-primary/40"
+              />
+            )}
+          </div>
         )}
       </div>
 

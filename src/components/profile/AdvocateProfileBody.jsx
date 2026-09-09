@@ -1,5 +1,6 @@
 import { Container } from '@/components/ui';
 import ProfileHeader from '@/components/profile/ProfileHeader';
+import ProfileTabs from '@/components/profile/ProfileTabs';
 import ProfileContactCard from '@/components/profile/ProfileContactCard';
 import ProfileAbout from '@/components/profile/ProfileAbout';
 import ProfileLegalServices from '@/components/profile/ProfileLegalServices';
@@ -27,11 +28,29 @@ import RelatedAdvocates from '@/components/profile/RelatedAdvocates';
 export default function AdvocateProfileBody({ advocate, related = [], notice }) {
   return (
     <>
-      <Container className="py-6 pb-28 sm:py-8 lg:pb-8">
+      {/* The header and the tabs are bands, like the navbar above them: the
+          white surface reaches both edges of the window and only what is
+          written on it is held to the site's column, so the portrait starts
+          on the logo's left edge. The body below keeps the column. */}
+      <div className="pb-28 lg:pb-10">
         {notice}
         <ProfileHeader advocate={advocate} />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        {/* Only the sections this lawyer actually filled in. A tab that
+            jumps nowhere is worse than a missing tab. */}
+        <ProfileTabs
+          tabs={[
+            { id: 'about', label: 'About' },
+            ...(advocate.legalServices?.length || advocate.specializations?.length
+              ? [{ id: 'legal-services', label: 'Specializations' }]
+              : []),
+            ...(advocate.education?.length ? [{ id: 'education', label: 'Experience' }] : []),
+            ...(advocate.gallery?.length ? [{ id: 'gallery', label: 'Gallery' }] : []),
+            { id: 'reviews', label: 'Reviews' },
+          ]}
+        />
+
+        <Container className="mt-6 grid gap-5 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <ProfileAbout advocate={advocate} />
             <ProfileLegalServices advocate={advocate} />
@@ -46,8 +65,8 @@ export default function AdvocateProfileBody({ advocate, related = [], notice }) 
           <div className="lg:col-span-1">
             <ProfileContactCard advocate={advocate} />
           </div>
-        </div>
-      </Container>
+        </Container>
+      </div>
 
       <RelatedAdvocates advocates={related} />
       <ProfileMobileBar advocate={advocate} />

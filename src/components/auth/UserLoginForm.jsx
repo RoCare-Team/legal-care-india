@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Phone, KeyRound, ArrowLeft, LogIn, RotateCw, UserRound } from 'lucide-react';
+import { Phone, KeyRound, ArrowLeft, LogIn, RotateCw, UserRound, Check } from 'lucide-react';
 import { Button, FormField, Input } from '@/components/ui';
 import { safeNextPath } from '@/utils/safeNext';
 import { trackMetaEvent } from '@/utils/metaPixel';
@@ -19,6 +19,16 @@ import { trackMetaEvent } from '@/utils/metaPixel';
  */
 // Length is set by the SMS gateway, which sends a 4-digit code.
 const OTP_LENGTH = 4;
+
+/**
+ * The three questions, in order. Named for what is asked rather than for the
+ * state that asks it: "Verify" is what the visitor is doing, `otp` is how.
+ */
+const STEPS = [
+  { key: 'phone', label: 'Mobile' },
+  { key: 'otp', label: 'Verify' },
+  { key: 'name', label: 'Details' },
+];
 
 export default function UserLoginForm() {
   const [step, setStep] = useState('phone');
@@ -199,10 +209,49 @@ export default function UserLoginForm() {
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="rounded-2xl border border-ink/8 bg-surface p-6 shadow-card sm:p-8"
-    >
+    <form onSubmit={onSubmit}>
+      {/* Where the visitor is, and how much is left. Three dots and two
+          rules rather than a progress bar: a bar says "43% done", which is
+          not a thing anyone can act on, while a numbered step says which of
+          three questions is being asked. */}
+      <ol className="mb-7 flex items-center" aria-label="Progress">
+        {STEPS.map(({ key, label }, i) => {
+          const index = STEPS.findIndex((x) => x.key === step);
+          const state = i < index ? 'done' : i === index ? 'current' : 'todo';
+          return (
+            <li key={key} className="flex flex-1 items-center last:flex-none">
+              <div className="flex flex-col items-center gap-1.5">
+                <span
+                  aria-current={state === 'current' ? 'step' : undefined}
+                  className={`grid h-7 w-7 place-items-center rounded-full text-[12px] font-bold transition-colors ${
+                    state === 'todo'
+                      ? 'bg-ink/[0.07] text-ink/40'
+                      : 'bg-primary text-white'
+                  }`}
+                >
+                  {state === 'done' ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : i + 1}
+                </span>
+                <span
+                  className={`text-[11px] font-semibold ${
+                    state === 'todo' ? 'text-ink/40' : 'text-ink/70'
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <span
+                  aria-hidden="true"
+                  className={`mx-2 -mt-5 h-px flex-1 ${
+                    i < index ? 'bg-primary' : 'bg-ink/12'
+                  }`}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
       <div className="flex items-center gap-3">
         {step !== 'phone' && step !== 'name' && (
           <button
@@ -236,20 +285,53 @@ export default function UserLoginForm() {
       <div className="mt-6 space-y-4">
         {step === 'phone' && (
           <FormField label="Mobile Number" htmlFor="user-login-phone">
-            <Input
-              id="user-login-phone"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
-                setError('');
-              }}
-              placeholder="10-digit mobile"
-              leftIcon={<Phone className="h-4 w-4" />}
-              autoFocus
-            />
+            {/* The country code as a fixed prefix rather than something to type
+                or choose. The site serves India only — every rate is in rupees
+                and every court an Indian one — so a picker would be a list of
+                one, and leaving +91 to be typed turns ten digits into twelve and
+                fails validation.
+
+                The two halves share one border and one focus ring so they read
+                as a single field: the ring is drawn on the wrapper and the input
+                inside carries none of its own. */}
+            <div className="flex h-11 w-full items-center overflow-hidden rounded-xl border border-ink/15 bg-surface transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30">
+              <span className="flex shrink-0 items-center gap-1.5 border-r border-ink/12 py-2 pl-3 pr-2.5 text-sm font-semibold text-ink/70">
+                {/* Drawn rather than the 🇮🇳 emoji: Windows ships no colour flag
+                    glyph, so there it renders as the letters "IN" in a box.
+
+                    Three equal bands from a flex column — an earlier version used
+                    `grid` with `h-1/3` children, which does not divide a grid the
+                    way it divides a block, and came out as a thin orange line over
+                    a fat white one. The chakra is a ring rather than the real
+                    24 spokes: at 6px the spokes are one pixel apart and read as a
+                    smudge, where a clean ring reads as the chakra. */}
+                <span
+                  aria-hidden="true"
+                  className="flex h-[18px] w-[26px] shrink-0 flex-col overflow-hidden rounded-[2px] ring-1 ring-ink/15"
+                >
+                  <span className="flex-1 bg-[#FF9933]" />
+                  <span className="flex flex-1 items-center justify-center bg-white">
+                    <span className="block h-[6px] w-[6px] rounded-full border border-[#000080]" />
+                  </span>
+                  <span className="flex-1 bg-[#138808]" />
+                </span>
+                +91
+              </span>
+              <input
+                id="user-login-phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value.replace(/D/g, '').slice(0, 10));
+                  setError('');
+                }}
+                placeholder="10-digit mobile"
+                className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm text-ink placeholder:text-ink/40 focus:outline-none"
+                autoFocus
+              />
+            </div>
           </FormField>
         )}
 
