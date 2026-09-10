@@ -108,37 +108,44 @@ export function planRank(advocate) {
 /**
  * Order a copy of the list.
  *
+ * Membership comes first, always: Premium above Professional above Starter,
+ * which is the order of what they cost. That is what the plan is sold on, and
+ * a placement that only held on the default view is not the placement a lawyer
+ * paid ₹499 for.
+ *
+ * The chosen sort then orders lawyers *within* each tier. So "Highest rated"
+ * gives the best-rated Premium lawyers, then the best-rated Professional ones,
+ * then the best-rated free ones — every tier sorted as asked, the tiers
+ * themselves in paid order.
+ *
+ * The cost of this is worth stating plainly: "Rate: low to high" no longer
+ * returns the cheapest lawyer first if a dearer one has paid for placement.
+ * The control still sorts, but it sorts inside a group the visitor cannot see.
+ *
  * "Relevance" is rating × reviews: a lawyer with 4.9 from forty clients is a
  * better answer than one with a lone five-star review, and sorting on the
  * average alone puts them the other way round.
- *
- * Membership decides the default order and only the default order. A paid
- * listing is placed above an unpaid one when nobody has asked for anything in
- * particular — which is what almost every visitor sees, and what the plan is
- * sold on. It is deliberately NOT applied to the explicit sorts: someone who
- * chooses "Rate: low to high" and is shown a ₹500 lawyer above a ₹5 one has
- * been handed a sorted list that is not sorted, and a directory that lies
- * about its own controls is worth less than the placement it sold.
  *
  * @param {Array} list
  * @param {string} sort  one of ADVOCATE_SORTS
  */
 export function sortAdvocates(list, sort) {
-  const copy = [...list];
-  switch (sort) {
-    case 'rating':
-      return copy.sort((a, b) => b.rating - a.rating);
-    case 'experience':
-      return copy.sort((a, b) => b.experience - a.experience);
-    case 'fee-low':
-      return copy.sort((a, b) => a.consultationFee - b.consultationFee);
-    case 'fee-high':
-      return copy.sort((a, b) => b.consultationFee - a.consultationFee);
-    default:
-      return copy.sort(
-        (a, b) =>
-          planRank(b) - planRank(a) ||
-          b.rating * b.reviews - a.rating * a.reviews
-      );
-  }
+  // Within a tier. Returns 0 for "these two are equally good by this sort",
+  // which leaves their existing order alone.
+  const within = (a, b) => {
+    switch (sort) {
+      case 'rating':
+        return b.rating - a.rating;
+      case 'experience':
+        return b.experience - a.experience;
+      case 'fee-low':
+        return a.consultationFee - b.consultationFee;
+      case 'fee-high':
+        return b.consultationFee - a.consultationFee;
+      default:
+        return b.rating * b.reviews - a.rating * a.reviews;
+    }
+  };
+
+  return [...list].sort((a, b) => planRank(b) - planRank(a) || within(a, b));
 }

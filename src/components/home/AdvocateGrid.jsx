@@ -5,6 +5,7 @@ import { ArrowUpDown, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
 import { advocateRates } from '@/constants/callRates';
+import { planRank } from '@/lib/advocateSearch';
 import { useLocation } from '@/components/location/LocationProvider';
 import { usePresence } from '@/components/consultation/PresenceProvider';
 
@@ -77,27 +78,35 @@ function railOrder(list, columns, rows) {
 }
 
 /**
- * Order a copy of the list. Never mutates — the incoming array is the server's,
- * and re-sorting it in place would leave the original order unrecoverable when
- * the visitor switches back to "Most relevant".
+ * Order a copy of the list. Never mutates — the incoming array is the
+ * server's, and re-sorting it in place would leave the original order
+ * unrecoverable when the visitor switches back to "Most relevant".
+ *
+ * Membership first, as in the directory: Premium above Professional above
+ * Starter, with the chosen sort ordering lawyers inside each tier. This band
+ * is the first list of lawyers anyone sees, so a placement that skipped it
+ * would be missing from the most valuable page on the site.
  */
 function sortAdvocates(list, sort) {
-  const copy = [...list];
-  switch (sort) {
-    case 'rating':
-      return copy.sort((a, b) => b.rating - a.rating);
-    case 'experience':
-      return copy.sort((a, b) => b.experience - a.experience);
-    // Lawyers who quote nothing sort last either way: an unpriced profile is
-    // not the cheapest one, it is one you have to ask.
-    case 'fee-low':
-      return copy.sort((a, b) => (feeOf(a) || Infinity) - (feeOf(b) || Infinity));
-    case 'fee-high':
-      return copy.sort((a, b) => feeOf(b) - feeOf(a));
-    default:
-      // Relevance = the order the server sent (newest first), untouched.
-      return copy;
-  }
+  const within = (a, b) => {
+    switch (sort) {
+      case 'rating':
+        return b.rating - a.rating;
+      case 'experience':
+        return b.experience - a.experience;
+      // Lawyers who quote nothing sort last either way: an unpriced profile is
+      // not the cheapest one, it is one you have to ask.
+      case 'fee-low':
+        return (feeOf(a) || Infinity) - (feeOf(b) || Infinity);
+      case 'fee-high':
+        return feeOf(b) - feeOf(a);
+      default:
+        // Relevance = the order the server sent (newest first), untouched.
+        return 0;
+    }
+  };
+
+  return [...list].sort((a, b) => planRank(b) - planRank(a) || within(a, b));
 }
 
 /**

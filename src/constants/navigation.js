@@ -2,21 +2,20 @@
  * Centralized navigation maps used by the Navbar, MobileMenu and Footer.
  * Keeping links here keeps the layout components presentational and reusable.
  */
-// The five from the approved design. Two changes worth recording:
+// Three links, not five.
 //
-// "Home" is gone. The logo already goes home from every page, and a Home link
-// beside it spends one of five slots saying the same thing twice.
+// "Home" went first: the logo already goes home from every page. About and
+// Contact went next — both are read once and neither is what somebody opens
+// the site to do, so they keep their place in the footer, where visitors go
+// looking for that kind of thing.
 //
-// "Blogs" is gone from the header, not from the site — it keeps its place in
-// the footer's Company column. The slots it freed go to How It Works and
-// About, which are what someone deciding whether to trust the site looks for,
-// and neither was reachable from the header before.
+// How It Works stays. It is not a page but a jump to the section on the home
+// page, and it answers the question a first-time visitor has before they will
+// search for anything: what actually happens if I do.
 export const MAIN_NAV = [
   { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
   { label: 'How It Works', href: '/#how-it-works' },
-  { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
 ];
 
 /** Primary calls-to-action shown in the header and mobile drawer. */

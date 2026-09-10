@@ -47,6 +47,7 @@ export default async function RegisterPage() {
 Make a Bigger Impact.`}
       benefits={LAWYER_BENEFITS}
       image="/lawyer-register.png"
+      imageFit="contain"
     >
       <AdvocateAuthForm intent="register" />
     </AuthLayout>

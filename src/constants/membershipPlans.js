@@ -48,13 +48,13 @@ export const MEMBERSHIP_PLANS = [
     tagline: 'For a practice that spans more than a couple of matters.',
     monthly: 199,
     rank: 1,
-    areas: 4,
-    matters: 8,
-    cities: 4,
+    areas: 5,
+    matters: 10,
+    cities: 5,
     placement: 'Ranked above Starter lawyers in every search',
     features: [
       'Everything in Starter',
-      '4 practice areas, 8 matters and 4 cities',
+      '5 practice areas, 10 matters and 5 cities',
       'Ranked above free listings',
       'Professional badge on your profile',
     ],
@@ -106,6 +106,23 @@ export const PAID_PLANS = MEMBERSHIP_PLANS.filter((p) => p.monthly > 0);
  */
 export function annualTotal(planId) {
   const plan = getPlan(planId);
+
+  // A flat test price, when one is set. Razorpay will not take a real card
+  // for a rupee in live mode, so this exists to walk the whole flow — order,
+  // checkout, verify, membership granted — without ₹2,818 moving each time.
+  //
+  // It has to live here rather than in the order route because two places
+  // read the price and they must agree: the order is opened for it and
+  // grantMembership refuses a payment whose amount is not exactly it.
+  //
+  // NEXT_PUBLIC_ on purpose. Without it the pricing page (client) would quote
+  // ₹2,818 while checkout (server) asked for ₹1, which looks like a bug and
+  // is worse than the test price being visible.
+  const testAmount = Number(process.env.NEXT_PUBLIC_MEMBERSHIP_TEST_AMOUNT);
+  if (Number.isFinite(testAmount) && testAmount > 0) {
+    return { base: testAmount, gst: 0, total: testAmount, monthly: plan.monthly };
+  }
+
   const base = plan.monthly * TERM_MONTHS;
   // Rounded to whole rupees so the total never carries a stray paisa that the
   // receipt and the payment gateway then disagree about.

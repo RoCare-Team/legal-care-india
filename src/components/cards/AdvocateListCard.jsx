@@ -3,7 +3,6 @@ import { MapPin, Star, BadgeCheck, ArrowRight, CalendarDays, Languages } from 'l
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
-import { slotsFor, CARD_SLOT_MINUTES } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -73,13 +72,6 @@ export default function AdvocateListCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
-  // The blocks the card quotes. Every lawyer has a price for these — their own
-  // if they set one, the platform's if they did not — so the ticket is never
-  // simply absent.
-  const cardSlots = slotsFor(advocate, 'chat').filter((s) =>
-    CARD_SLOT_MINUTES.includes(s.minutes)
-  );
-
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say.
   const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
@@ -148,22 +140,6 @@ export default function AdvocateListCard({ advocate }) {
             <Fact icon={Languages} tone="text-primary">{languageLabel}</Fact>
           )}
         </div>
-
-        {/* What a consultation costs, on one line with the other facts. It is
-            the same kind of thing they are — something you read while
-            deciding, not something you press — and above the buttons it read
-            as a heading for them, as though ₹200 were the price of pressing
-            Call rather than of a ten-minute block. */}
-        {cardSlots.length > 0 && (
-          <div className="mt-2.5 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-dashed border-emerald-300/70 bg-emerald-50/60 px-3 py-1.5">
-            {cardSlots.map((slot) => (
-              <p key={slot.minutes} className="text-[12.5px] leading-snug text-emerald-800/70">
-                {slot.minutes} min{' '}
-                <span className="text-[13.5px] font-bold text-emerald-900">₹{slot.price}</span>
-              </p>
-            ))}
-          </div>
-        )}
 
         {tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">

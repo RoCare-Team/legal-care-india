@@ -102,6 +102,7 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
         <FormField
           label="Headline / Tagline"
           htmlFor="d-tagline"
+          required
           className="sm:col-span-2"
           hint="One line under your name — what you do, in a few words."
         >

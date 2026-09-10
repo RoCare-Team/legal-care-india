@@ -32,7 +32,6 @@ export const DASHBOARD_NAV = [
       { label: 'Office Timing', href: '/dashboard/profile#timing', icon: Clock },
       { label: 'Contact Details', href: '/dashboard/profile#contact', icon: Phone },
       { label: 'Bookable Slots', href: '/dashboard/profile#slots', icon: Clock },
-      { label: 'Fees', href: '/dashboard/profile#fees', icon: IndianRupee },
       { label: 'Education', href: '/dashboard/profile#education', icon: GraduationCap },
       { label: 'Experience', href: '/dashboard/profile#experience', icon: Briefcase },
       { label: 'Languages', href: '/dashboard/profile#languages', icon: Languages },

@@ -1,5 +1,7 @@
 'use client';
 
+import { formatRate } from '@/constants/callRates';
+
 import { useState } from 'react';
 import { Phone, MessageSquare, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -127,7 +129,7 @@ export default function CardContactActions({
       chat: 'bg-primary text-white shadow-sm hover:bg-primary-dark hover:shadow',
     },
     compact: {
-      base: 'flex h-8 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-all duration-200',
+      base: 'flex h-11 items-center justify-center gap-1 rounded-lg text-[11px] font-semibold transition-all duration-200',
       icon: 'h-3.5 w-3.5',
       call: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
       video: 'border border-primary/15 bg-primary/[0.06] text-primary hover:border-primary/35 hover:bg-primary/10',
@@ -145,7 +147,7 @@ export default function CardContactActions({
     // video. Kept pale so a row of six cards is not a wall of colour: the tint
     // identifies the button, it does not shout.
     quiet: {
-      base: 'inline-flex h-9 items-center justify-center gap-1 rounded-xl border px-1.5 text-[12px] font-semibold transition-colors duration-200',
+      base: 'inline-flex h-12 items-center justify-center gap-1.5 rounded-xl border px-1.5 text-[12px] font-semibold transition-colors duration-200',
       icon: 'h-3.5 w-3.5 shrink-0',
       call: 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50',
       chat: 'border-blue-200/80 bg-blue-50/70 text-blue-700 hover:border-blue-300 hover:bg-blue-50',
@@ -169,7 +171,20 @@ export default function CardContactActions({
   const base = iconOnly ? `${set.base} min-w-8 px-0` : set.base;
   const { icon } = set;
   const iconFor = (key) => `${icon} ${set[`${key}Icon`] || ''}`;
-  const label = (text) => (iconOnly ? null : text);
+  const label = (text, rate) => {
+    if (iconOnly) return null;
+    // No rate ⇒ the lawyer does not price this channel, so the button is just
+    // a button. Printing ₹0 would read as free, which is a different offer.
+    if (!(Number(rate) > 0)) return text;
+    return (
+      <span className="flex flex-col items-center leading-none">
+        <span>{text}</span>
+        <span className="mt-[3px] text-[10.5px] font-medium opacity-75">
+          {formatRate(rate)}
+        </span>
+      </span>
+    );
+  };
 
   return (
     <>
@@ -181,7 +196,7 @@ export default function CardContactActions({
         className={`${base} ${set.call}`}
       >
         <Phone className={iconFor('call')} />
-        {label('Call')}
+        {label('Call', audioRate)}
       </a>
 
       <a
@@ -194,7 +209,7 @@ export default function CardContactActions({
         className={`${base} ${set.chat}`}
       >
         <MessageSquare className={iconFor('chat')} />
-        {label('Chat')}
+        {label('Chat', chatRate)}
       </a>
       <button
         type="button"
@@ -204,7 +219,7 @@ export default function CardContactActions({
         className={`${base} ${set.video}`}
       >
         <Video className={iconFor('video')} />
-        {label('Video')}
+        {label('Video', videoRate)}
       </button>
 
       <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />

@@ -266,6 +266,8 @@ const AdvocateSchema = new Schema(
     // Practice highlights shown on the profile (entered by the lawyer).
     metrics: {
       cases: { type: Number, default: 0 },
+      // Of `cases`. `successRate` is derived from the two and never sent.
+      casesWon: { type: Number, default: 0 },
       clients: { type: Number, default: 0 },
       successRate: { type: Number, default: 0 },
     },

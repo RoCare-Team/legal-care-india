@@ -72,7 +72,7 @@ export async function PUT(request) {
   const {
     fullName, photo, coverImage, gallery, tagline, city, state, about,
     services, subServices, languages, courts, practiceCities, barCouncil, experience,
-    cases, clients, successRate,
+    cases, casesWon, clients,
     education, certificates, awards, timing,
     officeName, officeAddress, pincode,
     phone, whatsapp, email, fee, social, chatRate, audioRate, videoRate, slotPrices,
@@ -93,7 +93,13 @@ export async function PUT(request) {
       .filter((g) => g && g.url)
       .map((g) => ({ url: g.url, label: g.label || '' }));
   }
-  if (tagline !== undefined) update.tagline = tagline;
+  // Not rejected when blank. The headline is required — it carries a `*` and
+  // the completion meter counts it, and a profile is only reviewed for the
+  // directory once complete — but the setup wizard saves one step at a time
+  // while sending the whole profile, so a blank headline arrives with the
+  // cities step. Rejecting it there stops the save on a screen that has no
+  // headline field to fix it on.
+  if (tagline !== undefined) update.tagline = String(tagline).trim();
   if (city !== undefined) update.city = city;
   if (state !== undefined) update.state = state;
   if (about !== undefined) update.about = about;
@@ -145,9 +151,19 @@ export async function PUT(request) {
   if (barCouncil !== undefined) update.barCouncilNumber = barCouncil;
   if (experience !== undefined) update.experience = Number(experience) || 0;
   if (cases !== undefined) update['metrics.cases'] = Number(cases) || 0;
+  if (casesWon !== undefined) update['metrics.casesWon'] = Number(casesWon) || 0;
   if (clients !== undefined) update['metrics.clients'] = Number(clients) || 0;
-  if (successRate !== undefined) {
-    update['metrics.successRate'] = Math.min(100, Math.max(0, Number(successRate) || 0));
+
+  // The success rate is worked out here, from the two counts, and never
+  // taken from the request. It is a claim clients choose a lawyer on, so it
+  // has to follow from figures rather than be a third number a browser can
+  // name — the form shows it read-only for the same reason.
+  if (cases !== undefined || casesWon !== undefined) {
+    const handled = Number(update['metrics.cases'] ?? NaN);
+    const won = Number(update['metrics.casesWon'] ?? NaN);
+    if (Number.isFinite(handled) && handled > 0 && Number.isFinite(won)) {
+      update['metrics.successRate'] = Math.min(100, Math.max(0, Math.round((won / handled) * 100)));
+    }
   }
   if (Array.isArray(education)) update.education = education;
   if (Array.isArray(certificates)) update.certificates = certificates;
@@ -179,7 +195,7 @@ export async function PUT(request) {
     update.videoPlans = [];
   }
 
-  if (officeName !== undefined) update['office.name'] = officeName;
+  if (officeName !== undefined) update['office.name'] = String(officeName).trim();
   if (officeAddress !== undefined) update['office.address'] = officeAddress;
   if (pincode !== undefined) update['office.pincode'] = pincode;
 

@@ -40,7 +40,9 @@ export function toEditableSnapshot(a) {
     practiceCities: a.practiceCities || [],
     barCouncil: a.barCouncilNumber || '',
     experience: String(a.experience || ''),
-    cases: String(a.metrics?.cases || ''),
+    cases: String(a.metrics?.cases || ''),
+
+    casesWon: String(a.metrics?.casesWon || ''),
     clients: String(a.metrics?.clients || ''),
     successRate: String(a.metrics?.successRate || ''),
     education: a.education || [],

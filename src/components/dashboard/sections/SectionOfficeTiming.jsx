@@ -18,7 +18,7 @@ export default function SectionOfficeTiming({ data, set }) {
     <>
       <DashboardSection id="office" title="Office Details" description="Where clients can meet you." icon={Building2}>
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField label="Office / Chamber Name" htmlFor="d-office-name" className="sm:col-span-2">
+          <FormField label="Office / Chamber Name" htmlFor="d-office-name" required className="sm:col-span-2">
             <Input
               id="d-office-name"
               value={data.officeName}

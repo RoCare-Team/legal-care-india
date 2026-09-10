@@ -3,7 +3,6 @@ import { MapPin, Check, Star, ArrowRight, CalendarDays, Languages } from 'lucide
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
-import { slotsFor, CARD_SLOT_MINUTES } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -96,16 +95,6 @@ export default function AdvocateGridCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
-  // The two blocks the card quotes. Every lawyer has a price for these — their
-  // own if they set one, the platform's if they did not — so unlike the old
-  // per-minute figure there is no case where the ticket is simply absent, and
-  // no card that silently offers nothing because a rate was left at zero.
-  // Chat prices, because that is the channel CONSULTATION_CHANNELS marks for
-  // the card — a card has one line and there are nine figures behind it.
-  const cardSlots = slotsFor(advocate, 'chat').filter((s) =>
-    CARD_SLOT_MINUTES.includes(s.minutes)
-  );
-
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say. Every advocate is at least an Advocate, so the
   // designation falls back rather than leaving the line half empty.
@@ -115,11 +104,6 @@ export default function AdvocateGridCard({ advocate }) {
   // to the profile. Three fitted only when all three were short: "Criminal
   // Law, Property Law, Civil Law, +4" wrapped, and the wrapped row pushed
   // "View Profile" out of line with the tags it was sitting beside.
-  // The cheapest block on offer — what "starts at" means.
-  const cheapestSlot = cardSlots.length
-    ? cardSlots.reduce((a, b) => (b.price < a.price ? b : a))
-    : null;
-
   const tags = specializations.slice(0, 2);
   const extraTags = Math.max(0, specializations.length - tags.length);
 
@@ -151,18 +135,7 @@ export default function AdvocateGridCard({ advocate }) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <PresenceIndicator id={advocate._id} variant="label" />
 
-        {/* What it costs to start, as one figure. The card used to quote
-            both blocks — "10 min ₹200 · 30 min ₹500" — which is a price
-            list, and a card in a row of three is scanned rather than read:
-            what a scan wants is the number to compare. The full list is on
-            the profile, one click away. */}
-        {cheapestSlot && (
-          <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-            Starts at{' '}
-            <span className="text-[13.5px] font-bold">₹{cheapestSlot.price.toLocaleString('en-IN')}</span>
-            <span className="ml-1 font-medium text-emerald-600/70">· {cheapestSlot.minutes} mins</span>
-          </span>
-        )}
+
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────── */}

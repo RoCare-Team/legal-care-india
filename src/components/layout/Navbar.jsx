@@ -24,8 +24,15 @@ export default function Navbar({ className }) {
   return (
     <nav aria-label="Primary" className={cn('items-center gap-0.5', className)}>
       {MAIN_NAV.map(({ label, href }) => {
-        const active =
-          href === '/' ? pathname === '/' : pathname.startsWith(href.split('#')[0]);
+        // A link to a section — /#how-it-works — is a jump inside a page, not
+        // a page of its own, so it is never the current one. It used to be
+        // marked current everywhere: splitting the hash off left "/", and
+        // every path on the site starts with "/". 
+        const active = href.includes('#')
+          ? false
+          : href === '/'
+            ? pathname === '/'
+            : pathname.startsWith(href);
 
         return (
           <Link
