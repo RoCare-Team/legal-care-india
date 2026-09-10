@@ -93,6 +93,7 @@ const LegalServiceSchema = new Schema(
   { timestamps: true }
 );
 
+
 // The catalogue is read as "active, in this category, in running order" on
 // almost every request the app makes, so that is the index it gets.
 LegalServiceSchema.index({ active: 1, category: 1, sortOrder: 1 });
