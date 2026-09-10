@@ -25,6 +25,29 @@ const WalletTxnSchema = new Schema(
   { _id: true }
 );
 
+/**
+ * The client's saved billing address, used to prefill a service order.
+ *
+ * A copy of it is written onto every ServiceOrder as it is placed. This one is
+ * only the default — editing it later must not rewrite the address on an
+ * invoice that has already been issued.
+ */
+const BillingAddressSchema = new Schema(
+  {
+    name: { type: String, default: '', trim: true },
+    email: { type: String, default: '', trim: true, lowercase: true },
+    phone: { type: String, default: '', trim: true },
+    line1: { type: String, default: '', trim: true },
+    line2: { type: String, default: '', trim: true },
+    city: { type: String, default: '', trim: true },
+    state: { type: String, default: '', trim: true },
+    pincode: { type: String, default: '', trim: true },
+    /** GSTIN, when buying as a business that wants the input credit. */
+    gstin: { type: String, default: '', trim: true, uppercase: true },
+  },
+  { _id: false }
+);
+
 const UserSchema = new Schema(
   {
     // Identity is the mobile number now: an account is created the first time a
@@ -70,6 +93,8 @@ const UserSchema = new Schema(
     // Wallet: prepaid balance (in ₹) the user tops up themselves, plus a ledger.
     walletBalance: { type: Number, default: 0, min: 0 },
     walletTransactions: { type: [WalletTxnSchema], default: [] },
+    // Prefill for the legal-services checkout; see BillingAddressSchema above.
+    billingAddress: { type: BillingAddressSchema, default: () => ({}) },
   },
   { timestamps: true }
 );

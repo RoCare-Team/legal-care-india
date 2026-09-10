@@ -11,8 +11,12 @@
  * the pricing table is the same number the server enforces on save.
  */
 
-/** 18% on a service, which is what a listing is. */
-export const GST_RATE = 0.18;
+// The rate lives in constants/tax so the listing plans and the legal-service
+// catalogue cannot drift onto different ones. Imported for use below and
+// re-exported because callers of this module have always read it from here.
+import { GST_RATE } from '@/constants/tax';
+
+export { GST_RATE };
 
 /** Every plan runs a year at a time. See `annualTotal` for what that costs. */
 export const TERM_MONTHS = 12;
