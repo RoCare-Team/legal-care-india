@@ -18,6 +18,17 @@ function serialize(doc) {
     photo: u.photo || '',
     city: u.city || '',
     anonymous: Boolean(u.anonymous),
+    billingAddress: {
+      name: u.billingAddress?.name || '',
+      email: u.billingAddress?.email || '',
+      phone: u.billingAddress?.phone || '',
+      line1: u.billingAddress?.line1 || '',
+      line2: u.billingAddress?.line2 || '',
+      city: u.billingAddress?.city || '',
+      state: u.billingAddress?.state || '',
+      pincode: u.billingAddress?.pincode || '',
+      gstin: u.billingAddress?.gstin || '',
+    },
     walletBalance: u.walletBalance || 0,
     walletTransactions: (u.walletTransactions || [])
       .map((t) => ({
