@@ -1,5 +1,4 @@
 import { createMetadata } from '@/lib/metadata';
-import PageHeader from '@/components/shared/PageHeader';
 import { Container } from '@/components/ui';
 import AdvocateListing from '@/components/listing/AdvocateListing';
 import JsonLd from '@/components/shared/JsonLd';
@@ -156,16 +155,22 @@ export default async function AdvocatesPage({ searchParams }) {
           faqSchema(FAQS),
         ]}
       />
-      <PageHeader
-        eyebrow="Lawyer Directory"
-        title="Find Verified Lawyers Across India"
-        subtitle="Browse trusted lawyers by legal service, city and experience — then call, WhatsApp or email them directly."
-        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Find Lawyers' }]}
-      />
-      {/* Pull the filter/search bar up so it floats over the hero — the first
-          thing a visitor reaches, clearly above the fold. */}
-      <Container className="relative z-20 -mt-6 pb-10 sm:-mt-8 sm:pb-12">
-        <AdvocateListing advocates={advocates} initial={initial} cities={cities} floatFilters />
+      {/* No dark page header. It carried a second heading — "Find Verified
+          Lawyers Across India" directly above the results' own "Find the Right
+          Lawyer Near You" — which said the same thing twice and pushed the
+          filters and the first lawyer below the fold. The breadcrumb it also
+          held is still published for search engines in the JSON-LD above. */}
+      {/* Wider than the site's default column, and the only page that is.
+          A directory is two lists side by side — seven filter groups and 391
+          lawyers — where every other page is one column of prose, and at the
+          default 1280px the sidebar ate a third of the row the cards needed.
+          The extra 128px goes to the results, not to the gutter.
+
+          The negative pull is gone with the floating filter bar it was for:
+          filters are a column beside the results now, and a sidebar hoisted
+          over the hero would have its first group cut off by it. */}
+      <Container size="wide" className="relative z-20 pb-10 pt-4 sm:pb-12 sm:pt-5">
+        <AdvocateListing advocates={advocates} initial={initial} cities={cities} />
 
         {/* Below the list, because the list is what the visitor came for — but
             on the page, because a directory with no explanation of how to read

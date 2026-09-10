@@ -65,11 +65,11 @@ export default function CityHomeView({ city }) {
       />
 
       <Hero city={city} />
+      <Stats city={city} />
       <PopularCities />
       <FeaturedAdvocates city={city} />
       <LawyerBanner />
       <Categories city={city} />
-      <Stats city={city} />
       <HowItWorks />
       <Testimonials />
       <CTA />

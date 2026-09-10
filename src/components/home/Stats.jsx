@@ -1,11 +1,6 @@
-import Image from 'next/image';
 import { Container } from '@/components/ui';
 import StatsCounters from './StatsCounters';
 import { getPlatformStats } from '@/lib/stats';
-
-/** Legal-themed backdrop (Bombay High Court, Wikimedia Commons). */
-const LAW_BG =
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/Mumbai_03-2016_41_Bombay_High_Court.jpg/1280px-Mumbai_03-2016_41_Bombay_High_Court.jpg';
 
 /**
  * Stats — headline platform metrics band over a courthouse backdrop.
@@ -22,25 +17,14 @@ export default async function Stats({ city }) {
   const stats = await getPlatformStats(city);
 
   return (
-    <section className="relative overflow-hidden bg-primary-dark py-10 sm:py-12">
-      {/* Legal-themed background photo */}
-      <Image
-        src={LAW_BG}
-        alt=""
-        fill
-        sizes="100vw"
-        className="scale-105 object-cover opacity-30 blur-[2px]"
-        aria-hidden="true"
-      />
-
-      {/* Brand wash — deep navy at the edges, a touch lighter through the middle
-          so the band has some depth rather than reading as a flat block. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-dark via-primary/85 to-primary-dark" />
-      <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 via-transparent to-primary-dark/70" />
-
-      {/* Subtle dotted texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:22px_22px] opacity-[0.04]" />
-
+    // No margins and little padding. Directly under the hero the strip reads
+    // as the hero's own footer — the numbers behind the promise just made —
+    // and a gap above would cut it loose from the thing it answers for.
+    <section className="relative overflow-hidden bg-primary-dark py-6 sm:py-7">
+      {/* A single wash for depth. The courthouse photograph and the dotted
+          texture that used to sit here were for a band three times this tall;
+          behind one line of figures they are noise. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-primary-dark via-primary/80 to-primary-dark" />
       {/* Gold hairlines top and bottom — frames the band like a letterhead rule
           instead of letting it float as a plain coloured stripe. */}
       <span className="rule-gold absolute inset-x-0 top-0 h-px opacity-70" aria-hidden="true" />

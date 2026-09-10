@@ -37,9 +37,24 @@ module.exports = {
         sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'Georgia', 'serif'],
       },
+      /*
+       * Tighter than Tailwind ships, not looser.
+       *
+       * These used to sit above the defaults — 14px and 20px against 12 and
+       * 16 — and with a card, a portrait, a price pill, four buttons and a
+       * dozen filter rows all curved that hard, a listing row read as a pile
+       * of lozenges rather than one card with things in it. Corners are the
+       * one property every component here shares, so a couple of pixels off
+       * each is felt on every page at once.
+       *
+       * `xl` is buttons, inputs and small tiles; `2xl` is cards and panels;
+       * `3xl` is the few large surfaces (modals, sheets) that still want to
+       * read as soft.
+       */
       borderRadius: {
-        xl: '0.875rem',
-        '2xl': '1.25rem',
+        xl: '0.5rem',    /* 8px */
+        '2xl': '0.625rem', /* 10px */
+        '3xl': '0.875rem', /* 14px */
       },
       boxShadow: {
         /* Layered and tinted navy rather than grey — on a cool page backdrop a

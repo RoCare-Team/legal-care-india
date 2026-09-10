@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { servesCity } from '@/utils/advocateCity';
 import { filterAdvocates, sortAdvocates } from '@/lib/advocateSearch';
-import { SearchX, Loader2, Columns2, Columns3 } from 'lucide-react';
+import { SearchX, Loader2, Rows3, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui';
+import AdvocateListCard from '@/components/cards/AdvocateListCard';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
-import ListingFilters from './ListingFilters';
+import FilterSidebar from './FilterSidebar';
 import { usePresence } from '@/components/consultation/PresenceProvider';
 import { useLocation } from '@/components/location/LocationProvider';
 import { pluralize } from '@/utils/formatters';
@@ -19,7 +20,7 @@ import { distanceKm } from '@/utils/distance';
  * @param {object} props
  * @param {Array} props.advocates
  * @param {{query?:string,service?:string,city?:string}} [props.initial]
- * @param {boolean} [props.showFilters=true]   hide the filter bar on focused pages
+ * @param {boolean} [props.showFilters=true]   hide the filters on focused pages
  * @param {string} [props.emptyTitle]          heading for the empty state
  * @param {string} [props.emptyMessage]        supporting text for the empty state
  * @param {import('react').ReactNode} [props.emptyAction]  custom empty-state CTA
@@ -34,7 +35,34 @@ const EMPTY = {
   availability: '', // '' | 'online' | 'offline'
   sort: 'relevance',
   radius: '',
+  // Added with the sidebar. All four read fields the advocate record already
+  // carries, so none of them needed a change to the API.
+  consult: '',    // '' | 'chat' | 'audio' | 'video' | 'office'
+  language: '',
+  maxFee: '',     // ceiling on the cheapest live per-minute rate
+  minRating: '',
 };
+
+/** Which rate field proves a lawyer offers a given way of consulting. */
+const CONSULT_FIELD = {
+  chat: 'chatRate',
+  audio: 'audioRate',
+  video: 'videoRate',
+  office: 'consultationFee',
+};
+
+/**
+ * The cheapest live per-minute rate, or null when a lawyer quotes none.
+ *
+ * Null is not zero: someone who has set no live rate is not free, they are
+ * unpriced, and an "Under ₹25" filter must not sweep them in.
+ */
+function cheapestRate(a) {
+  const rates = [a.chatRate, a.audioRate, a.videoRate]
+    .map(Number)
+    .filter((r) => Number.isFinite(r) && r > 0);
+  return rates.length ? Math.min(...rates) : null;
+}
 
 /** Nearest-first, keeping lawyers without a known distance at the end. */
 function sortByDistance(list) {
@@ -45,29 +73,17 @@ function sortByDistance(list) {
   });
 }
 
+/** Where the chosen layout is kept between visits. */
+const VIEW_KEY = 'lci:listing-view';
+
 /** How many more cards to reveal each time the visitor scrolls to the end. */
 const BATCH_SIZE = 12;
 
-/**
- * Where the chosen column count is kept between visits.
- *
- * Two or three across is a reading preference, not a property of the search —
- * someone who wants the denser grid wants it on every page of results and on
- * their next visit, so it outlives both the filters and the session.
- */
-const COLUMNS_KEY = 'lci:listing-columns';
-
-/** Grid classes per choice. Below `lg` the width decides, not the toggle. */
-const COLUMN_CLASSES = {
-  2: 'sm:grid-cols-2',
-  3: 'sm:grid-cols-2 lg:grid-cols-3',
-};
 
 export default function AdvocateListing({
   advocates,
   initial = {},
   showFilters = true,
-  floatFilters = false,
   cities,
   emptyTitle,
   emptyMessage,
@@ -81,20 +97,21 @@ export default function AdvocateListing({
   // Watched by an IntersectionObserver — when it scrolls into view, load more.
   const sentinelRef = useRef(null);
 
-  // Three across by default, matching the band on the home page. Read from
-  // storage on mount rather than during render: the server has no localStorage,
-  // and reading it in the initial state would hydrate to different markup.
-  const [columns, setColumns] = useState(3);
+  // 'list' is one lawyer per row, the full horizontal card; 'grid' is two
+  // across in the compact card the home page uses. Read from storage on
+  // mount rather than during render: the server has no localStorage, and
+  // reading it in the initial state would hydrate to different markup.
+  const [view, setView] = useState('list');
 
   useEffect(() => {
-    const saved = Number(window.localStorage.getItem(COLUMNS_KEY));
-    if (saved === 2 || saved === 3) setColumns(saved);
+    const saved = window.localStorage.getItem(VIEW_KEY);
+    if (saved === 'list' || saved === 'grid') setView(saved);
   }, []);
 
-  const chooseColumns = (next) => {
-    setColumns(next);
+  const chooseView = (next) => {
+    setView(next);
     try {
-      window.localStorage.setItem(COLUMNS_KEY, String(next));
+      window.localStorage.setItem(VIEW_KEY, next);
     } catch {
       // Private browsing can refuse to store; the choice still applies here.
     }
@@ -192,7 +209,11 @@ export default function AdvocateListing({
         filters.subService ||
         filters.court ||
         filters.city ||
-        filters.availability
+        filters.availability ||
+        filters.consult ||
+        filters.language ||
+        filters.maxFee ||
+        filters.minRating
     ) ||
     filters.sort !== 'relevance' ||
     // A known location is not a filter until a radius narrows by it — saying
@@ -223,6 +244,33 @@ export default function AdvocateListing({
     if (filters.availability) {
       const wantOnline = filters.availability === 'online';
       filtered = filtered.filter((a) => isOnline(a) === wantOnline);
+    }
+
+    // A way of consulting is offered when there is a rate against it. A
+    // lawyer with no video rate is not a lawyer you can pay to video call.
+    if (filters.consult) {
+      const field = CONSULT_FIELD[filters.consult];
+      if (field) filtered = filtered.filter((a) => Number(a[field]) > 0);
+    }
+
+    if (filters.language) {
+      const want = String(filters.language).toLowerCase();
+      filtered = filtered.filter((a) =>
+        (a.languages || []).some((l) => String(l).toLowerCase() === want)
+      );
+    }
+
+    if (filters.maxFee) {
+      const ceiling = Number(filters.maxFee);
+      filtered = filtered.filter((a) => {
+        const rate = cheapestRate(a);
+        return rate != null && rate <= ceiling;
+      });
+    }
+
+    if (filters.minRating) {
+      const floor = Number(filters.minRating);
+      filtered = filtered.filter((a) => Number(a.rating) >= floor);
     }
 
     // Distance: attach how far each lawyer is from the searcher, then (if a
@@ -278,57 +326,70 @@ export default function AdvocateListing({
     return () => io.disconnect();
   }, [visibleCount, results.length]);
 
-  return (
-    <div className="space-y-6">
-      {showFilters && (
-        <>
-          <ListingFilters
-            value={filters}
-            onChange={onChange}
-            onReset={onReset}
-            hasActiveFilters={hasActiveFilters}
-            elevated={floatFilters}
-            cities={cities}
-            userLocation={userLocation}
-            locationLabel={locationLabel}
-            locating={locating}
-            locationError={locationError}
-            onUseMyLocation={useMyLocation}
-            onClearLocation={clearLocation}
-          />
+  // The city the header line names — whatever the visitor actually narrowed
+  // to, falling back to where they are before saying nothing at all.
+  const scopeCity = filters.city || locationLabel || '';
 
-          <div className="flex items-center justify-between gap-4">
+  return (
+    // Filters beside the results, not above them. A bar across the top hid
+    // every option behind a <select>; a column shows the practice areas and
+    // the languages, which are the two things a visitor scans to decide what
+    // to narrow by. Below lg the column would push the results off screen, so
+    // FilterSidebar collapses itself to a button and a sheet.
+    <div className="lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      {showFilters && (
+        <FilterSidebar
+          value={filters}
+          onChange={onChange}
+          onReset={onReset}
+          hasActiveFilters={hasActiveFilters}
+          cities={cities}
+          advocates={advocates}
+          userLocation={userLocation}
+          locationLabel={locationLabel}
+          locating={locating}
+          locationError={locationError}
+          onUseMyLocation={useMyLocation}
+          onClearLocation={clearLocation}
+        />
+      )}
+
+      <div className="min-w-0 space-y-6">
+      {showFilters && (
+        <div className="mt-4 lg:mt-0">
+          <h2 className="font-display text-xl font-bold text-ink sm:text-[26px]">
+            Find the Right Lawyer Near You
+          </h2>
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-ink/60">
-              <span className="font-semibold text-ink">{results.length}</span>{' '}
-              {pluralize(results.length, 'lawyer').replace(`${results.length} `, '')} found
-              {filters.availability === 'online'
-                ? ' online now'
-                : filters.availability === 'offline'
-                  ? ' offline'
-                  : ''}
+              Showing <span className="font-semibold text-ink">{results.length}</span>{' '}
+              verified {pluralize(results.length, 'lawyer').replace(`${results.length} `, '')}
+              {scopeCity ? ` in ${scopeCity}` : ''}
               {userLocation && filters.radius ? ` within ${filters.radius} km` : ''}
             </p>
 
-            {/* Two across or three. Hidden below `lg`, where the viewport
-                already decides the count and the control would do nothing. */}
+            <div className="flex shrink-0 items-center gap-3">
+            {/* One lawyer per row, or two across. Hidden below sm, where the
+                width decides for itself and the control would do nothing. */}
             <div
               role="group"
-              aria-label="Cards per row"
-              className="hidden shrink-0 items-center gap-0.5 rounded-xl border border-ink/12 bg-surface p-0.5 shadow-sm lg:flex"
+              aria-label="Layout"
+              className="hidden items-center gap-0.5 rounded-xl border border-ink/12 bg-surface p-0.5 shadow-sm sm:flex"
             >
               {[
-                { value: 2, icon: Columns2, label: '2 per row' },
-                { value: 3, icon: Columns3, label: '3 per row' },
+                { value: 'list', icon: Rows3, label: 'One per row' },
+                { value: 'grid', icon: LayoutGrid, label: 'Two per row' },
               ].map(({ value, icon: Icon, label }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => chooseColumns(value)}
-                  aria-pressed={columns === value}
+                  onClick={() => chooseView(value)}
+                  aria-pressed={view === value}
                   title={label}
                   aria-label={label}
-                  className={`grid h-8 w-8 place-items-center rounded-lg transition-colors ${
-                    columns === value
+                  className={`grid h-9 w-9 place-items-center rounded-lg transition-colors ${
+                    view === value
                       ? 'bg-primary text-white'
                       : 'text-ink/45 hover:bg-primary/[0.06] hover:text-primary'
                   }`}
@@ -337,20 +398,46 @@ export default function AdvocateListing({
                 </button>
               ))}
             </div>
-          </div>
-        </>
-      )}
 
+            {/* Sort stays with the results it reorders, not in the sidebar,
+                which is for narrowing. */}
+            <label className="flex shrink-0 items-center gap-2 text-[13px] text-ink/55">
+              Sort by
+              <select
+                value={filters.sort}
+                onChange={(e) => onChange({ sort: e.target.value })}
+                className="h-10 rounded-xl border border-ink/15 bg-surface px-3 pr-8 text-[13px] font-semibold text-ink transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
+              >
+                <option value="relevance">Relevance</option>
+                <option value="rating">Highest rated</option>
+                <option value="experience">Most experienced</option>
+                <option value="fee-low">Rate: low to high</option>
+                <option value="fee-high">Rate: high to low</option>
+              </select>
+            </label>
+            </div>
+          </div>
+        </div>
+      )}
       {results.length > 0 ? (
         <>
           {/* The same card the home page shows, at the density the visitor
               chose — one across on a phone whatever the toggle says. */}
-          <div className={`grid grid-cols-1 gap-4 sm:gap-5 ${COLUMN_CLASSES[columns]}`}>
+          <div className={view === 'grid'
+            ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5'
+            : 'grid grid-cols-1 gap-4 sm:gap-5'}>
             {pageResults.map((advocate) => (
+              view === 'grid' ? (
               <AdvocateGridCard
+                key={advocate.legalCareId || advocate._id || advocate.slug}
+                advocate={advocate}
+              />
+              ) : (
+              <AdvocateListCard
                 key={advocate.id || advocate._id || advocate.slug}
                 advocate={advocate}
               />
+              )
             ))}
           </div>
 
@@ -395,6 +482,7 @@ export default function AdvocateListing({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

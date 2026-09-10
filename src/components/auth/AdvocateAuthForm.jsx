@@ -178,7 +178,7 @@ export default function AdvocateAuthForm({ intent = 'register' }) {
     <form
       onSubmit={onSubmit}
       noValidate
-      className="mx-auto w-full max-w-[27rem] rounded-2xl border border-ink/8 bg-surface p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-16px_rgba(16,24,40,0.18)] sm:p-7"
+      className="w-full"
     >
       <PhaseRail step={step} />
 

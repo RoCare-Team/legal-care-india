@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createMetadata } from '@/lib/metadata';
-import { Container } from '@/components/ui';
+import AuthLayout from '@/components/auth/AuthLayout';
 import UserLoginForm from '@/components/auth/UserLoginForm';
 import { getSession } from '@/lib/auth';
 
@@ -17,10 +17,8 @@ export default async function UserLoginPage() {
   if (session?.role === 'advocate') redirect('/dashboard');
 
   return (
-    <Container className="py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-md">
-        <UserLoginForm />
-      </div>
-    </Container>
+    <AuthLayout imageAlt="">
+      <UserLoginForm />
+    </AuthLayout>
   );
 }

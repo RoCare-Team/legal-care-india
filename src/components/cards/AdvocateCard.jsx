@@ -140,7 +140,7 @@ export default function AdvocateCard({ advocate }) {
     <>
       {/* ══ Phone ══════════════════════════════════════════════════════ */}
       <article
-        className={`flex h-full flex-col rounded-[18px] border ${HAIRLINE} bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-16px_rgba(16,24,40,0.16)] sm:hidden`}
+        className={`flex h-full flex-col rounded-2xl border ${HAIRLINE} bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-16px_rgba(16,24,40,0.16)] sm:hidden`}
       >
         {/* Portrait and identity side by side. Only the name and practice area
             sit in the narrow column beside the photo; everything after it takes

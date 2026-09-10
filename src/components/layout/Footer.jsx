@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Mail, Phone, MapPin, MessageCircle, Twitter, Facebook, Linkedin, Instagram } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import Logo from '@/components/shared/Logo';
+import NewsletterForm from './NewsletterForm';
 import { FOOTER_NAV } from '@/constants/navigation';
 import { SITE, CONTACT, SOCIAL } from '@/constants/site';
 
@@ -29,7 +30,14 @@ export default function Footer() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.25fr_repeat(4,0.85fr)_1.25fr]">
           <div className="max-w-sm">
             <Logo onDark />
-            <p className="mt-4 text-sm leading-relaxed text-white/65">
+            {/* The promise first, in the brand voice, then the plain
+                description under it. The tagline is what the design leads
+                the footer with and it is the one line that says what the
+                site is for rather than what it contains. */}
+            <p className="mt-4 font-display text-[15px] font-semibold leading-snug text-white">
+              Your Legal Help, Just a Click Away.
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-white/65">
               {SITE.description}
             </p>
             {/* The two mailboxes stay with the brand, not in the Contact
@@ -47,6 +55,16 @@ export default function Footer() {
                 <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="break-all">{CONTACT.infoEmail}</span>
               </a>
+            </div>
+
+            {/* Subscribing files a message in the same admin inbox the
+                contact form fills — see NewsletterForm for why. */}
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-white">Subscribe to Our Newsletter</p>
+              <p className="mt-1 text-xs text-white/50">
+                Legal guides and platform news. No spam.
+              </p>
+              <NewsletterForm />
             </div>
           </div>
 
@@ -103,9 +121,14 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-5 sm:flex-row">
-          <p className="text-sm text-white/55">
-            © {year} {SITE.name}. All rights reserved.
-          </p>
+          <div className="flex flex-col items-center gap-1 sm:items-start">
+            <p className="text-sm text-white/55">
+              © {year} {SITE.name}. All rights reserved.
+            </p>
+            <p className="font-display text-[13px] italic text-accent/85">
+              Justice for a Better Tomorrow.
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
               <a

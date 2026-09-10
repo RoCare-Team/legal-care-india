@@ -135,7 +135,7 @@ export default function SearchBar({ className, city: pageCity }) {
           type="submit"
           disabled={searching}
           aria-busy={searching}
-          className="mt-1 h-12 shrink-0 rounded-xl bg-primary px-7 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-70 sm:mt-0 sm:h-[3.25rem]"
+          className="mt-1 h-12 shrink-0 rounded-xl bg-gradient-to-b from-[#E7C766] via-accent to-[#BC9A2E] px-7 text-sm font-semibold text-[#241B02] shadow-gold transition-all hover:brightness-[1.03] disabled:opacity-70 sm:mt-0 sm:h-[3.25rem]"
         >
           Search
         </button>

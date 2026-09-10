@@ -3,10 +3,17 @@ import { Avatar, Badge } from '@/components/ui';
 import Rating from '@/components/shared/Rating';
 import { formatExperience } from '@/utils/formatters';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import Container from '@/components/ui/Container';
+import ProfileConsultPanel from './ProfileConsultPanel';
 
 /**
- * ProfileHeader — cover banner, avatar, identity and headline meta for a
+ * ProfileHeader — identity, headline meta and the consult panel for a
  * lawyer's public profile.
+ *
+ * There is no cover banner any more. It was 190px of gradient or, worse, a
+ * photograph of a courthouse the lawyer has never been to, and it pushed the
+ * one thing a visitor arrives for — what this costs and how to start — below
+ * the fold on a laptop. The panel that answers that now sits beside the name.
  *
  * @param {object} props
  * @param {object} props.advocate  full profile from getAdvocateBySlug
@@ -22,33 +29,20 @@ export default function ProfileHeader({ advocate }) {
   const otherCities = practiceCities.filter((c) => c && c !== city);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-ink/8 bg-surface shadow-card" suppressHydrationWarning>
-      <div
-        className="relative h-36 bg-gradient-to-br from-primary via-primary-dark to-secondary sm:h-48"
-        style={coverImage ? { backgroundImage: `url(${coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
-      >
-        {!coverImage && (
-          <>
-            {/* Soft gold + navy glows for a premium banner */}
-            <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-accent/20 blur-3xl" aria-hidden="true" />
-            <div className="pointer-events-none absolute -bottom-24 -left-10 h-56 w-56 rounded-full bg-primary-light/25 blur-3xl" aria-hidden="true" />
-            {/* Faint scale-of-justice watermark */}
-            <Scale className="pointer-events-none absolute -right-4 top-2 h-40 w-40 rotate-12 text-white/[0.06]" aria-hidden="true" />
-          </>
-        )}
-        <div className="pointer-events-none absolute inset-0 bg-black/10" aria-hidden="true" />
-        {/* Gold hairline at the base of the cover */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" aria-hidden="true" />
-      </div>
-
-      <div className="px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-6">
-        <div className="flex flex-row items-center gap-4 sm:items-end sm:gap-5">
+    <div className="border-b border-ink/8 bg-surface" suppressHydrationWarning>
+      <Container className="py-5 sm:py-6">
+        {/* Identity on the left, the price list and the way in on the right.
+            They stack below lg, where a 352px panel beside the name would
+            leave the name three words wide. */}
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-7">
+        <div className="min-w-0 flex-1">
+        <div className="flex flex-row items-center gap-4 sm:gap-5">
           <Avatar
             src={photo}
             name={name}
             size="xl"
             ring
-            className="h-24 w-24 shadow-card sm:-mt-12 sm:h-28 sm:w-28"
+            className="h-24 w-24 shadow-card sm:h-28 sm:w-28"
           />
           <div className="flex-1 sm:pb-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -78,7 +72,7 @@ export default function ProfileHeader({ advocate }) {
           </div>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-ink/8 pt-5 sm:grid-cols-4">
+        <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4 border-t border-ink/8 pt-5 sm:grid-cols-2 xl:grid-cols-4">
           <Meta icon={MapPin} label="Location" value={`${city}, ${state}`} />
           <Meta icon={Briefcase} label="Experience" value={formatExperience(experience).replace(' experience', '')} />
           <Meta icon={Scale} label="Bar Council No." value={barCouncilNumber} />
@@ -86,7 +80,7 @@ export default function ProfileHeader({ advocate }) {
         </dl>
 
         {(courts.length > 0 || otherCities.length > 0) && (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-5 border-t border-ink/8 pt-5 sm:grid-cols-2">
             {courts.length > 0 && (
               <ChipRow icon={Gavel} label="Practises in">
                 {courts.map((c) => (
@@ -115,14 +109,18 @@ export default function ProfileHeader({ advocate }) {
             {metrics.successRate > 0 && <Stat value={`${metrics.successRate}%`} label="Success Rate" />}
           </div>
         )}
-      </div>
+        </div>
+
+        <ProfileConsultPanel advocate={advocate} />
+        </div>
+      </Container>
     </div>
   );
 }
 
 function ChipRow({ icon: Icon, label, children }) {
   return (
-    <div className="rounded-xl border border-ink/8 bg-muted/40 p-3">
+    <div>
       <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/45">
         <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
         {label}
@@ -134,8 +132,8 @@ function ChipRow({ icon: Icon, label, children }) {
 
 function Meta({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-ink/8 bg-muted/40 p-2.5">
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+    <div className="flex items-center gap-2.5">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/[0.07] text-primary">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <div className="min-w-0">

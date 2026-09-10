@@ -1,6 +1,5 @@
 import { createMetadata } from '@/lib/metadata';
 import Hero from '@/components/home/Hero';
-import PopularLegalAreas from '@/components/home/PopularLegalAreas';
 import AnonymousBand from '@/components/home/AnonymousBand';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
@@ -28,7 +27,7 @@ export default function HomePage() {
     // that stops someone who has just found a lawyer they want to call.
     <>
       <Hero />
-      <PopularLegalAreas />
+      <Stats />
       <FeaturedAdvocates />
       <AnonymousBand />
       <PopularCities />
@@ -37,7 +36,6 @@ export default function HomePage() {
           two pitches in a row read as a page that does not know what it has
           already said. The city pages still use it; they have no such band. */}
       <Categories />
-      <Stats />
       <HowItWorks />
       <Testimonials />
       <CTA />
