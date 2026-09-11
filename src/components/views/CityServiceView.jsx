@@ -11,6 +11,8 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { serviceSchema, breadcrumbSchema, faqSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
+import { sortAdvocates } from '@/lib/advocateSearch';
+import { toCardAdvocate } from '@/lib/advocateCard';
 import {
   cityPath, servicePath, cityServicePath, cityMatterPath,
 } from '@/lib/serviceRoutes';
@@ -74,8 +76,10 @@ export default async function CityServiceView({ city, service }) {
 
   // Lawyers practising this service AND based in this city.
   const allAdvocates = await getAllAdvocates();
-  const advocates = allAdvocates.filter(
-    (a) => a.specializations?.includes(service.name) && a.city === city.name
+  const advocates = sortAdvocates(
+    allAdvocates.filter((a) => a.specializations?.includes(service.name) && a.city === city.name),
+    'relevance',
+    { service: service.name }
   );
   const count = advocates.length;
   const faqs = buildFaqs(service, city, count);
@@ -249,7 +253,10 @@ export default async function CityServiceView({ city, service }) {
           </div>
           <div className="mt-5">
             <AdvocateListing
-              advocates={advocates}
+              advocates={advocates.map(toCardAdvocate)}
+              // Tells the listing what it is narrowed to, so its own
+              // "relevance" order keeps the specialists first.
+              initial={{ service: service.name }}
               showFilters={false}
               emptyTitle={`No ${service.name} lawyers in ${city.name} yet`}
               emptyMessage={`No verified ${service.name} lawyer has registered in ${city.name} so far. Explore ${service.name} lawyers in all cities, or all lawyers in ${city.name}.`}

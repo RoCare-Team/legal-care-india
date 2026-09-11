@@ -244,12 +244,6 @@ export default function AdvocateGridCard({ advocate }) {
       )}
 
       {/* ── Expertise ─────────────────────────────────────────────────── */}
-      {/* Tags on the left, the way in on the right. "View Profile" is a cue,
-          not a control — the whole card already opens the profile — so it is
-          plain text with no face of its own, and it moves with the card's own
-          hover rather than owning one. Both sides are held to a single line:
-          `min-w-0` plus `flex-nowrap` lets the tags shrink instead of wrapping
-          underneath and dragging the cue out of line with them. */}
       {/* Tags on the left, the way in on the right — one line rather than two.
           Given a line of its own the button was right-aligned against an empty
           left half, which is a strip of card doing nothing. `min-w-0` plus
@@ -274,10 +268,10 @@ export default function AdvocateGridCard({ advocate }) {
 
         <Link
           href={profileHref}
-          className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-ink/12 bg-surface px-2.5 text-[12px] font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/[0.04]"
+          className="relative z-10 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/[0.07] px-3 text-[12.5px] font-semibold text-primary shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-white"
         >
           Profile
-          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </div>
       {/* ── Actions ───────────────────────────────────────────────────── */}

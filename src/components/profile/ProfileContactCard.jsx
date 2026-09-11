@@ -1,8 +1,9 @@
 import { Clock } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { SideCard } from './ProfileCoverage';
 
 /**
- * ProfileContactCard — the sticky sidebar beside the profile body.
+ * ProfileContactCard — office hours, in the sidebar beside the profile body.
  *
  * The rates and the consult actions used to live here. They are in the header
  * now, beside the name, where the question they answer is the one a visitor
@@ -22,23 +23,17 @@ export default function ProfileContactCard({ advocate }) {
   if (timing.length === 0) return null;
 
   return (
-    <aside id="contact" className="scroll-mt-24 lg:sticky lg:top-24">
-      <div className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-          Office Timing
-        </h3>
-        <ul className="mt-3 space-y-2 text-sm">
-          {timing.map((t) => (
-            <li key={t.day} className="flex items-center justify-between gap-3">
-              <span className="text-ink/60">{t.day}</span>
-              <span className={cn(`font-medium`, t.open ? `text-ink/80` : `text-ink/45`)}>
-                {t.hours}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </aside>
+    <SideCard icon={Clock} title="Office Timing">
+      <ul className="divide-y divide-ink/[0.06] text-[13.5px]">
+        {timing.map((t) => (
+          <li key={t.day} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+            <span className="text-ink/60">{t.day}</span>
+            <span className={cn('font-semibold', t.open === false ? 'text-ink/40' : 'text-ink/85')}>
+              {t.hours}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </SideCard>
   );
 }

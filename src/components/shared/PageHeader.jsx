@@ -39,9 +39,9 @@ export default function PageHeader({
       <div className="pointer-events-none absolute -top-40 right-0 h-[420px] w-[420px] rounded-full bg-[#D4AF37]/10 blur-[140px]" />
       <div className="pointer-events-none absolute bottom-0 left-10 h-[300px] w-[300px] rounded-full bg-[#34557F]/20 blur-[100px]" />
 
-      <Container className="relative z-10 py-12 sm:py-16">
+      <Container className="relative z-10 py-7 sm:py-9">
         {breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="animate-fade-up mb-5">
+          <nav aria-label="Breadcrumb" className="animate-fade-up mb-3">
             <ol className="flex flex-wrap items-center gap-1 text-sm text-slate-300/70">
               {breadcrumbs.map((crumb, i) => (
                 <li key={crumb.label} className="flex items-center gap-1">
@@ -63,21 +63,21 @@ export default function PageHeader({
           <div>
             {eyebrow && (
               <span
-                className="animate-fade-up mb-4 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 px-3.5 py-1 text-xs font-medium uppercase tracking-wider text-[#D4AF37] backdrop-blur-sm"
+                className="animate-fade-up mb-2.5 inline-flex items-center gap-2 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/10 px-3 py-0.5 text-[11px] font-medium uppercase tracking-wider text-[#D4AF37] backdrop-blur-sm"
                 style={{ animationDelay: '0.05s' }}
               >
                 {eyebrow}
               </span>
             )}
             <h1
-              className="animate-fade-up font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl"
+              className="animate-fade-up font-display text-[28px] font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-[42px]"
               style={{ animationDelay: '0.1s' }}
             >
               {title}
             </h1>
             {subtitle && (
               <p
-                className="animate-fade-up mt-4 max-w-2xl text-base leading-8 text-slate-300"
+                className="animate-fade-up mt-2 max-w-2xl text-[15px] leading-7 text-slate-300"
                 style={{ animationDelay: '0.15s' }}
               >
                 {subtitle}
@@ -87,7 +87,7 @@ export default function PageHeader({
           {actions && <div className="shrink-0">{actions}</div>}
         </div>
 
-        {children && <div className="mt-8">{children}</div>}
+        {children && <div className="mt-6">{children}</div>}
       </Container>
     </section>
   );

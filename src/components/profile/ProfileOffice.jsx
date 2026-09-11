@@ -1,6 +1,7 @@
 import { Building2, MapPin, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui';
 import ProfileSection from './ProfileSection';
+import LazyMap from './LazyMap';
 
 /**
  * ProfileOffice — office name, address and an embedded Google map.
@@ -38,12 +39,9 @@ export default function ProfileOffice({ advocate }) {
         </div>
 
         <div className="overflow-hidden rounded-xl border border-ink/10 lg:col-span-3">
-          <iframe
+          <LazyMap
             title={`Map showing ${office.name}`}
             src={`https://maps.google.com/maps?q=${mapQuery}&z=14&output=embed`}
-            className="h-64 w-full"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
           />
         </div>
       </div>

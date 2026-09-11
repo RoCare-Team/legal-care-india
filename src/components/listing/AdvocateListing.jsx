@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { filterAdvocates, sortAdvocates, planRank } from '@/lib/advocateSearch';
-import { SearchX, Loader2, Rows3, LayoutGrid } from 'lucide-react';
+import { SearchX, Loader2, Rows3, LayoutGrid, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateListCard from '@/components/cards/AdvocateListCard';
 import AdvocateGridCard from '@/components/cards/AdvocateGridCard';
@@ -190,6 +190,18 @@ export default function AdvocateListing({
     );
   }
 
+  // The phone filter sheet. Its button lives in the results toolbar beside
+  // Sort, so the listing owns whether it is open.
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // How many filters are on — the badge on the phone Filters button and the
+  // count in the sheet's title. Sort is not a filter: it hides nobody.
+  const activeCount =
+    [
+      filters.query, filters.service, filters.subService, filters.court, filters.city,
+      filters.availability, filters.consult, filters.language, filters.maxFee, filters.minRating,
+    ].filter((v) => v !== '' && v != null).length + (userLocation && filters.radius ? 1 : 0);
+
   const hasActiveFilters =
     Boolean(
       filters.query ||
@@ -283,7 +295,12 @@ export default function AdvocateListing({
     if (userLocation && filters.sort === 'relevance') {
       return sortByDistance(filtered);
     }
-    return sortAdvocates(filtered, filters.sort);
+    // The practice area or matter the list is narrowed to decides what
+    // "relevance" means — see bySpecialism.
+    return sortAdvocates(filtered, filters.sort, {
+      service: filters.service,
+      subService: filters.subService,
+    });
   }, [advocates, filters, userLocation, presence]);
 
   // Collapse back to the first batch whenever the *filters* change — but not on
@@ -378,12 +395,16 @@ export default function AdvocateListing({
           locationError={locationError}
           onUseMyLocation={useMyLocation}
           onClearLocation={clearLocation}
+          activeCount={activeCount}
+          resultCount={results.length}
+          sheetOpen={sheetOpen}
+          onSheetOpenChange={setSheetOpen}
         />
       )}
 
       <div className="min-w-0 space-y-6">
       {showFilters && (
-        <div className="mt-4 lg:mt-0">
+        <div className="lg:mt-0">
           <h2 className="font-display text-xl font-bold text-ink sm:text-[26px]">
             Find the Right Lawyer Near You
           </h2>
@@ -396,7 +417,24 @@ export default function AdvocateListing({
               {userLocation && filters.radius ? ` within ${filters.radius} km` : ''}
             </p>
 
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="flex w-full items-center gap-2.5 sm:w-auto sm:shrink-0 sm:gap-3">
+            {/* Below lg the filters are a sheet, opened from here — beside
+                Sort, in the results' own toolbar, rather than as a full-width
+                bar above the page title that read as part of the header. */}
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl border border-ink/12 bg-surface px-4 text-[13.5px] font-semibold text-ink shadow-sm transition-colors active:bg-primary/[0.05] sm:flex-none lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-primary" aria-hidden="true" />
+              Filters
+              {activeCount > 0 && (
+                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">
+                  {activeCount}
+                </span>
+              )}
+            </button>
+
             {/* One lawyer per row, or two across. Hidden below sm, where the
                 width decides for itself and the control would do nothing. */}
             <div
@@ -428,14 +466,14 @@ export default function AdvocateListing({
 
             {/* Sort stays with the results it reorders, not in the sidebar,
                 which is for narrowing. */}
-            <div className="flex shrink-0 items-center gap-2 text-[13px] text-ink/55">
-              <span id="listing-sort-label">Sort by</span>
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px] text-ink/55 sm:flex-none sm:shrink-0">
+              <span id="listing-sort-label" className="sr-only sm:not-sr-only">Sort by</span>
               <Select
                 size="sm"
                 value={filters.sort}
                 onChange={(e) => onChange({ sort: e.target.value })}
                 aria-labelledby="listing-sort-label"
-                wrapperClassName="w-[184px]"
+                wrapperClassName="w-full sm:w-[184px]"
                 className="font-semibold"
                 options={[
                   { value: 'relevance', label: 'Relevance' },

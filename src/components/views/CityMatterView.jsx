@@ -10,6 +10,8 @@ import SectionReveal from '@/components/shared/SectionReveal';
 import JsonLd from '@/components/shared/JsonLd';
 import { serviceSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
+import { sortAdvocates } from '@/lib/advocateSearch';
+import { toCardAdvocate } from '@/lib/advocateCard';
 import { getAllCities } from '@/lib/cities';
 import {
   cityPath, matterPath, cityServicePath, cityMatterPath,
@@ -46,8 +48,10 @@ export default async function CityMatterView({ city, service, subService, subSlu
 
   // Lawyers who practise this specific matter AND are based in this city.
   const allAdvocates = await getAllAdvocates();
-  const advocates = allAdvocates.filter(
-    (a) => a.subSpecializations?.includes(subService) && a.city === city.name
+  const advocates = sortAdvocates(
+    allAdvocates.filter((a) => a.subSpecializations?.includes(subService) && a.city === city.name),
+    'relevance',
+    { service: service.name, subService }
   );
 
   // Same matter in other cities; other matters in this city.
@@ -189,7 +193,10 @@ export default async function CityMatterView({ city, service, subService, subSlu
 
           <div className="mt-5">
             <AdvocateListing
-              advocates={advocates}
+              advocates={advocates.map(toCardAdvocate)}
+              // Tells the listing what it is narrowed to, so its own
+              // "relevance" order keeps the specialists first.
+              initial={{ subService }}
               showFilters={false}
               emptyTitle={`No ${subService} lawyers in ${city.name} yet`}
               emptyMessage={`No lawyer has listed ${subService} in ${city.name} so far. Browse ${subService} lawyers in all cities, or explore all lawyers in ${city.name}.`}

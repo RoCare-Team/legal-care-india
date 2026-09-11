@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { MapPin, BadgeCheck, Briefcase, ArrowRight, UserSearch } from 'lucide-react';
+import { MapPin, Check, Briefcase, ArrowRight, UserSearch, Star, Sparkles } from 'lucide-react';
 import { Avatar } from '@/components/ui';
-import Rating from '@/components/shared/Rating';
 import CardContactActions from '@/components/cards/CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 import { cn } from '@/utils/cn';
-import { formatExperience, pluralize } from '@/utils/formatters';
+import { pluralize } from '@/utils/formatters';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
 
@@ -46,7 +45,11 @@ export default function LawyerSidebar({
   return (
     <aside
       className={cn(
-        'lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pr-1',
+        // min-w-0: a grid item's minimum width is its content's by default, and
+        // the swipeable rail's content is every card side by side — so without
+        // it the column grew to the whole rail (1,900px on a 390px phone) and
+        // the page scrolled sideways with the first card cut off.
+        'min-w-0 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:self-start lg:overflow-y-auto lg:pr-1',
         className
       )}
     >
@@ -86,7 +89,7 @@ export default function LawyerSidebar({
             {shown.map((advocate) => (
               <li
                 key={advocate._id}
-                className="w-[82%] shrink-0 snap-start sm:w-[46%] lg:w-auto"
+                className="flex w-[86%] shrink-0 snap-start sm:w-[46%] lg:block lg:w-auto"
               >
                 <CompactLawyer advocate={advocate} />
               </li>
@@ -108,7 +111,7 @@ export default function LawyerSidebar({
   );
 }
 
-/** One condensed lawyer row inside the rail. */
+/** One condensed lawyer card inside the rail. */
 function CompactLawyer({ advocate }) {
   const {
     name, photo, city, state, experience, rating, reviews, verified,
@@ -120,54 +123,84 @@ function CompactLawyer({ advocate }) {
   // costs to reach this lawyer — falling back to the flat office fee.
   const liveRates = [chatRate, audioRate, videoRate].filter((r) => r > 0);
   const cheapestRate = liveRates.length ? Math.min(...liveRates) : 0;
+  const headline = cheapestRate || Number(consultationFee) || 0;
+  const years = Math.max(0, Math.round(Number(experience) || 0));
+  const hasReviews = Number(reviews) > 0 && Number(rating) > 0;
+  const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
 
   return (
-    <div className="rounded-2xl border border-ink/8 bg-surface p-3.5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card-hover">
+    <div className="flex w-full flex-col rounded-2xl border border-ink/8 bg-surface p-3.5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card-hover">
+      {/* Who: a portrait big enough to recognise, and the name beside it on
+          as many as two lines — the rate no longer shares the name's line, so
+          nothing squeezes the name down to its first word. */}
       <div className="flex items-start gap-3">
-        <div className="relative shrink-0">
-          <Avatar src={photo} name={name} size="md" className="rounded-xl !bg-transparent ring-1 ring-ink/10" />
+        <Link href={profileHref} aria-label={`View ${name}'s profile`} className="relative shrink-0">
+          <Avatar
+            src={photo}
+            name={name}
+            size="lg"
+            className="!h-16 !w-16 rounded-xl !bg-slate-100 ring-1 ring-ink/10"
+          />
           {verified && (
             <span
-              className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-surface shadow"
+              className="absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-white ring-2 ring-white"
               aria-label="Verified lawyer"
             >
-              <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+              <Check className="h-3 w-3" strokeWidth={3} />
             </span>
           )}
-        </div>
+        </Link>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="truncate font-display text-sm font-semibold leading-tight text-ink">
+          <Link href={profileHref}>
+            <h3 className="line-clamp-2 break-words text-[15px] font-bold leading-snug text-ink transition-colors hover:text-primary">
               {name}
             </h3>
-            <span className="shrink-0 rounded-full bg-primary/[0.07] px-2 py-0.5 text-[11px] font-semibold text-primary">
-              ₹{cheapestRate || consultationFee}
-              <span className="font-normal text-primary/60">
-                {cheapestRate ? '/min' : ''}
-              </span>
-            </span>
-          </div>
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink/55">
-            <MapPin className="h-3 w-3 shrink-0 text-primary/70" aria-hidden="true" />
-            <span className="truncate">{city}, {state}</span>
+          </Link>
+          <p className="mt-0.5 flex items-center gap-1 text-[12px] text-ink/55">
+            <MapPin className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden="true" />
+            <span className="truncate">{[city, state].filter(Boolean).join(', ')}</span>
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <Rating value={rating} reviews={reviews} size="sm" />
-            <span className="inline-flex items-center gap-1 text-[11px] text-ink/55">
-              <Briefcase className="h-3 w-3 text-primary/70" aria-hidden="true" />
-              {formatExperience(experience)}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <PresenceIndicator id={advocate._id} variant="label" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-ink/[0.05] px-2 py-0.5 text-[11px] font-semibold text-ink/60">
+              <Briefcase className="h-3 w-3 text-accent" aria-hidden="true" />
+              {years}+ yrs
             </span>
-            <PresenceIndicator id={advocate._id} variant="profile" />
           </div>
         </div>
       </div>
 
-      {/* The compact size — this whole card is about the height of three
-          full-size buttons, so the actions have to be scaled to it. */}
-      <div className="mt-2.5 grid grid-cols-3 gap-1.5 border-t border-ink/8 pt-2.5">
+      {/* The two numbers a visitor compares cards by, on one strip: how
+          clients rated them, and what it costs to start. */}
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#F4F7FB] px-3 py-2">
+        {hasReviews ? (
+          <span className="inline-flex items-center gap-1 text-[12.5px]">
+            <Star className="h-3.5 w-3.5 fill-accent text-accent" aria-hidden="true" />
+            <span className="font-bold text-ink">{Number(rating).toFixed(1)}</span>
+            <span className="text-ink/45">({reviews})</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[12px] font-medium text-ink/55">
+            <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            New
+          </span>
+        )}
+        {headline > 0 && (
+          <span className="text-[12px] text-ink/50">
+            {cheapestRate ? 'from ' : ''}
+            <span className="text-[15px] font-bold text-primary">₹{headline.toLocaleString('en-IN')}</span>
+            {cheapestRate ? <span className="text-ink/50">/min</span> : null}
+          </span>
+        )}
+      </div>
+
+      {/* Call, Chat, Video and View Profile, two to a row, in the same colours
+          as the directory's cards — green call, blue chat, violet video — so
+          the three ways in are told apart at a glance. */}
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <CardContactActions
-          variant="compact"
+          variant="quiet"
           contact={contact}
           name={name}
           advocateId={advocate._id}
@@ -175,15 +208,15 @@ function CompactLawyer({ advocate }) {
           videoRate={videoRate}
           audioRate={audioRate}
         />
-      </div>
 
-      <Link
-        href={`/lawyers/${advocateProfilePath(advocate)}`}
-        className="mt-1.5 flex h-8 items-center justify-center gap-1 rounded-lg bg-primary px-3 text-[11px] font-semibold text-white transition-colors hover:bg-primary-dark"
-      >
-        View Profile
-        <ArrowRight className="h-3 w-3" aria-hidden="true" />
-      </Link>
+        <Link
+          href={profileHref}
+          className="flex h-12 items-center justify-center gap-1 rounded-xl border border-primary/30 bg-primary/[0.07] px-2 text-[12.5px] font-semibold text-primary transition-colors hover:border-primary hover:bg-primary hover:text-white"
+        >
+          View Profile
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      </div>
     </div>
   );
 }

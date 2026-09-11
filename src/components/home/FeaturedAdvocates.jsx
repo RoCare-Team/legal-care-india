@@ -2,6 +2,7 @@ import { UserPlus } from 'lucide-react';
 import { Section, Button } from '@/components/ui';
 import AdvocateGrid from './AdvocateGrid';
 import { getAllAdvocates } from '@/lib/advocates';
+import { toCardAdvocate } from '@/lib/advocateCard';
 import { servesCity } from '@/utils/advocateCity';
 
 /**
@@ -36,7 +37,7 @@ export default async function FeaturedAdvocates({ city }) {
           behind an arrow the visitor has to discover. */}
       {advocates.length > 0 ? (
         <AdvocateGrid
-          advocates={advocates}
+          advocates={advocates.map(toCardAdvocate)}
           // The heading names the place, because that is what the band is
           // about. It is also what the online-aware rewrite works on: with
           // lawyers reachable right now it becomes "Top online lawyers in

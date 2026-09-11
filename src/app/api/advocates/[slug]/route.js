@@ -12,7 +12,9 @@ import { resolveAdvocateByParam } from '@/lib/advocates';
  *
  * The record is the one the public page renders: `buildAdvocateProfile` has
  * already run, so the reviews, rates, office and FAQs are the same objects the
- * website shows, and the account's credential is not among them.
+ * website shows, and neither the account's credential nor any other
+ * account-only field (email, login phone, date of birth, wallet) is among them
+ * — `resolveAdvocateByParam` returns the record through `toPublicAdvocate`.
  *
  * Sits beside [slug]/reviews/route.js, and beside the static `nearby` segment
  * — Next matches a literal path segment before a dynamic one, so /nearby still

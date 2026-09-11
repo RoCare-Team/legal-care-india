@@ -12,6 +12,7 @@ import FactStrip from '@/components/views/sections/FactStrip';
 import { WhatLawyerDoes, ProcessSteps, FaqList } from '@/components/views/sections/ContentSections';
 import { serviceSchema, breadcrumbSchema, faqSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
+import { sortAdvocates } from '@/lib/advocateSearch';
 import { getAllCities } from '@/lib/cities';
 import { servicePath, matterPath, cityMatterPath } from '@/lib/serviceRoutes';
 import { getSubServiceLinks } from '@/data/categories';
@@ -53,7 +54,12 @@ export default async function MatterView({ service, subService, subSlug }) {
   // Only lawyers who explicitly listed this matter. A lawyer who did not add it
   // must NOT appear here — no category-wide fallback.
   const allAdvocates = await getAllAdvocates();
-  const advocates = allAdvocates.filter((a) => a.subSpecializations?.includes(subService));
+  // Those who handle little else first — see bySpecialism.
+  const advocates = sortAdvocates(
+    allAdvocates.filter((a) => a.subSpecializations?.includes(subService)),
+    'relevance',
+    { service: service.name, subService }
+  );
 
   const siblings = getSubServiceLinks(service.name).filter((s) => s.slug !== subSlug);
   const faqs = content?.faqs || [];
@@ -103,7 +109,7 @@ export default async function MatterView({ service, subService, subSlug }) {
 
       <Container className="py-10 sm:py-14">
         {/* Content on the left; the lawyer rail pinned alongside it. */}
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
           {/* The lawyer rail leads on a narrow screen. Stacked in source order
               it landed below every word of the page, so the one thing the
               visitor came for was the last thing they could reach. */}

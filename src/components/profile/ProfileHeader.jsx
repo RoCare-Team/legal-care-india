@@ -1,156 +1,218 @@
-import { BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint, Gavel } from 'lucide-react';
-import { Avatar, Badge } from '@/components/ui';
-import Rating from '@/components/shared/Rating';
+import Image from 'next/image';
+import {
+  BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint, Star, Sparkles,
+  Check, Users, TrendingUp, FolderCheck,
+} from 'lucide-react';
 import { formatExperience } from '@/utils/formatters';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 import Container from '@/components/ui/Container';
 import ProfileConsultPanel from './ProfileConsultPanel';
 
+/** Practice areas named in the header before the rest become "+N more". */
+const AREA_LIMIT = 4;
+
 /**
- * ProfileHeader — identity, headline meta and the consult panel for a
- * lawyer's public profile.
+ * ProfileHeader — who the lawyer is, the facts that stand behind that, and the
+ * consult panel, on one band under the navbar.
  *
- * There is no cover banner any more. It was 190px of gradient or, worse, a
- * photograph of a courthouse the lawyer has never been to, and it pushed the
- * one thing a visitor arrives for — what this costs and how to start — below
- * the fold on a laptop. The panel that answers that now sits beside the name.
+ * Two columns: identity and facts on the left, the price list and the way in on
+ * the right, in a card of its own so it reads as the one thing on the page that
+ * is pressed rather than read.
+ *
+ * The courts and the cities a lawyer serves used to sit here too, as two walls
+ * of chips. A lawyer who serves twenty cities pushed their own facts and the
+ * About text half a screen down, so both lists now live beside the body — see
+ * ProfileCoverage.
  *
  * @param {object} props
  * @param {object} props.advocate  full profile from getAdvocateBySlug
  */
 export default function ProfileHeader({ advocate }) {
   const {
-    name, photo, coverImage, city, state, experience, rating, reviews, verified,
-    barCouncilNumber, tagline, languages = [], metrics, legalCareId, _id,
-    courts = [], practiceCities = [],
+    name, photo, city, state, experience, rating, reviews, verified,
+    barCouncilNumber, tagline, languages = [], metrics = {}, legalCareId, _id,
+    designation, specializations = [],
   } = advocate;
 
-  // Cities the lawyer serves, minus the base city (shown separately).
-  const otherCities = practiceCities.filter((c) => c && c !== city);
+  const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
+  const initial = String(name || '').replace(/^Adv\.?\s*/i, '').charAt(0).toUpperCase() || 'A';
+  const hasReviews = Number(reviews) > 0 && Number(rating) > 0;
+
+  // The facts, then the lawyer's own practice figures — only the ones they
+  // actually entered. "0 clients, 0% success" is worse than saying nothing.
+  const facts = [
+    { icon: MapPin, label: 'Location', value: [city, state].filter(Boolean).join(', ') },
+    { icon: Briefcase, label: 'Experience', value: formatExperience(experience).replace(' experience', '') },
+    { icon: Scale, label: 'Bar Council No.', value: barCouncilNumber },
+    { icon: Languages, label: 'Languages', value: languages.join(', ') },
+    metrics.cases > 0 && { icon: FolderCheck, label: 'Cases Handled', value: `${metrics.cases}+` },
+    metrics.clients > 0 && { icon: Users, label: 'Clients Advised', value: `${metrics.clients}+` },
+    metrics.successRate > 0 && { icon: TrendingUp, label: 'Success Rate', value: `${metrics.successRate}%` },
+  ].filter((f) => f && f.value);
 
   return (
-    <div className="border-b border-ink/8 bg-surface" suppressHydrationWarning>
-      <Container className="py-5 sm:py-6">
-        {/* Identity on the left, the price list and the way in on the right.
-            They stack below lg, where a 352px panel beside the name would
-            leave the name three words wide. */}
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:gap-7">
-        <div className="min-w-0 flex-1">
-        <div className="flex flex-row items-center gap-4 sm:gap-5">
-          <Avatar
-            src={photo}
-            name={name}
-            size="xl"
-            ring
-            className="h-24 w-24 shadow-card sm:h-28 sm:w-28"
-          />
-          <div className="flex-1 sm:pb-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-2xl font-semibold text-ink sm:text-3xl">
-                {name}
-              </h1>
-              {verified && (
-                <Badge variant="primary" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
-                  Verified
-                </Badge>
-              )}
-              <PresenceIndicator id={_id} variant="profile" />
+    <div className="relative border-b border-ink/8 bg-surface" suppressHydrationWarning>
+      {/* A wash of the hero's blue-grey behind the top of the band, so the
+          header reads as the start of the page rather than a white slab under
+          a white navbar. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#EEF2F8] to-transparent"
+        aria-hidden="true"
+      />
+
+      <Container className="relative py-6 sm:py-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_430px] xl:gap-10">
+          <div className="min-w-0">
+            <div className="flex items-start gap-4 sm:gap-6">
+              {/* Portrait — a rounded square, not a disc, for the same reason
+                  as the cards: a disc crops the gown away. */}
+              <div className="relative shrink-0">
+                {/* The frame takes the photo's own shape: a fixed height, and
+                    the width the photo needs at that height. Lawyers upload
+                    everything from head shots to campaign posters; a fixed
+                    square either cut the edges off anything that wasn't square
+                    (a poster lost its heading and its name) or, fitted inside
+                    it, left empty strips down both sides. Only a very wide
+                    photo is held to a maximum width and trimmed at its sides. */}
+                {photo ? (
+                  <div className="overflow-hidden rounded-2xl bg-primary/[0.06] shadow-[0_12px_28px_-14px_rgba(30,58,95,0.45)] ring-4 ring-white">
+                    <Image
+                      src={photo}
+                      alt={name}
+                      width={264}
+                      height={264}
+                      priority
+                      className="block h-[112px] w-auto min-w-[64px] max-w-[150px] object-cover sm:h-[160px] sm:min-w-[88px] sm:max-w-[220px]"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid h-[112px] w-[92px] place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/[0.12] to-primary/[0.04] font-display text-4xl font-semibold text-primary/70 shadow-[0_12px_28px_-14px_rgba(30,58,95,0.45)] ring-4 ring-white sm:h-[160px] sm:w-[132px] sm:text-5xl">
+                    {initial}
+                  </div>
+                )}
+                {verified && (
+                  <span
+                    className="absolute -bottom-1.5 -right-1.5 grid h-7 w-7 place-items-center rounded-full bg-emerald-500 text-white shadow-sm ring-[3px] ring-white sm:h-8 sm:w-8"
+                    title="Verified advocate"
+                  >
+                    <Check className="h-4 w-4" strokeWidth={3} aria-label="Verified" />
+                  </span>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 sm:pt-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <h1 className="font-display text-[24px] font-semibold leading-tight text-ink sm:text-[32px]">
+                    {name}
+                  </h1>
+                  <PresenceIndicator id={_id} variant="profile" />
+                </div>
+
+                <p className="mt-1 text-[13.5px] font-semibold text-primary/80 sm:text-[14.5px]">{standing}</p>
+
+                {tagline && (
+                  <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink/60 sm:text-[14.5px]">
+                    {tagline}
+                  </p>
+                )}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {verified && (
+                    <Pill className="bg-emerald-50 text-emerald-700 ring-emerald-200/80">
+                      <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                      Verified Advocate
+                    </Pill>
+                  )}
+                  {/* No row of five grey stars and "0.0 (0)" for a lawyer
+                      nobody has reviewed yet — that reads as a bad score. */}
+                  {hasReviews ? (
+                    <Pill className="bg-amber-50 text-amber-800 ring-amber-200/80">
+                      <Star className="h-3.5 w-3.5 fill-accent text-accent" aria-hidden="true" />
+                      {Number(rating).toFixed(1)}
+                      <span className="font-medium text-amber-800/70">
+                        · {reviews} {Number(reviews) === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </Pill>
+                  ) : (
+                    <Pill className="bg-primary/[0.05] text-primary/80 ring-primary/10">
+                      <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                      New on Justiceland
+                    </Pill>
+                  )}
+                  {legalCareId && (
+                    <Pill className="bg-white font-mono tracking-wide text-ink/60 ring-ink/10" title="Justiceland ID">
+                      <Fingerprint className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                      {legalCareId}
+                    </Pill>
+                  )}
+                </div>
+              </div>
             </div>
-            {tagline && <p className="mt-1 text-sm text-ink/60">{tagline}</p>}
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              <Rating value={rating} reviews={reviews} size="sm" />
-              {legalCareId && (
-                <span
-                  title="Justiceland ID"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary/5 px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-primary ring-1 ring-primary/10"
-                >
-                  <Fingerprint className="h-3.5 w-3.5" aria-hidden="true" />
-                  {legalCareId}
+
+            <dl className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {facts.map((f) => (
+                <Fact key={f.label} {...f} />
+              ))}
+            </dl>
+
+            {/* The practice areas, as the last line of the identity column —
+                what the lawyer does, seen before anyone scrolls to Legal
+                Services, and the line that brings this column down level
+                with the consult card beside it. */}
+            {specializations.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[11px] font-bold uppercase tracking-wide text-ink/40">
+                  Practice areas
                 </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4 border-t border-ink/8 pt-5 sm:grid-cols-2 xl:grid-cols-4">
-          <Meta icon={MapPin} label="Location" value={`${city}, ${state}`} />
-          <Meta icon={Briefcase} label="Experience" value={formatExperience(experience).replace(' experience', '')} />
-          <Meta icon={Scale} label="Bar Council No." value={barCouncilNumber} />
-          <Meta icon={Languages} label="Languages" value={languages.join(', ')} />
-        </dl>
-
-        {(courts.length > 0 || otherCities.length > 0) && (
-          <div className="mt-5 grid gap-5 border-t border-ink/8 pt-5 sm:grid-cols-2">
-            {courts.length > 0 && (
-              <ChipRow icon={Gavel} label="Practises in">
-                {courts.map((c) => (
-                  <span key={c} className="rounded-lg bg-primary/8 px-2.5 py-1 text-xs font-medium text-primary ring-1 ring-primary/10">
-                    {c}
-                  </span>
+                {specializations.slice(0, AREA_LIMIT).map((s) => (
+                  <a
+                    key={s}
+                    href="#legal-services"
+                    className="rounded-full border border-ink/10 bg-white px-3 py-1 text-[12.5px] font-semibold text-ink/75 transition-colors hover:border-primary/40 hover:text-primary"
+                  >
+                    {s}
+                  </a>
                 ))}
-              </ChipRow>
-            )}
-            {otherCities.length > 0 && (
-              <ChipRow icon={MapPin} label="Also works in">
-                {otherCities.map((c) => (
-                  <span key={c} className="rounded-lg bg-accent/10 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-accent/25">
-                    {c}
-                  </span>
-                ))}
-              </ChipRow>
+                {specializations.length > AREA_LIMIT && (
+                  <a
+                    href="#legal-services"
+                    className="rounded-full bg-primary/[0.06] px-3 py-1 text-[12.5px] font-semibold text-primary hover:bg-primary/10"
+                  >
+                    +{specializations.length - AREA_LIMIT} more
+                  </a>
+                )}
+              </div>
             )}
           </div>
-        )}
 
-        {metrics && (metrics.cases > 0 || metrics.clients > 0 || metrics.successRate > 0) && (
-          <div className="mt-5 grid grid-cols-3 gap-3">
-            {metrics.cases > 0 && <Stat value={`${metrics.cases}+`} label="Cases Handled" />}
-            {metrics.clients > 0 && <Stat value={`${metrics.clients}+`} label="Clients Advised" />}
-            {metrics.successRate > 0 && <Stat value={`${metrics.successRate}%`} label="Success Rate" />}
-          </div>
-        )}
-        </div>
-
-        <ProfileConsultPanel advocate={advocate} />
+          <ProfileConsultPanel advocate={advocate} />
         </div>
       </Container>
     </div>
   );
 }
 
-function ChipRow({ icon: Icon, label, children }) {
+function Pill({ className = '', title, children }) {
   return (
-    <div>
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink/45">
-        <Icon className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-        {label}
-      </p>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-    </div>
+    <span
+      title={title}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ring-1 ${className}`}
+    >
+      {children}
+    </span>
   );
 }
 
-function Meta({ icon: Icon, label, value }) {
+function Fact({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/[0.07] text-primary">
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-ink/[0.07] bg-white/80 px-3 py-2.5 shadow-[0_1px_2px_rgba(30,58,95,0.04)]">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/[0.07] text-primary">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <dt className="text-[11px] uppercase tracking-wide text-ink/40">{label}</dt>
-        <dd className="text-sm font-semibold leading-snug text-ink/85">{value || '—'}</dd>
+        <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-ink/40">{label}</dt>
+        <dd className="break-words text-[13.5px] font-semibold leading-snug text-ink/85">{value}</dd>
       </div>
-    </div>
-  );
-}
-
-function Stat({ value, label }) {
-  return (
-    <div className="group relative overflow-hidden rounded-xl border border-ink/8 bg-gradient-to-b from-muted/50 to-surface px-3 py-4 text-center shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-card">
-      {/* Gold top accent */}
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-accent/70 to-transparent opacity-70" aria-hidden="true" />
-      <p className="font-display text-2xl font-bold text-primary">{value}</p>
-      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-ink/50">{label}</p>
     </div>
   );
 }

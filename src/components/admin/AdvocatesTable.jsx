@@ -7,6 +7,7 @@ import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, Eye
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
+import ClientPager, { useClientPages } from '@/components/admin/ClientPager';
 import { formatDate } from '@/utils/formatters';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 
@@ -377,17 +378,28 @@ export default function AdvocatesTable({ advocates }) {
   const active =
     q || status !== 'all' || verification !== 'all' || state !== 'all' || field !== 'all';
 
+  // Fifty to a page; a new search or filter starts again at page one.
+  const { page, totalPages, pageRows, goToPage, topRef } = useClientPages(filtered, [
+    q, status, verification, state, field,
+  ]);
+
   // Selection is scoped to what the filters are showing. "Select all" on a
   // page filtered to Pending has to mean those pending lawyers and nothing
   // else — a tick box that quietly also published the rows you had filtered
   // out would be the worst kind of bulk action.
-  const visibleIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
+  //
+  // The header tick covers the page on screen, since that is what "all" can be
+  // seen to mean. Ticks survive a page change, so an admin can tick through
+  // several pages and act on all of them at once — the bulk bar counts every
+  // ticked lawyer the filters still show, on any page.
+  const visibleIds = useMemo(() => pageRows.map((a) => a.id), [pageRows]);
+  const filteredIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
   const selectedVisible = useMemo(
-    () => visibleIds.filter((id) => selected.has(id)),
-    [visibleIds, selected]
+    () => filteredIds.filter((id) => selected.has(id)),
+    [filteredIds, selected]
   );
-  const allVisibleTicked =
-    visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+  const tickedOnPage = visibleIds.filter((id) => selected.has(id)).length;
+  const allVisibleTicked = visibleIds.length > 0 && tickedOnPage === visibleIds.length;
 
   const toggleOne = (id, on) =>
     setSelected((prev) => {
@@ -413,9 +425,9 @@ export default function AdvocatesTable({ advocates }) {
       label: (
         <Tick
           checked={allVisibleTicked}
-          indeterminate={selectedVisible.length > 0}
+          indeterminate={tickedOnPage > 0}
           onChange={toggleAllVisible}
-          label={allVisibleTicked ? 'Clear selection' : 'Select all shown'}
+          label={allVisibleTicked ? 'Clear this page' : 'Select all on this page'}
         />
       ),
       className: 'w-10',
@@ -547,7 +559,7 @@ export default function AdvocatesTable({ advocates }) {
   ];
 
   return (
-    <div>
+    <div ref={topRef} className="scroll-mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <SearchBox value={q} onChange={setQ} placeholder="Search name, email, phone, ID…" />
         <FilterSelect
@@ -597,8 +609,16 @@ export default function AdvocatesTable({ advocates }) {
 
       <DataTable
         columns={columns}
-        rows={filtered}
+        rows={pageRows}
         empty={active ? 'No lawyers match your search or filters.' : 'No lawyers registered yet.'}
+      />
+
+      <ClientPager
+        page={page}
+        totalPages={totalPages}
+        total={filtered.length}
+        onPage={goToPage}
+        label="Lawyers pages"
       />
     </div>
   );

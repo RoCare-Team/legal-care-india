@@ -6,6 +6,7 @@ import { FaqList } from '@/components/views/sections/ContentSections';
 import { SeoSection, LinkCardGrid, StepCards } from '@/components/shared/SeoSection';
 import { breadcrumbSchema, collectionSchema, faqSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
+import { toCardAdvocate } from '@/lib/advocateCard';
 import { getServiceByAnySlug, getSubServiceByAnySlug } from '@/data/categories';
 import { getAllCities } from '@/lib/cities';
 
@@ -170,7 +171,7 @@ export default async function AdvocatesPage({ searchParams }) {
           filters are a column beside the results now, and a sidebar hoisted
           over the hero would have its first group cut off by it. */}
       <Container size="wide" className="relative z-20 pb-10 pt-4 sm:pb-12 sm:pt-5">
-        <AdvocateListing advocates={advocates} initial={initial} cities={cities} />
+        <AdvocateListing advocates={advocates.map(toCardAdvocate)} initial={initial} cities={cities} />
 
         {/* Below the list, because the list is what the visitor came for — but
             on the page, because a directory with no explanation of how to read

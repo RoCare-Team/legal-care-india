@@ -57,8 +57,12 @@ export function LinkCardGrid({ items = [], columns = 2 }) {
     <ul
       className={`mt-7 grid gap-3 ${columns === 3 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}
     >
+      {/* Keyed on the link and the title together: two cards can rightly point
+          at the same page (the cities page sends two of its three to
+          /lawyers), and a key of the link alone made React warn and risk
+          mixing the two cards up. */}
       {items.map(({ href, title, text }) => (
-        <li key={href}>
+        <li key={`${href}::${title}`}>
           <Link
             href={href}
             className="group block h-full rounded-2xl border border-ink/8 bg-surface p-5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-card-hover"

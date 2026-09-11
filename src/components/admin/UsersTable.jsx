@@ -7,6 +7,7 @@ import { Phone, Mail, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox } from '@/components/admin/TableControls';
+import ClientPager, { useClientPages } from '@/components/admin/ClientPager';
 import { formatDate } from '@/utils/formatters';
 
 /** Destructive delete, in its own column away from the Login/View controls. */
@@ -64,6 +65,9 @@ export default function UsersTable({ users }) {
 
   const active = Boolean(q);
 
+  // Fifty to a page; a new search starts again at page one.
+  const { page, totalPages, pageRows, goToPage, topRef } = useClientPages(filtered, [q]);
+
   const columns = [
     {
       key: 'name',
@@ -118,7 +122,7 @@ export default function UsersTable({ users }) {
   ];
 
   return (
-    <div>
+    <div ref={topRef} className="scroll-mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <SearchBox value={q} onChange={setQ} placeholder="Search name, email, phone…" />
         <span className="ml-auto text-sm text-ink/50">
@@ -128,8 +132,16 @@ export default function UsersTable({ users }) {
 
       <DataTable
         columns={columns}
-        rows={filtered}
+        rows={pageRows}
         empty={active ? 'No users match your search or filters.' : 'No users registered yet.'}
+      />
+
+      <ClientPager
+        page={page}
+        totalPages={totalPages}
+        total={filtered.length}
+        onPage={goToPage}
+        label="Users pages"
       />
     </div>
   );

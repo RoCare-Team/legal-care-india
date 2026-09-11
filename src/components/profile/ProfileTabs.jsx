@@ -62,15 +62,15 @@ export default function ProfileTabs({ tabs }) {
             href={`#${id}`}
             aria-current={active === id ? 'true' : undefined}
             className={cn(
-              'relative shrink-0 whitespace-nowrap px-3.5 py-3 text-[13.5px] font-semibold transition-colors',
-              active === id ? 'text-primary' : 'text-ink/55 hover:text-ink'
+              'relative shrink-0 whitespace-nowrap px-3.5 py-3.5 text-[14px] font-semibold transition-colors',
+              active === id ? 'text-primary' : 'text-ink/50 hover:text-ink'
             )}
           >
             {label}
             <span
               className={cn(
-                'absolute inset-x-2.5 bottom-0 h-[2.5px] rounded-full transition-colors',
-                active === id ? 'bg-primary' : 'bg-transparent'
+                'absolute inset-x-3 bottom-0 h-[3px] rounded-t-full transition-colors',
+                active === id ? 'bg-accent' : 'bg-transparent'
               )}
               aria-hidden="true"
             />

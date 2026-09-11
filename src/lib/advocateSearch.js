@@ -1,5 +1,6 @@
 import { servesCity } from '@/utils/advocateCity';
 import { activePlan } from '@/constants/membershipPlans';
+import { getSubServices } from '@/data/categories';
 
 /**
  * The directory's filter and sort rules, in one place.
@@ -106,6 +107,53 @@ export function planRank(advocate) {
 }
 
 /**
+ * How squarely a lawyer belongs to a practice area or a matter, as a comparator
+ * — negative when `a` is the better fit, positive when `b` is.
+ *
+ * Nearly every lawyer here ticks several areas: Criminal Law is on 351 of 391
+ * profiles and Family Law on 353. Filtering alone therefore gave every category
+ * page almost the same list, and ordered newest-first it gave them literally
+ * the same top six — the Criminal Law and Family Law pages opened on the same
+ * people. What tells a criminal lawyer from a lawyer who also ticked Criminal
+ * Law is what else they chose:
+ *
+ *  - for a practice area, the share of their specific matters that belong to
+ *    it — ten criminal matters out of ten is a criminal lawyer, three out of
+ *    forty is not — then the fewer areas overall, then the more matters in it;
+ *  - for a single matter, the fewer areas and then the fewer matters overall,
+ *    since everyone in that list has the matter and the question is who has
+ *    little else.
+ *
+ * The order of `specializations` is not used: it follows the order of the
+ * registration form's checkboxes, not the lawyer's own emphasis, which is why
+ * Civil Law is "first" on 236 profiles.
+ *
+ * @param {{service?: string, subService?: string}} [context]
+ * @returns {(a: object, b: object) => number}
+ */
+export function bySpecialism({ service, subService } = {}) {
+  if (subService) {
+    return (a, b) =>
+      (a.specializations?.length || 0) - (b.specializations?.length || 0) ||
+      (a.subSpecializations?.length || 0) - (b.subSpecializations?.length || 0);
+  }
+  if (service) {
+    const matters = new Set(getSubServices(service));
+    const fit = (x) => {
+      const subs = x.subSpecializations || [];
+      const inArea = subs.filter((s) => matters.has(s)).length;
+      return { share: subs.length ? inArea / subs.length : 0, inArea, areas: x.specializations?.length || 0 };
+    };
+    return (a, b) => {
+      const A = fit(a);
+      const B = fit(b);
+      return B.share - A.share || A.areas - B.areas || B.inArea - A.inArea;
+    };
+  }
+  return () => 0;
+}
+
+/**
  * Order a copy of the list.
  *
  * Membership comes first, always: Premium above Professional above Starter,
@@ -124,12 +172,16 @@ export function planRank(advocate) {
  *
  * "Relevance" is rating × reviews: a lawyer with 4.9 from forty clients is a
  * better answer than one with a lone five-star review, and sorting on the
- * average alone puts them the other way round.
+ * average alone puts them the other way round. When the list is narrowed to a
+ * practice area or a matter, relevance first means fit — see `bySpecialism` —
+ * and rating × reviews then breaks ties.
  *
  * @param {Array} list
  * @param {string} sort  one of ADVOCATE_SORTS
+ * @param {{service?: string, subService?: string}} [context]  what the list is narrowed to
  */
-export function sortAdvocates(list, sort) {
+export function sortAdvocates(list, sort, context = {}) {
+  const specialism = bySpecialism(context);
   // Within a tier. Returns 0 for "these two are equally good by this sort",
   // which leaves their existing order alone.
   const within = (a, b) => {
@@ -143,7 +195,7 @@ export function sortAdvocates(list, sort) {
       case 'fee-high':
         return b.consultationFee - a.consultationFee;
       default:
-        return b.rating * b.reviews - a.rating * a.reviews;
+        return specialism(a, b) || b.rating * b.reviews - a.rating * a.reviews;
     }
   };
 

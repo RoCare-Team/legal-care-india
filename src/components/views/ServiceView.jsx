@@ -13,6 +13,7 @@ import {
 } from '@/components/views/sections/ContentSections';
 import { serviceSchema, breadcrumbSchema, faqSchema } from '@/lib/schema';
 import { getAllAdvocates } from '@/lib/advocates';
+import { sortAdvocates } from '@/lib/advocateSearch';
 import { servicePath, matterPath } from '@/lib/serviceRoutes';
 import { getSubServiceLinks, CATEGORIES } from '@/data/categories';
 import { getServiceContent } from '@/data/serviceContent';
@@ -70,7 +71,13 @@ export default async function ServiceView({ service }) {
 
   // Honest counts, straight from registered profiles — no marketing figures.
   const allAdvocates = await getAllAdvocates();
-  const advocates = allAdvocates.filter((a) => a.specializations?.includes(service.name));
+  // Specialists first. Most lawyers list several areas, so filtering alone gave
+  // every practice-area page nearly the same lawyers in the same order.
+  const advocates = sortAdvocates(
+    allAdvocates.filter((a) => a.specializations?.includes(service.name)),
+    'relevance',
+    { service: service.name }
+  );
   const countFor = (matter) =>
     allAdvocates.filter((a) => a.subSpecializations?.includes(matter.name)).length;
 
@@ -103,7 +110,7 @@ export default async function ServiceView({ service }) {
 
       <Container className="py-10 sm:py-14">
         {/* Content on the left; the lawyer rail pinned alongside it. */}
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(0,1fr)_26rem]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
           {/* The lawyer rail leads on a narrow screen. Stacked in source order
               it landed below every word of the page, so the one thing the
               visitor came for was the last thing they could reach. */}

@@ -14,7 +14,9 @@ import Advocate from '@/models/Advocate';
  * over HTTP — the same `getAllAdvocates()` read behind the same tag cache, and
  * the same filter and sort rules from lib/advocateSearch that the web listing
  * runs. A query typed here and the same query typed on /lawyers return the
- * same lawyers in the same order.
+ * same lawyers in the same order. The rows are public profiles: account-only
+ * fields (email, login phone, date of birth, wallet) were removed by
+ * `getAllAdvocates` before they reach this route.
  *
  * Query: q, city, service, subService, court, language, minExperience, maxFee,
  * verified, availability, sort, page, perPage
@@ -92,7 +94,7 @@ export async function GET(request) {
       rows = rows.filter((a) => online.has(String(a._id)) === want);
     }
 
-    rows = sortAdvocates(rows, sort);
+    rows = sortAdvocates(rows, sort, { service, subService });
 
     const total = rows.length;
     const start = (page - 1) * perPage;

@@ -5,6 +5,7 @@ import {
   resolveAdvocateByParam,
   getRelatedAdvocates,
   getAllAdvocateParams,
+  advocatePhotoUrl,
 } from '@/lib/advocates';
 import AdvocateProfileBody from '@/components/profile/AdvocateProfileBody';
 
@@ -29,6 +30,35 @@ export async function generateMetadata({ params }) {
     path: `/lawyers/${advocate.profilePath}`,
     keywords: [`lawyer in ${advocate.city}`, advocate.legalCareId, ...(advocate.specializations || [])],
   });
+}
+
+/**
+ * The profile with its stored images swapped for the URLs that serve them.
+ *
+ * A lawyer's photo and office gallery are kept in the database as base64 data
+ * URIs. Rendered as they are, every one of them was written into the page's
+ * HTML, and again into the data React hydrates from — a profile with a photo
+ * and two office pictures came to 2.3 MB before anything could be shown, which
+ * on a phone is most of the wait. The photo and gallery routes serve the same
+ * bytes as separate, cacheable images that load after the page.
+ *
+ * The cover image is dropped outright: the profile no longer shows one.
+ *
+ * Only for this public page. The admin preview renders unapproved profiles,
+ * whose images those routes rightly refuse to serve, so it keeps the inline
+ * data.
+ */
+function withImageUrls(advocate) {
+  const inline = (value) => typeof value === 'string' && value.startsWith('data:');
+  const id = String(advocate._id);
+  return {
+    ...advocate,
+    photo: inline(advocate.photo) ? advocatePhotoUrl(id) : advocate.photo,
+    coverImage: inline(advocate.coverImage) ? '' : advocate.coverImage,
+    gallery: (advocate.gallery || []).map((item, i) =>
+      item && inline(item.url) ? { ...item, url: `/api/advocates/${id}/gallery/${i}` } : item
+    ),
+  };
 }
 
 /** JSON-LD structured data for richer search results. */
@@ -111,15 +141,16 @@ export default async function AdvocateProfilePage({ params }) {
   }
 
   const related = getRelatedAdvocates(advocate, 3);
+  const profile = withImageUrls(advocate);
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSchema(advocate)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildSchema(profile)) }}
       />
 
-      <AdvocateProfileBody advocate={advocate} related={related} />
+      <AdvocateProfileBody advocate={profile} related={related} />
     </>
   );
 }

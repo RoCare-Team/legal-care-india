@@ -245,6 +245,48 @@ export function buildAdvocateProfile(a) {
 }
 
 /**
+ * Fields that belong to the account, not to the public profile.
+ *
+ * `buildAdvocateProfile` spreads the whole document, and it serves two very
+ * different readers: the lawyer's own dashboard, which needs their email, wallet
+ * and plan payments, and every public page and API, which must never show them.
+ * The directory used to publish all of it — every lawyer's email, login phone,
+ * date of birth, home address, wallet balance and transactions, and the hash of
+ * their password-reset code — inside the HTML of /lawyers, readable with View
+ * Source. The public readers now run their records through
+ * `toPublicAdvocate`; `getAdvocateById`, which only the lawyer's own
+ * dashboard and the admin use, does not.
+ *
+ * `contact` stays: it is the phone, WhatsApp and email the lawyer chose to
+ * publish on their profile, which is a different thing from the phone they log
+ * in with.
+ */
+const PRIVATE_FIELDS = [
+  'email',
+  'phone',
+  'phoneNormalized',
+  'resetOtpHash',
+  'resetOtpExpires',
+  'resetOtpAttempts',
+  'dob',
+  'address',
+  'pincode',
+  'residence',
+  'walletBalance',
+  'walletTransactions',
+  'planPayments',
+  '__v',
+];
+
+/** A profile with the account-only fields removed. Never mutates its input. */
+export function toPublicAdvocate(profile) {
+  if (!profile) return profile;
+  const out = { ...profile };
+  for (const key of PRIVATE_FIELDS) delete out[key];
+  return out;
+}
+
+/**
  * The cached readers below deliberately DO NOT swallow DB errors: if the read
  * throws (e.g. MongoDB is temporarily unreachable), unstable_cache does not
  * cache anything and rethrows. The thin public wrappers catch that and return
@@ -313,12 +355,12 @@ const _getAllAdvocates = unstable_cache(
     ]);
 
     return rows.map((r) => {
-      const profile = buildAdvocateProfile(serialize(r));
+      const profile = toPublicAdvocate(buildAdvocateProfile(serialize(r)));
       profile.photo = r.hasPhoto ? advocatePhotoUrl(r._id) : '';
       return profile;
     });
   },
-  ['all-advocates'],
+  ['all-advocates-public-v2'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -353,9 +395,9 @@ const _getAdvocateBySlug = unstable_cache(
   async (slug) => {
     await connectDB();
     const advocate = await Advocate.findOne({ slug }).lean();
-    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
+    return advocate ? toPublicAdvocate(buildAdvocateProfile(serialize(advocate))) : null;
   },
-  ['advocate-by-slug'],
+  ['advocate-by-slug-public-v2'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -369,7 +411,7 @@ export async function getAdvocateBySlug(slug) {
   } catch (err) {
     console.warn('getAdvocateBySlug: MongoDB unavailable, falling back to static record', err);
     const base = ADVOCATES.find((a) => a.slug === slug);
-    return base ? buildAdvocateProfile(base) : null;
+    return base ? toPublicAdvocate(buildAdvocateProfile(base)) : null;
   }
 }
 
@@ -377,9 +419,9 @@ const _getAdvocateByLegalCareId = unstable_cache(
   async (legalCareId) => {
     await connectDB();
     const advocate = await Advocate.findOne({ legalCareId }).lean();
-    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
+    return advocate ? toPublicAdvocate(buildAdvocateProfile(serialize(advocate))) : null;
   },
-  ['advocate-by-lci'],
+  ['advocate-by-lci-public-v2'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -390,7 +432,7 @@ export async function getAdvocateByLegalCareId(legalCareId) {
   } catch (err) {
     console.warn('getAdvocateByLegalCareId: MongoDB unavailable', err);
     const base = ADVOCATES.find((a) => a.legalCareId === legalCareId);
-    return base ? buildAdvocateProfile(base) : null;
+    return base ? toPublicAdvocate(buildAdvocateProfile(base)) : null;
   }
 }
 
@@ -428,9 +470,9 @@ const _getAdvocateByLegacyId = unstable_cache(
   async (legacyLegalCareId) => {
     await connectDB();
     const advocate = await Advocate.findOne({ legacyLegalCareId }).lean();
-    return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
+    return advocate ? toPublicAdvocate(buildAdvocateProfile(serialize(advocate))) : null;
   },
-  ['advocate-by-legacy-lci'],
+  ['advocate-by-legacy-lci-public-v2'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
