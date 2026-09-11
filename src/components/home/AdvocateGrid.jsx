@@ -8,6 +8,7 @@ import { advocateRates } from '@/constants/callRates';
 import { planRank } from '@/lib/advocateSearch';
 import { useLocation } from '@/components/location/LocationProvider';
 import { usePresence } from '@/components/consultation/PresenceProvider';
+import Select from '@/components/ui/Select';
 
 /**
  * Sort orders offered here, in the order they are shown. The same ones the
@@ -403,31 +404,17 @@ export default function AdvocateGrid({
 
         <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-2.5">
           {showSort && (
-            <label className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-ink/12 bg-surface pl-3 pr-1 shadow-sm transition-colors focus-within:border-primary hover:border-ink/25">
-              <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-ink/40" aria-hidden="true" />
-              <span className="sr-only">Sort lawyers by</span>
-              {/* A bare native select rather than the themed one: inside this
-                  pill it supplies only the menu, so it carries no border, no
-                  height and no background of its own. */}
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="h-full cursor-pointer appearance-none bg-transparent pr-6 text-[13px] font-semibold text-ink focus:outline-none"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2.5'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3e%3c/svg%3e\")",
-                  backgroundPosition: 'right 0.4rem center',
-                  backgroundSize: '0.85rem',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              >
-                {SORTS.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              bare
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              options={SORTS}
+              aria-label="Sort lawyers by"
+              leftIcon={<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-ink/40" aria-hidden="true" />}
+              wrapperClassName="shrink-0"
+              className="h-9 gap-1.5 rounded-xl border border-ink/12 bg-surface pl-3 pr-8 text-[13px] font-semibold text-ink shadow-sm hover:border-ink/25 focus-visible:border-primary"
+              chevronClassName="right-2.5 h-3.5 w-3.5"
+            />
           )}
 
           {/* The way out and the arrows, as one group rather than as loose

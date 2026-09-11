@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { servesCity } from '@/utils/advocateCity';
-import { filterAdvocates, sortAdvocates } from '@/lib/advocateSearch';
+import { filterAdvocates, sortAdvocates, planRank } from '@/lib/advocateSearch';
 import { SearchX, Loader2, Rows3, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui';
 import AdvocateListCard from '@/components/cards/AdvocateListCard';
@@ -12,6 +11,7 @@ import { usePresence } from '@/components/consultation/PresenceProvider';
 import { useLocation } from '@/components/location/LocationProvider';
 import { pluralize } from '@/utils/formatters';
 import { distanceKm } from '@/utils/distance';
+import Select from '@/components/ui/Select';
 
 /**
  * AdvocateListing — client-side filterable directory grid.
@@ -66,11 +66,14 @@ function cheapestRate(a) {
 
 /** Nearest-first, keeping lawyers without a known distance at the end. */
 function sortByDistance(list) {
-  return [...list].sort((a, b) => {
+  // Paid plans still lead, as in every other sort; distance orders within them.
+  const byDistance = (a, b) => {
+    if (a._distance == null && b._distance == null) return 0;
     if (a._distance == null) return 1;
     if (b._distance == null) return -1;
     return a._distance - b._distance;
-  });
+  };
+  return [...list].sort((a, b) => planRank(b) - planRank(a) || byDistance(a, b));
 }
 
 /** Where the chosen layout is kept between visits. */
@@ -129,20 +132,18 @@ export default function AdvocateListing({
   const [locationError, setLocationError] = useState('');
 
   // The location picked in the header — or detected on arrival, when the
-  // visitor allowed the browser's prompt — sets the distances the cards show,
-  // orders the list nearest-first, and narrows it to the visitor's own city.
+  // visitor allowed the browser's prompt — sets the distances the cards show
+  // and orders the list nearest-first. It does not narrow the list.
   //
-  // That last step is deliberately conditional. An earlier version arrived with
-  // a 100 km radius already applied, which met someone landing from Gurgaon
-  // with "0 lawyers found within 100 km" — a filter they never set, hiding
-  // every lawyer on the site. So the city is only pre-selected when it still
-  // leaves lawyers on screen, and it goes into the City dropdown as an ordinary
-  // filter with a Clear beside it, not into a rule the visitor cannot see.
+  // It used to: the visitor's own city was pre-selected in the City filter, so
+  // someone in Gurgaon opened "Find Lawyers" to 9 lawyers out of nearly 400 and
+  // took that for the whole directory. The directory is the whole directory;
+  // the nearby lawyers are simply at the top, and the City filter is there for
+  // anyone who does want to narrow. A city carried in from the URL
+  // (/lawyers?city=jaipur, or a city page) still arrives as a filter, because
+  // there the visitor asked for it.
   const { location: pickedLocation } = useLocation();
   const appliedPickedRef = useRef('');
-  // A city carried in from the URL (/lawyers?city=jaipur, or a city page) is
-  // the visitor's own request and outranks wherever their device says they are.
-  const urlCityRef = useRef(Boolean(initial.city));
 
   useEffect(() => {
     if (!pickedLocation) return;
@@ -152,20 +153,7 @@ export default function AdvocateListing({
     setUserLocation({ lat: pickedLocation.lat, lng: pickedLocation.lng });
     setLocationLabel(pickedLocation.label || 'Your location');
     setLocationError('');
-
-    // Narrowing needs a filter bar to undo it in, and a city nobody asked for.
-    if (!showFilters || urlCityRef.current) return;
-    // The town first, then the state — the reverse geocoder leaves `city` empty
-    // for a union territory, where "Delhi" only ever comes back as the state.
-    // Whichever actually has lawyers wins; if neither does, nothing is applied
-    // and the directory stays whole, merely reordered nearest-first.
-    const cityWithLawyers = [pickedLocation.city, pickedLocation.state].find(
-      (name) => name && advocates.some((a) => servesCity(a, name))
-    );
-    if (cityWithLawyers) {
-      setFilters((prev) => (prev.city ? prev : { ...prev, city: cityWithLawyers }));
-    }
-  }, [pickedLocation, advocates, showFilters]);
+  }, [pickedLocation]);
 
   const onChange = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
   const onReset = () => {
@@ -308,27 +296,66 @@ export default function AdvocateListing({
   const pageResults = results.slice(0, visibleCount);
   const hasMore = visibleCount < results.length;
 
-  // Reveal the next batch as the sentinel nears the viewport. Re-attaches on
-  // every change to visibleCount/length so it keeps firing while the sentinel
-  // stays in view (a long screen can swallow several batches at once).
+  // Reveal the next batch as the sentinel nears the viewport — or once it is
+  // already behind it. An IntersectionObserver alone only reports a *change*
+  // in intersection, so a fast fling (or the footer's height on a phone) could
+  // carry the zero-height sentinel from below the screen to above it in one
+  // frame; it never "intersected", nothing fired, and the list stopped at the
+  // first batch for good. The scroll check catches exactly that case.
+  // Re-attaches on every change to visibleCount/length so it keeps firing
+  // while the sentinel stays in view (a long screen can swallow several
+  // batches at once).
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || visibleCount >= results.length) return undefined;
+
+    const LOOKAHEAD = 1200;
+    let done = false;
+    const loadMore = () => {
+      if (done) return;
+      done = true;
+      setVisibleCount((c) => Math.min(c + BATCH_SIZE, results.length));
+    };
+    const check = () => {
+      if (el.getBoundingClientRect().top < window.innerHeight + LOOKAHEAD) loadMore();
+    };
+
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((c) => Math.min(c + BATCH_SIZE, results.length));
-        }
+        if (entries[0].isIntersecting) loadMore();
       },
-      { rootMargin: '400px' }
+      { rootMargin: `${LOOKAHEAD}px 0px` }
     );
     io.observe(el);
-    return () => io.disconnect();
+
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        check();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    // On attach, only fill a tall screen: if the sentinel is already behind the
+    // viewport (the visitor is down at the footer), wait for them to scroll
+    // rather than chaining through every batch in one go.
+    if (el.getBoundingClientRect().top >= 0) check();
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [visibleCount, results.length]);
 
-  // The city the header line names — whatever the visitor actually narrowed
-  // to, falling back to where they are before saying nothing at all.
-  const scopeCity = filters.city || locationLabel || '';
+  // The place the header line names. Only a place the list is actually
+  // narrowed to: the visitor's own city, or a radius around where they are.
+  // Where they merely are, with nothing narrowed, the list is still everyone —
+  // "391 lawyers in Gurgaon" would claim otherwise.
+  const scopeCity = filters.city || (userLocation && filters.radius ? locationLabel : '');
 
   return (
     // Filters beside the results, not above them. A bar across the top hid
@@ -401,20 +428,24 @@ export default function AdvocateListing({
 
             {/* Sort stays with the results it reorders, not in the sidebar,
                 which is for narrowing. */}
-            <label className="flex shrink-0 items-center gap-2 text-[13px] text-ink/55">
-              Sort by
-              <select
+            <div className="flex shrink-0 items-center gap-2 text-[13px] text-ink/55">
+              <span id="listing-sort-label">Sort by</span>
+              <Select
+                size="sm"
                 value={filters.sort}
                 onChange={(e) => onChange({ sort: e.target.value })}
-                className="h-10 rounded-xl border border-ink/15 bg-surface px-3 pr-8 text-[13px] font-semibold text-ink transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
-              >
-                <option value="relevance">Relevance</option>
-                <option value="rating">Highest rated</option>
-                <option value="experience">Most experienced</option>
-                <option value="fee-low">Rate: low to high</option>
-                <option value="fee-high">Rate: high to low</option>
-              </select>
-            </label>
+                aria-labelledby="listing-sort-label"
+                wrapperClassName="w-[184px]"
+                className="font-semibold"
+                options={[
+                  { value: 'relevance', label: 'Relevance' },
+                  { value: 'rating', label: 'Highest rated' },
+                  { value: 'experience', label: 'Most experienced' },
+                  { value: 'fee-low', label: 'Rate: low to high' },
+                  { value: 'fee-high', label: 'Rate: high to low' },
+                ]}
+              />
+            </div>
             </div>
           </div>
         </div>

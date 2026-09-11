@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { CATEGORIES } from '@/data/categories';
 import { cn } from '@/utils/cn';
+import Select from '@/components/ui/Select';
 
 /**
  * FilterSidebar — the listing's filters as a column beside the results.
@@ -154,11 +155,11 @@ function Groups({
   return (
     <>
       <Group title="Location">
-        <select
+        <Select
+          size="sm"
           value={value.city}
           onChange={(e) => onChange({ city: e.target.value })}
           aria-label="City"
-          className="h-10 w-full rounded-xl border border-ink/15 bg-surface px-3 text-[13px] text-ink transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25"
         >
           <option value="">All cities</option>
           {cities.map((c) => (
@@ -169,7 +170,7 @@ function Groups({
           {value.city && !cities.some((c) => c.name === value.city) && (
             <option value={value.city}>{value.city}</option>
           )}
-        </select>
+        </Select>
 
         {/* Distance is only a question once there is a point to measure from. */}
         {userLocation ? (

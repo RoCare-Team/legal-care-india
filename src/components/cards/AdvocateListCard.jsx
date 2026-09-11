@@ -3,6 +3,7 @@ import { MapPin, Star, BadgeCheck, ArrowRight, CalendarDays, Languages } from 'l
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
+import { slotsFor } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -72,6 +73,11 @@ export default function AdvocateListCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
+  // The slot quoted when there is no per-minute rate to show — see the grid
+  // card for why the two are never shown together.
+  const hasPerMinute = chatRate > 0 || audioRate > 0 || videoRate > 0;
+  const bookSlot = hasPerMinute ? null : slotsFor(advocate, 'chat')[0] || null;
+
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say.
   const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
@@ -109,16 +115,31 @@ export default function AdvocateListCard({ advocate }) {
 
       {/* Who they are. */}
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Link href={profileHref} className="min-w-0">
-            <h3 className="truncate text-[17px] font-bold leading-snug text-ink transition-colors group-hover:text-primary">
-              {name}
-            </h3>
+        {/* Name on the left, the way into the profile on the right of the same
+            line. It sat at the end of the tags for a while, where a short set of
+            tags left it stranded at the far edge with nothing near it; the name
+            line is always there and always the same height, and the profile is
+            what the name is about. */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href={profileHref} className="min-w-0">
+              <h3 className="truncate text-[17px] font-bold leading-snug text-ink transition-colors group-hover:text-primary">
+                {name}
+              </h3>
+            </Link>
+            {verified && (
+              <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified" />
+            )}
+            <PresenceIndicator id={advocate._id} variant="label" />
+          </div>
+
+          <Link
+            href={profileHref}
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/[0.07] px-3.5 text-[13px] font-semibold text-primary shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-white"
+          >
+            View Profile
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
-          {verified && (
-            <BadgeCheck className="h-4 w-4 shrink-0 text-primary" aria-label="Verified" />
-          )}
-          <PresenceIndicator id={advocate._id} variant="label" />
         </div>
 
         <p className="mt-0.5 truncate text-[13.5px] text-ink/55">{standing}</p>
@@ -166,6 +187,14 @@ export default function AdvocateListCard({ advocate }) {
       <div
         className={`flex shrink-0 flex-col justify-center gap-2.5 border-t ${HAIRLINE} pt-3.5 sm:w-[204px] sm:self-stretch sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0`}
       >
+        {/* The same rule as the grid card: a lawyer with no per-minute rate
+            quotes a bookable slot here, so no card goes out without a price. */}
+        {bookSlot && (
+          <p className="rounded-xl border border-dashed border-emerald-300/70 bg-emerald-50/60 px-3 py-2 text-center text-[12.5px] text-emerald-800/70">
+            Book {bookSlot.minutes} min{' '}
+            <span className="text-[14px] font-bold text-emerald-900">₹{bookSlot.price.toLocaleString('en-IN')}</span>
+          </p>
+        )}
 
         {/* The three live channels, labelled, one per row. Labels matter
             here: a bare phone glyph does not tell anyone that pressing it
@@ -185,16 +214,6 @@ export default function AdvocateListCard({ advocate }) {
             audioRate={audioRate}
           />
         </div>
-
-        <Link
-          href={profileHref}
-          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b from-primary-light/95 via-primary to-primary-dark px-4 text-[13.5px] font-semibold text-white shadow-brand transition-all hover:-translate-y-0.5 hover:shadow-brand-hover"
-        >
-          View Profile
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-
-
       </div>
     </article>
   );

@@ -3,6 +3,7 @@ import { MapPin, Check, Star, ArrowRight, CalendarDays, Languages } from 'lucide
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
+import { slotsFor } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -98,6 +99,12 @@ export default function AdvocateGridCard({ advocate }) {
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say. Every advocate is at least an Advocate, so the
   // designation falls back rather than leaving the line half empty.
+  // The slot a card quotes when there is no per-minute rate to show — the
+  // shortest one, which is the cheapest way in. Every lawyer has a price for
+  // it: their own if they set one, the platform's standard if not.
+  const hasPerMinute = chatRate > 0 || audioRate > 0 || videoRate > 0;
+  const bookSlot = hasPerMinute ? null : slotsFor(advocate, 'chat')[0] || null;
+
   const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
 
   // Two tags and a counter, which is what fits on one line beside the way in
@@ -134,6 +141,19 @@ export default function AdvocateGridCard({ advocate }) {
           here, and nothing below has to make room for them. */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <PresenceIndicator id={advocate._id} variant="label" />
+
+        {/* A lawyer who has set no per-minute rate has nothing to put on the
+            buttons below, and a card with no price at all reads as either
+            free or broken. So these cards quote what can always be bought
+            instead — a fixed slot, their own price or the standard one.
+            Lawyers who do charge by the minute already show it on every
+            button, and a second price here would ask which one is real. */}
+        {bookSlot && (
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-50 px-3 py-1.5 text-[12px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            {bookSlot.minutes} min{' '}
+            <span className="text-[13.5px] font-bold">₹{bookSlot.price.toLocaleString('en-IN')}</span>
+          </span>
+        )}
 
 
       </div>

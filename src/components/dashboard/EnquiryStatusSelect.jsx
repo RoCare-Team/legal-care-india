@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { ADVOCATE_STATUS_OPTIONS, ADVOCATE_STATUS_META } from '@/constants/enquiryStatus';
+import Select from '@/components/ui/Select';
 
 /**
  * EnquiryStatusSelect — lets the lawyer set how they're handling an enquiry
@@ -51,19 +52,16 @@ export default function EnquiryStatusSelect({ id, initialStatus = 'new' }) {
         {meta.label}
       </span>
       <div className="relative">
-        <select
+        <Select
+          size="xs"
           value={status}
           onChange={onChange}
           disabled={saving}
           aria-label="Enquiry status"
-          className="cursor-pointer rounded-lg border border-ink/15 bg-white py-1.5 pl-2.5 pr-7 text-xs font-medium text-ink outline-none focus:border-primary disabled:opacity-60"
-        >
-          {ADVOCATE_STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={ADVOCATE_STATUS_OPTIONS}
+          className="font-medium"
+          wrapperClassName="min-w-[130px]"
+        />
       </div>
       {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-ink/40" aria-hidden="true" />}
       {saved && <Check className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />}

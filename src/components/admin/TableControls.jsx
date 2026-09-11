@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, X, ChevronDown } from 'lucide-react';
+import { Search, X } from 'lucide-react';
+import Select from '@/components/ui/Select';
 
 /** SearchBox — text input with a search icon and a clear button. */
 export function SearchBox({ value, onChange, placeholder = 'Search…' }) {
@@ -34,20 +35,14 @@ export function SearchBox({ value, onChange, placeholder = 'Search…' }) {
  */
 export function FilterSelect({ value, onChange, options, label }) {
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={label}
-        className="h-10 cursor-pointer appearance-none rounded-xl border border-ink/12 bg-surface pl-3.5 pr-9 text-sm font-medium text-ink outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" aria-hidden="true" />
-    </div>
+    <Select
+      size="sm"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      options={options}
+      aria-label={label}
+      className="font-medium"
+      wrapperClassName="min-w-[150px]"
+    />
   );
 }

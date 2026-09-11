@@ -32,6 +32,18 @@
 }
 
 @layer base {
+  /* Room between the options of every native dropdown.
+
+     Honoured by Firefox, and by Chromium on Linux and Android. Chrome and Edge
+     on Windows and macOS draw the open list with the operating system's own
+     control and ignore padding on <option> entirely — nothing in CSS reaches
+     that list. There the only way to space the rows is a dropdown built from
+     HTML rather than a native <select>. */
+  select option {
+    padding: 8px 12px;
+    line-height: 1.6;
+  }
+
   * {
     @apply border-ink/10;
   }

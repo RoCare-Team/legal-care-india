@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, ChevronDown } from 'lucide-react';
+import { Search, MapPin } from 'lucide-react';
 import FullScreenLoader from '@/components/shared/FullScreenLoader';
 import { useLocation } from '@/components/location/LocationProvider';
 import { CATEGORIES } from '@/data/categories';
 import { slugify } from '@/utils/slugify';
+import Select from '@/components/ui/Select';
 
 /**
  * SearchBar — the one control the home page is built around: which city, which
@@ -156,29 +157,18 @@ export default function SearchBar({ className, city: pageCity }) {
  */
 function Field({ icon: Icon, value, onChange, placeholder, ariaLabel, options, className }) {
   return (
-    <label
-      className={`relative flex items-center gap-2.5 rounded-xl px-3.5 transition-colors focus-within:bg-ink/[0.03] ${className || ''}`}
-    >
-      <Icon className="h-5 w-5 shrink-0 text-ink/35" aria-hidden="true" />
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={ariaLabel}
-        className={`h-12 w-full min-w-0 cursor-pointer appearance-none truncate bg-transparent pr-6 text-sm focus:outline-none ${
-          value ? 'font-semibold text-ink' : 'text-ink/45'
-        }`}
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        className="pointer-events-none absolute right-3 h-4 w-4 text-ink/35"
-        aria-hidden="true"
-      />
-    </label>
+    <Select
+      bare
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
+      options={[{ value: '', label: placeholder }, ...options]}
+      leftIcon={<Icon className="h-5 w-5 shrink-0 text-ink/35" aria-hidden="true" />}
+      wrapperClassName={className}
+      className={`h-12 gap-2.5 rounded-xl pl-3.5 pr-9 text-sm focus-visible:bg-ink/[0.03] ${
+        value ? 'font-semibold text-ink' : 'text-ink/45'
+      }`}
+      chevronClassName="text-ink/35"
+    />
   );
 }
