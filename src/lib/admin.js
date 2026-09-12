@@ -146,7 +146,7 @@ export async function adminGetUsers() {
   await connectDB();
   const rows = await User.find({})
     .sort({ createdAt: -1 })
-    .select('name email phone city createdAt')
+    .select('name email phone city walletBalance createdAt')
     .lean();
   return rows.map((r) => ({
     id: String(r._id),
@@ -154,6 +154,7 @@ export async function adminGetUsers() {
     email: r.email || '',
     phone: r.phone || '',
     city: r.city || '',
+    walletBalance: r.walletBalance || 0,
     createdAt: iso(r.createdAt),
   }));
 }

@@ -10,6 +10,7 @@ import {
   ConsultationList,
   WalletList,
 } from '@/components/admin/DetailKit';
+import WalletAdjust from '@/components/admin/WalletAdjust';
 import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
 
@@ -102,10 +103,17 @@ export default async function AdminUserDetailPage({ params, searchParams }) {
         <InfoCard
           title="Wallet ledger"
           action={
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
-              <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
-              ₹{user.walletBalance.toLocaleString('en-IN')}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
+                ₹{user.walletBalance.toLocaleString('en-IN')}
+              </span>
+              <WalletAdjust
+                userId={user.id}
+                name={user.name}
+                balance={user.walletBalance}
+              />
+            </div>
           }
         >
           <div className="max-h-[26rem] overflow-y-auto pr-1">

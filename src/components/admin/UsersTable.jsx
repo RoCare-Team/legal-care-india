@@ -8,6 +8,7 @@ import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
 import { SearchBox } from '@/components/admin/TableControls';
 import ClientPager, { useClientPages } from '@/components/admin/ClientPager';
+import WalletAdjust from '@/components/admin/WalletAdjust';
 import { formatDate } from '@/utils/formatters';
 
 /** Destructive delete, in its own column away from the Login/View controls. */
@@ -102,8 +103,32 @@ export default function UsersTable({ users }) {
           <span className="text-ink/30">—</span>
         ),
     },
+    {
+      key: 'wallet',
+      label: 'Wallet',
+      render: (u) => (
+        <span
+          className={
+            u.walletBalance > 0
+              ? 'font-display text-[15px] font-bold text-emerald-600'
+              : 'text-ink/30'
+          }
+        >
+          {u.walletBalance > 0 ? `₹${u.walletBalance.toLocaleString('en-IN')}` : '—'}
+        </span>
+      ),
+    },
     { key: 'createdAt', label: 'Joined', render: (u) => <span className="whitespace-nowrap text-ink/60">{formatDate(u.createdAt)}</span> },
-    { key: 'access', label: 'Access', render: (u) => <ImpersonateButton id={u.id} name={u.name} role="user" /> },
+    {
+      key: 'access',
+      label: 'Access',
+      render: (u) => (
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <WalletAdjust userId={u.id} name={u.name} balance={u.walletBalance || 0} />
+          <ImpersonateButton id={u.id} name={u.name} role="user" />
+        </div>
+      ),
+    },
     {
       key: 'view',
       label: '',

@@ -30,6 +30,25 @@ const STEPS = [
   { key: 'name', label: 'Details' },
 ];
 
+/**
+ * Whatever was typed, pasted or autofilled, reduced to the ten digits the
+ * field is asking for.
+ *
+ * The box already shows "+91" beside it, so a country code inside it is a
+ * duplicate — but a browser autofilling a saved number, or a person pasting
+ * one from their contacts, supplies "+91 79881 40xxx" or "079881 40xxx" all
+ * the same. Keeping the last ten digits accepts every one of those.
+ *
+ * (It also strips the spaces, dashes and brackets a saved number carries. An
+ * earlier version tried to, with a regex whose backslash had been lost —
+ * `/D/g` deletes the letter D and nothing else — so "+917988140xxx" kept its
+ * "+91", and the ten-character cut then left "+917988140" in the box.)
+ */
+function toTenDigits(value) {
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
 export default function UserLoginForm() {
   const [step, setStep] = useState('phone');
   const [phone, setPhone] = useState('');
@@ -324,7 +343,7 @@ export default function UserLoginForm() {
                 autoComplete="tel"
                 value={phone}
                 onChange={(e) => {
-                  setPhone(e.target.value.replace(/D/g, '').slice(0, 10));
+                  setPhone(toTenDigits(e.target.value));
                   setError('');
                 }}
                 placeholder="10-digit mobile"

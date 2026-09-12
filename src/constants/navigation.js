@@ -15,6 +15,12 @@
 export const MAIN_NAV = [
   { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
+  // The fixed-price catalogue. It sits beside Legal Services rather than
+  // inside it because the two are different products: Legal Services is the
+  // practice areas, and leads to a lawyer billed by the minute; this is work
+  // with a fixed scope and a fixed price — a company registered, a notice
+  // drafted, a trademark filed.
+  { label: 'Services', href: '/services' },
   { label: 'How It Works', href: '/#how-it-works' },
 ];
 
@@ -33,6 +39,7 @@ export const FOOTER_NAV = [
     links: [
       { label: 'Find Lawyers', href: '/lawyers' },
       { label: 'Legal Services', href: '/legal-services' },
+      { label: 'Services', href: '/services' },
       { label: 'Browse Cities', href: '/cities' },
       { label: 'How It Works', href: '/#how-it-works' },
     ],
