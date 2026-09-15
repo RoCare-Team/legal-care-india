@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
   Clock, FileBadge, Award, GraduationCap, Briefcase, Languages,
-  Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee,
+  Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee, Landmark,
 } from 'lucide-react';
 
 /**
@@ -16,6 +16,7 @@ export const DASHBOARD_NAV = [
       { label: 'Consultations', href: '/dashboard/consultations', icon: MessagesSquare, badge: 'pending' },
       { label: 'Messages', href: '/dashboard/messages', icon: MessageCircleMore },
       { label: 'Earnings', href: '/dashboard/earnings', icon: Wallet },
+      { label: 'Payouts', href: '/dashboard/payouts', icon: Landmark },
     ],
   },
   {
@@ -54,7 +55,8 @@ export const PROFILE_SECTIONS = [
 export const DASHBOARD_TITLES = [
   { prefix: '/dashboard/consultations', title: 'Consultations', sub: 'Requests, sessions and what each one earned' },
   { prefix: '/dashboard/messages', title: 'Messages', sub: 'Every client you have spoken to' },
-  { prefix: '/dashboard/earnings', title: 'Earnings', sub: 'Your wallet and how it was earned' },
+  { prefix: '/dashboard/earnings', title: 'Earnings', sub: 'What you earned after JusticeLand commission' },
+  { prefix: '/dashboard/payouts', title: 'Payouts', sub: 'Withdrawals and bank accounts' },
   { prefix: '/dashboard/profile', title: 'Edit Profile', sub: 'What clients see on your public profile' },
   { prefix: '/dashboard/plan', title: 'Your Plan', sub: 'Membership and billing' },
   { prefix: '/dashboard/settings', title: 'Settings', sub: 'Account details' },

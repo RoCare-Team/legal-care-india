@@ -8,14 +8,17 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getRawAdvocateById } from '@/lib/advocates';
 import { getAdvocateConsultations } from '@/lib/consultations';
 import { buildOverview, channelTotals, istDateTime } from '@/lib/dashboardOverview';
+import Link from 'next/link';
 import { advocateRates, formatRate } from '@/constants/callRates';
+import { getLawyerPayoutData } from '@/lib/payouts';
+import { COMMISSION_LABEL, formatMoney } from '@/constants/payouts';
 
 export const metadata = {
   title: 'Earnings | Lawyer Portal',
   robots: { index: false, follow: false },
 };
 
-const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+const money = formatMoney;
 
 const CHANNELS = [
   { key: 'chat', label: 'Chat', icon: MessagesSquare, tone: 'bg-blue-500/10 text-blue-600', bar: 'bg-blue-500' },
@@ -44,6 +47,9 @@ export default async function EarningsPage() {
   const id = await getSessionAdvocateId();
   if (!id) redirect('/login');
 
+  // Payout data first: it applies the one-time commission on older balances,
+  // so every figure below is already the withdrawable one.
+  const payoutData = await getLawyerPayoutData(id);
   const [raw, all] = await Promise.all([getRawAdvocateById(id), getAdvocateConsultations(id)]);
   if (!raw) redirect('/login');
 
@@ -52,12 +58,7 @@ export default async function EarningsPage() {
   const channels = channelTotals(consultations);
   const rates = advocateRates(raw);
 
-  const transactions = [...(raw.walletTransactions || [])].sort(
-    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-  );
-  const lifetime = transactions
-    .filter((t) => t.type === 'credit')
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
+  const { transactions, summary } = payoutData;
   const paid = consultations.filter((c) => c.charged);
   const minutes = paid.reduce((sum, c) => sum + (c.talkedMinutes || 0), 0);
   const channelMax = Math.max(...CHANNELS.map((c) => channels[c.key].earned), 0);
@@ -67,7 +68,7 @@ export default async function EarningsPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold text-ink">Earnings</h1>
         <p className="mt-1 text-sm text-ink/55">
-          Every paid minute is credited to your wallet when the session ends.
+          Every paid session is split when it ends — JusticeLand keeps {COMMISSION_LABEL}, the rest is yours to withdraw.
         </p>
       </div>
 
@@ -77,11 +78,23 @@ export default async function EarningsPage() {
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent/20 text-accent">
             <Wallet className="h-5 w-5" aria-hidden="true" />
           </span>
-          <p className="mt-3 font-display text-3xl font-semibold">{money(raw.walletBalance)}</p>
-          <p className="text-sm text-white/70">Wallet balance</p>
+          <p className="mt-3 font-display text-3xl font-semibold">{money(payoutData.balance)}</p>
+          <p className="text-sm text-white/70">Withdrawable balance</p>
+          <Link
+            href="/dashboard/payouts"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-primary-dark hover:brightness-105"
+          >
+            Withdraw &amp; payouts →
+          </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-3 lg:grid-cols-3">
-          <Tile icon={IndianRupee} label="Total earned" value={money(lifetime)} sub="All time" tone="bg-emerald-50 text-emerald-600" />
+          <Tile
+            icon={IndianRupee}
+            label="Your earnings (all time)"
+            value={money(summary.earning)}
+            sub={`Clients paid ${money(summary.gross)} · ${COMMISSION_LABEL} commission −${money(summary.commission)}`}
+            tone="bg-emerald-50 text-emerald-600"
+          />
           <Tile
             icon={CalendarCheck}
             label="Last 30 days"
@@ -98,7 +111,7 @@ export default async function EarningsPage() {
           <EarningsCard
             periods={overview.periods}
             week={overview.week}
-            walletBalance={raw.walletBalance || 0}
+            walletBalance={payoutData.balance}
             showLink={false}
           />
 
@@ -153,7 +166,7 @@ export default async function EarningsPage() {
               {transactions.map((t) => {
                 const credit = t.type !== 'debit';
                 return (
-                  <li key={t._id || `${t.createdAt}-${t.amount}`} className="flex items-center gap-3.5 px-5 py-3.5 sm:px-6">
+                  <li key={t.id} className="flex items-center gap-3.5 px-5 py-3.5 sm:px-6">
                     <span
                       className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${
                         credit ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
@@ -169,7 +182,12 @@ export default async function EarningsPage() {
                       <p className="truncate text-sm font-medium text-ink">
                         {t.note || (credit ? 'Consultation earning' : 'Debit')}
                       </p>
-                      <p className="text-xs text-ink/45">{t.createdAt ? istDateTime(t.createdAt) : '—'}</p>
+                      <p className="text-xs text-ink/45">
+                        {t.createdAt ? istDateTime(t.createdAt) : '—'}
+                        {t.kind === 'earning' && t.gross > 0 && (
+                          <> · Client paid {money(t.gross)} − {COMMISSION_LABEL} commission {money(t.commission)}</>
+                        )}
+                      </p>
                     </div>
                     <span className={`shrink-0 text-sm font-semibold ${credit ? 'text-emerald-600' : 'text-red-600'}`}>
                       {credit ? '+' : '−'}

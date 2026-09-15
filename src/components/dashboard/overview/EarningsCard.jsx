@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowUp, ArrowDown, ArrowRight, ChevronDown } from 'lucide-react';
 
-const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 /**
  * Earnings — the chosen period's total against the one before it, the last
@@ -25,7 +25,10 @@ export default function EarningsCard({ periods, week, walletBalance, showLink = 
   return (
     <section className="rounded-2xl border border-ink/8 bg-surface p-5 shadow-card sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-display text-lg font-semibold text-ink">Earnings</h2>
+        <h2 className="font-display text-lg font-semibold text-ink">
+          Earnings
+          <span className="block font-sans text-[11px] font-normal text-ink/45">After JusticeLand commission</span>
+        </h2>
         <label className="relative">
           <span className="sr-only">Period</span>
           <select
@@ -126,7 +129,7 @@ export default function EarningsCard({ periods, week, walletBalance, showLink = 
           <dd className="font-semibold text-ink">{p.minutes}</dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
-          <dt className="text-ink/60">Wallet Balance</dt>
+          <dt className="text-ink/60">Withdrawable Balance</dt>
           <dd className="font-semibold text-ink">{money(walletBalance)}</dd>
         </div>
       </dl>

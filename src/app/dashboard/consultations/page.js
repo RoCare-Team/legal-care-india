@@ -10,6 +10,7 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateConsultations } from '@/lib/consultations';
 import { istDateTime } from '@/lib/dashboardOverview';
 import { formatRate } from '@/constants/callRates';
+import { formatMoney, COMMISSION_LABEL } from '@/constants/payouts';
 
 export const metadata = {
   title: 'Consultations | Lawyer Portal',
@@ -40,7 +41,7 @@ const TABS = [
   { key: 'cancelled', label: 'Cancelled', statuses: ['cancelled'] },
 ];
 
-const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
+const money = formatMoney;
 
 function ConsultationCard({ item: c }) {
   const meta = STATUS_META[c.status] || STATUS_META.cancelled;
@@ -73,7 +74,7 @@ function ConsultationCard({ item: c }) {
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <span className={`text-sm font-semibold ${c.isResume ? 'text-ink/50' : c.charged ? 'text-emerald-600' : 'text-ink/35'}`}>
-            {c.isResume ? 'Free' : c.charged ? `+${money(c.price)}` : '—'}
+            {c.isResume ? 'Free' : c.charged ? `+${money(c.earning)}` : '—'}
           </span>
           {c.messagesCount > 0 && (
             <ViewConversationButton id={c.id} otherName={c.userName} viewerRole="advocate" />
@@ -95,6 +96,10 @@ function ConsultationCard({ item: c }) {
               <span className="inline-flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
                 Talked {c.talkedMinutes} min · billed {Math.round(c.minutes)} min
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Wallet className="h-3.5 w-3.5 text-ink/40" aria-hidden="true" />
+                Client paid {money(c.price)} · JusticeLand {COMMISSION_LABEL} −{money(c.commission)}
               </span>
               {c.messagesCount > 0 && (
                 <span className="inline-flex items-center gap-1.5">
@@ -130,7 +135,7 @@ export default async function ConsultationsPage({ searchParams }) {
   const all = await getAdvocateConsultations(id);
   const consultations = all.filter((c) => !c.hidden);
   const connected = consultations.filter((c) => c.charged);
-  const earned = connected.reduce((sum, c) => sum + c.price, 0);
+  const earned = connected.reduce((sum, c) => sum + c.earning, 0);
   const minutes = connected.reduce((sum, c) => sum + c.talkedMinutes, 0);
   const clients = new Set(consultations.map((c) => c.userId)).size;
 
@@ -164,7 +169,7 @@ export default async function ConsultationsPage({ searchParams }) {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <SummaryTile icon={Wallet} value={money(earned)} label="Total earned" tone="bg-emerald-500/10 text-emerald-600" />
+            <SummaryTile icon={Wallet} value={money(earned)} label="Your earnings (after commission)" tone="bg-emerald-500/10 text-emerald-600" />
             <SummaryTile icon={MessagesSquare} value={connected.length} label="Paid consultations" tone="bg-primary/10 text-primary" />
             <SummaryTile icon={Users} value={clients} label="Clients" tone="bg-violet-50 text-violet-600" />
             <SummaryTile icon={Clock} value={minutes} label="Minutes talked" tone="bg-blue-500/10 text-blue-600" />

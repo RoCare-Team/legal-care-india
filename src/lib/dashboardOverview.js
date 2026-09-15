@@ -67,7 +67,8 @@ const whenOf = (c) => c.startedAt || c.createdAt;
 function totals(paid, keys) {
   const rows = paid.filter((c) => keys.has(istDayKey(whenOf(c))));
   return {
-    earned: rows.reduce((sum, c) => sum + (c.price || 0), 0),
+    // The lawyer's share, after JusticeLand's commission.
+    earned: rows.reduce((sum, c) => sum + (c.earning || 0), 0),
     sessions: rows.length,
     minutes: rows.reduce((sum, c) => sum + (c.talkedMinutes || 0), 0),
   };
@@ -163,7 +164,7 @@ export function clientThreads(consultations) {
     }
     t.sessions += 1;
     t.messages += c.messagesCount || 0;
-    t.earned += c.charged ? c.price || 0 : 0;
+    t.earned += c.charged ? c.earning || 0 : 0;
     t.minutes += c.talkedMinutes || 0;
     t.types.add(c.type || 'chat');
     if (!t.lastMessage && c.lastMessage) t.lastMessage = c.lastMessage;
@@ -183,7 +184,7 @@ export function channelTotals(consultations) {
   for (const c of consultations) {
     if (!c.charged) continue;
     const row = out[c.type] || out.chat;
-    row.earned += c.price || 0;
+    row.earned += c.earning || 0;
     row.sessions += 1;
     row.minutes += c.talkedMinutes || 0;
   }

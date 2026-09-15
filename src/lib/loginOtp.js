@@ -60,16 +60,34 @@ function testLoginConfig() {
   return { phones, code };
 }
 
-/** Whether this number is one of the configured test numbers. */
-export function isTestPhone(phone) {
+/**
+ * Test logins that are always on — in development and in production, with or
+ * without the environment variables above. Hardcoded at the owner's request so
+ * this number works on the live site and in the app without any hosting
+ * config. Anyone who knows the pair can sign in as whoever owns this number,
+ * client or lawyer, so remove the entry when it is no longer needed.
+ */
+const FIXED_TEST_LOGINS = {
+  7740847114: '1234',
+};
+
+/** The fixed code for a test number, or '' when the number has none. */
+function testCodeFor(phone) {
+  const fixed = FIXED_TEST_LOGINS[phone];
+  if (fixed) return fixed;
   const cfg = testLoginConfig();
-  return Boolean(cfg && cfg.phones.includes(phone));
+  return cfg && cfg.phones.includes(phone) ? cfg.code : '';
+}
+
+/** Whether this number is one of the test numbers. */
+export function isTestPhone(phone) {
+  return Boolean(testCodeFor(phone));
 }
 
 /** Whether this code is the fixed one, for a number allowed to use it. */
 export function isTestCode(phone, otp) {
-  const cfg = testLoginConfig();
-  return Boolean(cfg && cfg.phones.includes(phone) && cfg.code === String(otp).trim());
+  const code = testCodeFor(phone);
+  return Boolean(code) && code === String(otp).trim();
 }
 
 /** Common request shape for both gateway calls. */

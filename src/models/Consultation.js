@@ -101,6 +101,13 @@ const ConsultationSchema = new Schema(
     price: { type: Number, default: 0, min: 0 },
     settled: { type: Boolean, default: false },
 
+    // How `price` was split when it settled: JusticeLand's commission and the
+    // lawyer's share credited to their wallet. Absent on sessions settled
+    // before commission existed — readers work those out at the current rate.
+    commissionRate: { type: Number, default: null },
+    commission: { type: Number, default: null },
+    advocateEarning: { type: Number, default: null },
+
     status: {
       type: String,
       enum: ['pending', 'active', 'ended', 'rejected', 'cancelled'],

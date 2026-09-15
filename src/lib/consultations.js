@@ -4,6 +4,8 @@ import Consultation from '@/models/Consultation';
 import User from '@/models/User';
 import Advocate from '@/models/Advocate';
 import { chargeForDuration } from '@/constants/callRates';
+import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
+import { applyLegacyCommission } from '@/lib/payouts';
 
 /**
  * Consultation data-access + the wallet transfer that settles a session.
@@ -268,15 +270,32 @@ async function settleCharges(session) {
     }
   }
 
+  // The lawyer is credited their share; JusticeLand keeps the commission. Any
+  // balance from before commission existed is adjusted first, so this credit
+  // is never swept into that one-time deduction.
+  const split = splitEarning(charged);
   if (charged > 0) {
+    await applyLegacyCommission(session.advocateId);
     await Advocate.findByIdAndUpdate(session.advocateId, {
-      $inc: { walletBalance: charged },
-      $push: { walletTransactions: { type: 'credit', amount: charged, note: note(session.userName) } },
+      $inc: { walletBalance: split.earning },
+      $push: {
+        walletTransactions: {
+          type: 'credit',
+          kind: 'earning',
+          amount: split.earning,
+          gross: split.gross,
+          commission: split.commission,
+          note: note(session.userName),
+        },
+      },
     });
   }
 
   session.minutes = minutes;
   session.price = charged;
+  session.commissionRate = COMMISSION_RATE;
+  session.commission = split.commission;
+  session.advocateEarning = split.earning;
   return true;
 }
 
@@ -336,6 +355,11 @@ function toHistoryRow(r, viewer) {
   // expired), so the account can show "X min left · resume free".
   const leftMs = isResumable(r) ? leftoverMs(r) : 0;
   const last = (r.messages || []).at(-1);
+  // Sessions settled before commission existed carry no split; they are shown
+  // at today's rate, which is what their balance was adjusted by.
+  const legacy = splitEarning(r.price || 0);
+  const commission = r.commission ?? legacy.commission;
+  const earning = r.advocateEarning ?? legacy.earning;
 
   return {
     id: String(r._id),
@@ -347,6 +371,9 @@ function toHistoryRow(r, viewer) {
     // Billed minutes and amount — what the session actually came to.
     minutes: r.minutes || 0,
     price: r.price || 0,
+    // How that price splits: JusticeLand's commission and the lawyer's share.
+    commission,
+    earning,
     // 'chat' | 'video' | 'audio' — history and the resume board group by it.
     type: r.type || 'chat',
     status: r.status,

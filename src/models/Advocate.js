@@ -281,7 +281,9 @@ const AdvocateSchema = new Schema(
     // regardless of whether they have the site open.
     available: { type: Boolean, default: false },
 
-    // Earnings wallet — credited when a paid consultation connects.
+    // Earnings wallet — what the lawyer can withdraw. Credited with their share
+    // of each paid consultation (after JusticeLand's commission), debited when
+    // they request a payout.
     walletBalance: { type: Number, default: 0, min: 0 },
     walletTransactions: {
       type: [
@@ -290,6 +292,42 @@ const AdvocateSchema = new Schema(
             type: { type: String, enum: ['credit', 'debit'], default: 'credit' },
             amount: { type: Number, required: true, min: 0 },
             note: { type: String, default: '' },
+            // 'earning' | 'commission_adjustment' | 'payout' | 'payout_refund'
+            // (empty on lines written before these existed).
+            kind: { type: String, default: '' },
+            // For an earning: what the client paid, and the commission kept.
+            gross: { type: Number, default: 0 },
+            commission: { type: Number, default: 0 },
+            payoutId: { type: Schema.Types.ObjectId, ref: 'Payout', default: null },
+            createdAt: { type: Date, default: Date.now },
+          },
+          { _id: true }
+        ),
+      ],
+      default: [],
+    },
+
+    // When the one-time commission on balances earned before commission
+    // existed was taken. Null until it has been — see lib/payouts.
+    commissionAppliedAt: { type: Date, default: null },
+
+    // The payout currently waiting on an admin, if any. One at a time, and
+    // enforced in the update that creates it.
+    openPayoutId: { type: Schema.Types.ObjectId, ref: 'Payout', default: null },
+
+    // Where payouts go. The account number is sealed (lib/secretBox); only the
+    // last four digits are ever sent to the lawyer's browser.
+    bankAccounts: {
+      type: [
+        new Schema(
+          {
+            holderName: { type: String, required: true, trim: true },
+            bankName: { type: String, default: '', trim: true },
+            ifsc: { type: String, required: true, uppercase: true, trim: true },
+            accountType: { type: String, enum: ['savings', 'current'], default: 'savings' },
+            accountLast4: { type: String, default: '' },
+            accountNumberEnc: { type: String, required: true },
+            isPrimary: { type: Boolean, default: false },
             createdAt: { type: Date, default: Date.now },
           },
           { _id: true }

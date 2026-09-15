@@ -77,7 +77,7 @@ export default function TodaySessions({ sessions }) {
                   </span>
                   {c.charged && (
                     <span className="text-sm font-semibold text-emerald-600">
-                      +₹{Number(c.price).toLocaleString('en-IN')}
+                      +₹{Number(c.earning).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                     </span>
                   )}
                 </div>

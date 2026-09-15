@@ -18,6 +18,7 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getAdvocateById, getRawAdvocateById } from '@/lib/advocates';
 import { fromRecord, completionOf } from '@/lib/profileCompletion';
 import { getAdvocateConsultations } from '@/lib/consultations';
+import { applyLegacyCommission } from '@/lib/payouts';
 import { buildOverview, percentChange } from '@/lib/dashboardOverview';
 import { lawyerProfileHref } from '@/utils/advocateUrl';
 
@@ -29,6 +30,9 @@ export default async function DashboardOverviewPage({ searchParams }) {
   if (!advocate) redirect('/login');
 
   const all = await getAdvocateConsultations(id);
+  // Take the one-time commission on pre-commission balances before the balance
+  // is read, so the overview never shows a figure the lawyer cannot withdraw.
+  await applyLegacyCommission(id);
   // The record as stored, so the checklist counts what the lawyer entered
   // rather than what the public profile fills in on their behalf.
   const raw = await getRawAdvocateById(id);

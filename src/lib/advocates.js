@@ -275,6 +275,9 @@ const PRIVATE_FIELDS = [
   'walletBalance',
   'walletTransactions',
   'planPayments',
+  'bankAccounts',
+  'openPayoutId',
+  'commissionAppliedAt',
   '__v',
 ];
 
@@ -516,7 +519,9 @@ export async function getAllAdvocateParams() {
 /** Full profile for a single lawyer id from MongoDB, or null. */
 export async function getAdvocateById(id) {
   await connectDB();
-  const advocate = await Advocate.findById(id).lean();
+  // The sealed account numbers never leave the server through this reader — it
+  // feeds /api/auth/me and the dashboard profile, both of which reach a browser.
+  const advocate = await Advocate.findById(id).select('-bankAccounts.accountNumberEnc').lean();
   return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
 }
 
@@ -554,7 +559,11 @@ export async function getRawAdvocateById(id, { withImages = false } = {}) {
         hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
       },
     },
-    { $project: withImages ? { passwordHash: 0 } : { photo: 0, coverImage: 0, passwordHash: 0 } },
+    {
+      $project: withImages
+        ? { passwordHash: 0, 'bankAccounts.accountNumberEnc': 0 }
+        : { photo: 0, coverImage: 0, passwordHash: 0, 'bankAccounts.accountNumberEnc': 0 },
+    },
   ]);
 
   return doc ? serialize(doc) : null;
