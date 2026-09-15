@@ -76,9 +76,18 @@ export default function VideoCallStage({ session, viewerRole, otherName, onEnded
   const body =
     phase === 'idle' ? (
       endedRef.current ? null : (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-ink text-white">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
-          <p className="text-sm text-white/70">Connecting your video call with {otherName}…</p>
+        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-5 bg-[#070D18] text-white">
+          <span className="relative">
+            <span className="absolute -inset-3 animate-ping rounded-full bg-primary-light/20" />
+            <span className="grid h-24 w-24 place-items-center rounded-full bg-gradient-to-br from-primary-light to-primary-dark font-display text-4xl font-semibold ring-4 ring-white/10">
+              {String(otherName || '?').replace(/^Adv\.?\s*/i, '').trim().charAt(0).toUpperCase()}
+            </span>
+          </span>
+          <p className="font-display text-2xl font-semibold">{otherName}</p>
+          <p className="flex items-center gap-2 text-sm text-white/65">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            Connecting your video call…
+          </p>
         </div>
       )
     ) : (
@@ -86,8 +95,11 @@ export default function VideoCallStage({ session, viewerRole, otherName, onEnded
         call={call}
         otherName={otherName}
         endsAt={session.endsAt}
+        startedAt={session.startedAt}
         minimized={false}
-        onMinimize={() => {}}
+        // No chat behind a video consultation, so nothing to minimize back to —
+        // leaving this unset hides the minimize and "Chat" buttons.
+        onMinimize={undefined}
         // A video consultation IS the call — there is no chat behind it.
         dismissLabel="Close"
       />

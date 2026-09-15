@@ -335,6 +335,7 @@ function toHistoryRow(r, viewer) {
   // Leftover time this session still has free to reconnect (0 if none / spent /
   // expired), so the account can show "X min left · resume free".
   const leftMs = isResumable(r) ? leftoverMs(r) : 0;
+  const last = (r.messages || []).at(-1);
 
   return {
     id: String(r._id),
@@ -359,6 +360,8 @@ function toHistoryRow(r, viewer) {
     resumeExpiresAt: leftMs ? new Date(new Date(r.endedAt).getTime() + RESUME_WINDOW_MS).toISOString() : null,
     talkedMinutes: talkedMinutes(r),
     messagesCount: (r.messages || []).length,
+    // The latest line of this session, for the dashboard's conversation preview.
+    lastMessage: last ? { from: last.from, text: last.text, at: last.at } : null,
     startedAt: r.startedAt || null,
     createdAt: r.createdAt,
     // Cleared from this viewer's own list (the other side is unaffected).

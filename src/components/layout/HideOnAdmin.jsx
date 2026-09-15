@@ -13,12 +13,15 @@ import { usePathname } from 'next/navigation';
  *             time and every competing link on the screen is an invitation to
  *             leave halfway through, which is precisely the failure it exists
  *             to prevent. It carries its own minimal header instead.
+ *   /dashboard — the lawyer portal. A lawyer at work needs their requests,
+ *             chats and earnings, not the client-facing "Find Lawyers" nav;
+ *             it has its own sidebar and app bar.
  *
  * Kept as a path list rather than a prop threaded through the root layout,
  * because the root layout is a server component and this decision needs the
  * pathname.
  */
-const STANDALONE = ['/admin', '/setup'];
+const STANDALONE = ['/admin', '/setup', '/dashboard'];
 
 export default function HideOnAdmin({ children }) {
   const pathname = usePathname();

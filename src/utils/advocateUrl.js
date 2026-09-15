@@ -62,3 +62,21 @@ export function parseAdvocateParam(param = '') {
 
   return { legalCareId: null, legacyLegalCareId: null, slug: value };
 }
+
+/** The lawyer's own private preview of their profile, for while it is unapproved. */
+export const PROFILE_PREVIEW_PATH = '/profile-preview';
+
+/**
+ * Where a lawyer's own "view my profile" links should go.
+ *
+ * The public page 404s a profile until an admin approves it, so linking a
+ * pending lawyer there shows them "Page Not Found" for their own profile. Until
+ * approval they get the private preview instead; after it, the real page.
+ *
+ * @param {object} advocate  needs `status`, `slug`, `legalCareId`
+ */
+export function lawyerProfileHref(advocate) {
+  return advocate?.status === 'published'
+    ? `/lawyers/${advocateProfilePath(advocate)}`
+    : PROFILE_PREVIEW_PATH;
+}

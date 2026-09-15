@@ -7,7 +7,7 @@ import { getSessionAdvocateId } from '@/lib/auth';
 import { getRawAdvocateById } from '@/lib/advocates';
 import { getAllCities } from '@/lib/cities';
 import { toEditableSnapshot } from '@/lib/advocateSnapshot';
-import { advocateProfilePath } from '@/utils/advocateUrl';
+import { lawyerProfileHref } from '@/utils/advocateUrl';
 
 export const metadata = {
   title: 'Complete your profile | Justiceland',
@@ -52,7 +52,7 @@ export default async function SetupPage({ searchParams }) {
       <ProfileSetupStepper
         initial={toEditableSnapshot(advocate)}
         cities={cities}
-        previewHref={advocateProfilePath(advocate)}
+        previewHref={lawyerProfileHref(advocate)}
         advocateName={advocate.name}
         justJoined={params?.new === '1'}
         status={advocate.status}

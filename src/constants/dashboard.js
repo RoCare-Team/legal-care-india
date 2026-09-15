@@ -1,44 +1,62 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
-  Clock, IndianRupee, FileBadge, Award, GraduationCap, Briefcase, Languages,
-  Share2, Settings, MessagesSquare, BadgeIndianRupee,
+  Clock, FileBadge, Award, GraduationCap, Briefcase, Languages,
+  Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee,
 } from 'lucide-react';
 
 /**
- * Dashboard navigation, grouped. Profile sub-sections deep-link into the
- * Edit Profile page anchors so every requested area is reachable.
- * (The "View Public Profile" link lives in the topbar, which knows the
- * logged-in advocate's slug.)
+ * The lawyer portal's navigation, grouped. `badge: 'pending'` marks the item
+ * that carries the live count of requests waiting on the lawyer.
  */
 export const DASHBOARD_NAV = [
   {
-    title: 'Overview',
+    title: 'Workspace',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Consultations', href: '/dashboard/consultations', icon: MessagesSquare },
-      { label: 'Edit Profile', href: '/dashboard/profile', icon: UserRound },
-      // Sits with the overview rather than under Profile Sections: a plan is
-      // not part of describing your practice, it is what decides how much of
-      // it you may describe.
-      { label: 'Your Plan', href: '/dashboard/plan', icon: BadgeIndianRupee },
-      { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+      { label: 'Consultations', href: '/dashboard/consultations', icon: MessagesSquare, badge: 'pending' },
+      { label: 'Messages', href: '/dashboard/messages', icon: MessageCircleMore },
+      { label: 'Earnings', href: '/dashboard/earnings', icon: Wallet },
     ],
   },
   {
-    title: 'Profile Sections',
+    title: 'Practice',
     items: [
-      { label: 'Legal Services', href: '/dashboard/profile#services', icon: Scale },
-      { label: 'Office Details', href: '/dashboard/profile#office', icon: Building2 },
-      { label: 'Office Timing', href: '/dashboard/profile#timing', icon: Clock },
-      { label: 'Contact Details', href: '/dashboard/profile#contact', icon: Phone },
-      { label: 'Bookable Slots', href: '/dashboard/profile#slots', icon: Clock },
-      { label: 'Education', href: '/dashboard/profile#education', icon: GraduationCap },
-      { label: 'Experience', href: '/dashboard/profile#experience', icon: Briefcase },
-      { label: 'Languages', href: '/dashboard/profile#languages', icon: Languages },
-      { label: 'Certificates', href: '/dashboard/profile#certificates', icon: FileBadge },
-      { label: 'Awards', href: '/dashboard/profile#awards', icon: Award },
-      { label: 'Gallery', href: '/dashboard/profile#gallery', icon: ImageIcon },
-      { label: 'Social Links', href: '/dashboard/profile#social', icon: Share2 },
+      { label: 'Edit Profile', href: '/dashboard/profile', icon: UserRound },
+      { label: 'Consultation Rates', href: '/dashboard/profile#slots', icon: IndianRupee },
+      // A plan is not part of describing your practice, it is what decides how
+      // much of it you may describe — but it is still about the practice.
+      { label: 'Your Plan', href: '/dashboard/plan', icon: BadgeIndianRupee },
     ],
   },
+  {
+    title: 'Account',
+    items: [{ label: 'Settings', href: '/dashboard/settings', icon: Settings }],
+  },
+];
+
+/** Deep links into the Edit Profile page's sections, shown while editing. */
+export const PROFILE_SECTIONS = [
+  { label: 'Legal Services', href: '/dashboard/profile#services', icon: Scale },
+  { label: 'Office Details', href: '/dashboard/profile#office', icon: Building2 },
+  { label: 'Office Timing', href: '/dashboard/profile#timing', icon: Clock },
+  { label: 'Contact Details', href: '/dashboard/profile#contact', icon: Phone },
+  { label: 'Consultation Rates', href: '/dashboard/profile#slots', icon: IndianRupee },
+  { label: 'Education', href: '/dashboard/profile#education', icon: GraduationCap },
+  { label: 'Experience', href: '/dashboard/profile#experience', icon: Briefcase },
+  { label: 'Languages', href: '/dashboard/profile#languages', icon: Languages },
+  { label: 'Certificates', href: '/dashboard/profile#certificates', icon: FileBadge },
+  { label: 'Awards', href: '/dashboard/profile#awards', icon: Award },
+  { label: 'Gallery', href: '/dashboard/profile#gallery', icon: ImageIcon },
+  { label: 'Social Links', href: '/dashboard/profile#social', icon: Share2 },
+];
+
+/** Page titles for the app bar, longest prefix first. */
+export const DASHBOARD_TITLES = [
+  { prefix: '/dashboard/consultations', title: 'Consultations', sub: 'Requests, sessions and what each one earned' },
+  { prefix: '/dashboard/messages', title: 'Messages', sub: 'Every client you have spoken to' },
+  { prefix: '/dashboard/earnings', title: 'Earnings', sub: 'Your wallet and how it was earned' },
+  { prefix: '/dashboard/profile', title: 'Edit Profile', sub: 'What clients see on your public profile' },
+  { prefix: '/dashboard/plan', title: 'Your Plan', sub: 'Membership and billing' },
+  { prefix: '/dashboard/settings', title: 'Settings', sub: 'Account details' },
+  { prefix: '/dashboard', title: 'Dashboard', sub: 'Your practice at a glance' },
 ];

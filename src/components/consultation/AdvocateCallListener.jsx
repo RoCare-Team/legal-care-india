@@ -1,24 +1,33 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { PhoneCall, Clock, Wallet, Check, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { playIncomingChime } from '@/utils/beep';
-import ConsultationModal from './ConsultationModal';
-import ChatPanel from './ChatPanel';
 import VideoCallStage from './VideoCallStage';
 import MinimizedCallBar from './MinimizedCallBar';
-import { formatRate } from '@/constants/callRates';
+import IncomingRequestPopup from './lawyer/IncomingRequestPopup';
+import LiveConsultationWindow from './lawyer/LiveConsultationWindow';
+import PhoneCallAlert from './lawyer/PhoneCallAlert';
+import { RESTORE_CONSULTATION_EVENT } from '@/utils/consultationEvents';
 
 /**
  * AdvocateCallListener — mounted globally; only active for a signed-in lawyer.
  * Polls the lawyer's inbox, rings on a new incoming request, and drives the
  * accept/reject + live-chat flow. Charges happen server-side on accept.
+ *
+ * What it puts on screen, in order of precedence:
+ *   a live video consultation  → the full-screen call
+ *   a live chat                → the chat window (or its minimized dock)
+ *   a new chat/video request   → the ringing request popup
+ *   an audio consultation      → a "your phone is ringing / on call" card,
+ *                                since those are answered on the handset
  */
 export default function AdvocateCallListener() {
   const { role } = useAuth();
   const [incoming, setIncoming] = useState(null);
+  const [queued, setQueued] = useState(0);
+  const [phone, setPhone] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [minimized, setMinimized] = useState(false);
   // Minimizing unmounts ChatPanel, which owns the video call — so while a call
@@ -26,6 +35,7 @@ export default function AdvocateCallListener() {
   const [callActive, setCallActive] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [note, setNote] = useState('');
+  const [hiddenPhone, setHiddenPhone] = useState('');
   const chimed = useRef(new Set());
   const dismissed = useRef(new Set());
 
@@ -43,23 +53,26 @@ export default function AdvocateCallListener() {
         if (!alive) return;
 
         // Audio consultations are pure phone calls — the lawyer's handset
-        // rings, nothing opens here. Filtering them out keeps this listener
-        // from popping a window over a call they are already taking.
+        // rings, nothing is answered here. They get their own small card.
+        setPhone(sessions.find((s) => s.type === 'audio' && ['pending', 'active'].includes(s.status)) || null);
         const live = sessions.filter((s) => s.type !== 'audio');
 
         const act = live.find((s) => s.status === 'active');
         if (act) setActiveId((cur) => cur || act.id);
 
         // Show an incoming request only when not already in a live chat.
-        const pend = live.find((s) => s.status === 'pending' && !dismissed.current.has(s.id));
+        const waiting = live.filter((s) => s.status === 'pending' && !dismissed.current.has(s.id));
+        const pend = waiting[0];
         if (pend && !act) {
           if (!chimed.current.has(pend.id)) {
             playIncomingChime();
             chimed.current.add(pend.id);
           }
           setIncoming(pend);
+          setQueued(waiting.length - 1);
         } else {
           setIncoming(null);
+          setQueued(0);
         }
       } catch {
         /* ignore transient poll errors */
@@ -72,6 +85,13 @@ export default function AdvocateCallListener() {
       clearInterval(t);
     };
   }, [isAdvocate]);
+
+  // Anything else on the page (the portal's live pill) can ask for the chat back.
+  useEffect(() => {
+    const restore = () => setMinimized(false);
+    window.addEventListener(RESTORE_CONSULTATION_EVENT, restore);
+    return () => window.removeEventListener(RESTORE_CONSULTATION_EVENT, restore);
+  }, []);
 
   // Live chat session once accepted.
   const [activeSession, , refresh] = useSessionPoll(activeId, {
@@ -125,6 +145,7 @@ export default function AdvocateCallListener() {
   const reject = async (id) => {
     dismissed.current.add(id);
     setIncoming(null);
+    setNote('');
     await fetch(`/api/consultations/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -152,6 +173,11 @@ export default function AdvocateCallListener() {
     refresh();
   };
 
+  const phoneKey = phone ? `${phone.id}:${phone.status}` : '';
+  const phoneCard = (raised) => phone && hiddenPhone !== phoneKey && (
+    <PhoneCallAlert session={phone} raised={raised} onDismiss={() => setHiddenPhone(phoneKey)} />
+  );
+
   // ── Live video call (after accepting a video-type request) ──────────────
   if (
     activeId && activeSession &&
@@ -178,97 +204,47 @@ export default function AdvocateCallListener() {
     activeSession.type !== 'video' &&
     (activeSession.status === 'active' || activeSession.status === 'ended')
   ) {
-    // The X only tucks the chat away (like backgrounding a call) — it never
-    // hangs up. Ending is the red button inside ChatPanel (onEnd).
+    // Minimizing only tucks the chat away (like backgrounding a call) — it
+    // never hangs up. Ending is the red button inside the chat.
     if (minimized && !callActive) {
       return (
-        <MinimizedCallBar
-          name={activeSession.userName}
-          endsAt={activeSession.endsAt}
-          onRestore={() => setMinimized(false)}
-        />
+        <>
+          <MinimizedCallBar
+            name={activeSession.userName}
+            endsAt={activeSession.endsAt}
+            startedAt={activeSession.startedAt}
+            onRestore={() => setMinimized(false)}
+            onEnd={activeSession.status === 'active' ? endNow : undefined}
+          />
+          {phoneCard(true)}
+        </>
       );
     }
     return (
-      <ConsultationModal
-        open
-        onClose={() => setMinimized(true)}
-        title={`Consultation · ${activeSession.userName}`}
-        icon={PhoneCall}
-        fullScreen
-      >
-        <ChatPanel
-          session={activeSession}
-          viewerRole="advocate"
-          otherName={activeSession.userName}
-          onSend={sendMessage}
-          onEnd={endNow}
-          onCallActiveChange={setCallActive}
-        />
-      </ConsultationModal>
+      <LiveConsultationWindow
+        session={activeSession}
+        onSend={sendMessage}
+        onEnd={endNow}
+        onMinimize={() => setMinimized(true)}
+        onCallActiveChange={setCallActive}
+      />
     );
   }
 
   // ── Incoming request ────────────────────────────────────────────────────
   if (incoming) {
     return (
-      <ConsultationModal open closable={false} title="Incoming consultation" icon={PhoneCall}>
-        <div className="p-5">
-          <div className="flex flex-col items-center text-center">
-            <span className="relative grid h-16 w-16 place-items-center">
-              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
-              <span className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-600">
-                <PhoneCall className="h-7 w-7" />
-              </span>
-            </span>
-            <h4 className="mt-4 font-display text-lg font-semibold text-ink">{incoming.userName}</h4>
-            <p className="text-sm text-ink/55">
-              {incoming.isResume
-                ? 'wants to resume a consultation'
-                : incoming.type === 'video'
-                  ? 'wants a video call'
-                  : 'wants a consultation'}
-            </p>
-
-            <div className="mt-4 flex items-center gap-4 rounded-xl bg-muted/50 px-4 py-3">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-                <Clock className="h-4 w-4 text-primary" /> up to {Math.round(incoming.maxMinutes)} min
-              </span>
-              <span className="h-4 w-px bg-ink/10" />
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                <Wallet className="h-4 w-4 text-emerald-600" /> {formatRate(incoming.rate)}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-ink/45">
-              You are paid for every minute this runs, credited when it ends.
-            </p>
-
-            {note && <p className="mt-3 text-sm text-red-600">{note}</p>}
-
-            <div className="mt-5 flex w-full gap-3">
-              <button
-                type="button"
-                onClick={() => reject(incoming.id)}
-                disabled={accepting}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-ink/15 py-2.5 text-sm font-semibold text-ink/70 transition-colors hover:border-red-300 hover:text-red-600 disabled:opacity-50"
-              >
-                <X className="h-4 w-4" /> Reject
-              </button>
-              <button
-                type="button"
-                onClick={() => accept(incoming.id)}
-                disabled={accepting}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {accepting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Accept
-              </button>
-            </div>
-          </div>
-        </div>
-      </ConsultationModal>
+      <IncomingRequestPopup
+        key={incoming.id}
+        request={incoming}
+        queued={queued}
+        accepting={accepting}
+        note={note}
+        onAccept={() => accept(incoming.id)}
+        onReject={() => reject(incoming.id)}
+      />
     );
   }
 
-  return null;
+  return phoneCard(false) || null;
 }

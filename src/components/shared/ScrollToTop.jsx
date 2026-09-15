@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
 import { useScrollPosition } from '@/hooks/useScrollPosition';
 
@@ -10,7 +11,9 @@ import { useScrollPosition } from '@/hooks/useScrollPosition';
  */
 export default function ScrollToTop() {
   const scrollY = useScrollPosition();
-  const visible = scrollY > 480;
+  const pathname = usePathname() || '';
+  // The lawyer portal's tab bar owns the bottom of the screen there.
+  const visible = scrollY > 480 && !pathname.startsWith('/dashboard');
 
   const scrollUp = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 

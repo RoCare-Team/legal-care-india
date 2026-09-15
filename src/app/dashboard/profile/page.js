@@ -3,7 +3,7 @@ import EditProfileForm from '@/components/dashboard/EditProfileForm';
 import { getSessionAdvocateId } from '@/lib/auth';
 import { getRawAdvocateById } from '@/lib/advocates';
 import { getAllCities } from '@/lib/cities';
-import { advocateProfilePath } from '@/utils/advocateUrl';
+import { lawyerProfileHref } from '@/utils/advocateUrl';
 import { toEditableSnapshot } from '@/lib/advocateSnapshot';
 
 export default async function EditProfilePage() {
@@ -31,7 +31,7 @@ export default async function EditProfilePage() {
       <EditProfileForm
         initial={initial}
         cities={cities}
-        previewHref={`/lawyers/${advocateProfilePath(advocate)}`}
+        previewHref={lawyerProfileHref(advocate)}
       />
     </div>
   );
