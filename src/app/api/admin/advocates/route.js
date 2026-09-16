@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { revalidateTag, revalidatePath } from 'next/cache';
+import mongoose from 'mongoose';
 import { getAdminSession } from '@/lib/admin';
+import { hasDeleteApiKey } from '@/lib/deleteApiKey';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { ADVOCATES_TAG } from '@/lib/advocates';
@@ -164,19 +166,31 @@ export async function PATCH(request) {
 
 /**
  * DELETE /api/admin/advocates?id=xyz — permanently remove a lawyer's account
- * and listing from the platform. Admin-only.
+ * and listing from the platform.
+ *
+ * `id` is the lawyer's database id, or their Justiceland id (JUSLD…).
+ * Admin session, or the account-delete API key (see lib/deleteApiKey).
  */
 export async function DELETE(request) {
   const admin = await getAdminSession();
-  if (!admin) return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
+  const byKey = !admin && hasDeleteApiKey(request);
+  if (!admin && !byKey) return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
 
-  const id = new URL(request.url).searchParams.get('id');
+  const id = String(new URL(request.url).searchParams.get('id') || '').trim();
   if (!id) return NextResponse.json({ error: 'Missing lawyer.' }, { status: 400 });
+
+  const filter = /^JUSLD\d+$/i.test(id)
+    ? { legalCareId: id.toUpperCase() }
+    : mongoose.isValidObjectId(id)
+      ? { _id: id }
+      : null;
+  if (!filter) return NextResponse.json({ error: 'Invalid lawyer id.' }, { status: 400 });
 
   try {
     await connectDB();
-    const deleted = await Advocate.findByIdAndDelete(id);
+    const deleted = await Advocate.findOneAndDelete(filter).select('_id legalCareId name').lean();
     if (!deleted) return NextResponse.json({ error: 'Lawyer not found.' }, { status: 404 });
+    console.warn(`[delete] lawyer ${deleted._id} (${deleted.legalCareId || ''}) deleted by ${byKey ? 'API key' : admin.email || 'admin'}`);
 
     // Lawyer removed from the public directory — refresh the cached list and
     // the pages that show lawyers.
@@ -184,7 +198,10 @@ export async function DELETE(request) {
     revalidatePath('/');
     revalidatePath('/lawyers');
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      deleted: { type: 'lawyer', id: String(deleted._id), legalCareId: deleted.legalCareId || '' },
+    });
   } catch (err) {
     console.error('advocate delete error', err);
     return NextResponse.json({ error: 'Could not delete the lawyer. Please try again.' }, { status: 500 });

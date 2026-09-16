@@ -270,6 +270,29 @@ function Tick({ checked, indeterminate = false, onChange, label }) {
   );
 }
 
+/** The plan a lawyer is on now; a lapsed paid plan is called out in red. */
+function PlanBadge({ plan }) {
+  if (!plan) return <span className="text-ink/30">—</span>;
+  const tone =
+    plan.id === 'premium'
+      ? 'bg-amber-500/12 text-amber-700 ring-amber-500/20'
+      : plan.id === 'professional'
+        ? 'bg-primary/10 text-primary ring-primary/20'
+        : plan.lapsed
+          ? 'bg-rose-500/10 text-rose-600 ring-rose-500/20'
+          : 'bg-ink/6 text-ink/50 ring-ink/10';
+  return (
+    <span className="flex flex-col items-start gap-0.5">
+      <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ${tone}`}>
+        {plan.lapsed ? `${plan.lapsedName} expired` : plan.name}
+      </span>
+      {plan.id !== 'free' && plan.expiresAt && (
+        <span className="whitespace-nowrap text-[11px] text-ink/45">till {formatDate(plan.expiresAt)}</span>
+      )}
+    </span>
+  );
+}
+
 function StatusBadge({ status }) {
   const map = {
     published: 'bg-emerald-500/12 text-emerald-700 ring-emerald-500/20',
@@ -341,6 +364,7 @@ export default function AdvocatesTable({ advocates }) {
   const [verification, setVerification] = useState('all');
   const [state, setState] = useState('all');
   const [field, setField] = useState('all');
+  const [plan, setPlan] = useState('all');
 
   // Ticked lawyers, by id. Held as a Set of ids rather than of rows so that a
   // refresh — which hands us new objects for the same lawyers — does not lose
@@ -365,6 +389,7 @@ export default function AdvocatesTable({ advocates }) {
       if (verification !== 'all' && a.verified !== (verification === 'verified')) return false;
       if (state !== 'all' && a.state !== state) return false;
       if (field !== 'all' && !(a.specializations || []).includes(field)) return false;
+      if (plan === 'expired' ? !a.plan?.lapsed : plan !== 'all' && a.plan?.id !== plan) return false;
       if (term) {
         const hay = [a.name, a.email, a.phone, a.legalCareId, a.city, a.state, ...(a.specializations || [])]
           .join(' ')
@@ -373,14 +398,14 @@ export default function AdvocatesTable({ advocates }) {
       }
       return true;
     });
-  }, [advocates, q, status, verification, state, field]);
+  }, [advocates, q, status, verification, state, field, plan]);
 
   const active =
-    q || status !== 'all' || verification !== 'all' || state !== 'all' || field !== 'all';
+    q || status !== 'all' || verification !== 'all' || state !== 'all' || field !== 'all' || plan !== 'all';
 
   // Fifty to a page; a new search or filter starts again at page one.
   const { page, totalPages, pageRows, goToPage, topRef } = useClientPages(filtered, [
-    q, status, verification, state, field,
+    q, status, verification, state, field, plan,
   ]);
 
   // Selection is scoped to what the filters are showing. "Select all" on a
@@ -521,6 +546,7 @@ export default function AdvocatesTable({ advocates }) {
       label: 'Profile',
       render: (a) => <CompletionCell completion={a.completion} />,
     },
+    { key: 'plan', label: 'Plan', render: (a) => <PlanBadge plan={a.plan} /> },
     { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
     { key: 'action', label: 'Approval', render: (a) => <StatusAction advocate={a} /> },
     { key: 'createdAt', label: 'Joined', render: (a) => <span className="whitespace-nowrap text-ink/60">{formatDate(a.createdAt)}</span> },
@@ -580,6 +606,18 @@ export default function AdvocatesTable({ advocates }) {
             { value: 'all', label: 'All lawyers' },
             { value: 'verified', label: 'Verified' },
             { value: 'unverified', label: 'Not verified' },
+          ]}
+        />
+        <FilterSelect
+          value={plan}
+          onChange={setPlan}
+          label="Plan"
+          options={[
+            { value: 'all', label: 'All plans' },
+            { value: 'premium', label: 'Premium' },
+            { value: 'professional', label: 'Professional' },
+            { value: 'free', label: 'Starter (free)' },
+            { value: 'expired', label: 'Plan expired' },
           ]}
         />
         <FilterSelect

@@ -19,6 +19,8 @@ import { getAdvocateById, getRawAdvocateById } from '@/lib/advocates';
 import { fromRecord, completionOf } from '@/lib/profileCompletion';
 import { getAdvocateConsultations } from '@/lib/consultations';
 import { applyLegacyCommission } from '@/lib/payouts';
+import { getQueriesForAdvocate } from '@/lib/queries';
+import OpenQueriesCard from '@/components/dashboard/overview/OpenQueriesCard';
 import { buildOverview, percentChange } from '@/lib/dashboardOverview';
 import { lawyerProfileHref } from '@/utils/advocateUrl';
 
@@ -30,6 +32,8 @@ export default async function DashboardOverviewPage({ searchParams }) {
   if (!advocate) redirect('/login');
 
   const all = await getAdvocateConsultations(id);
+  // Public questions waiting for any lawyer — masked until one takes them.
+  const queries = await getQueriesForAdvocate(id);
   // Take the one-time commission on pre-commission balances before the balance
   // is read, so the overview never shows a figure the lawyer cannot withdraw.
   await applyLegacyCommission(id);
@@ -108,6 +112,12 @@ export default async function DashboardOverviewPage({ searchParams }) {
         <div className="min-w-0 space-y-5 sm:space-y-6">
           <IncomingRequests initialAvailable={available} />
           <ActiveConsultations />
+          <OpenQueriesCard
+            count={queries.openTotal}
+            queries={queries.open.slice(0, 3)}
+            locked={queries.locked}
+            credits={queries.credits}
+          />
           <TodaySessions sessions={overview.today} />
           {progress.percent < 100 && <ProfileCompletion progress={progress} />}
         </div>

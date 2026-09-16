@@ -9,9 +9,9 @@
 // the site to do, so they keep their place in the footer, where visitors go
 // looking for that kind of thing.
 //
-// How It Works stays. It is not a page but a jump to the section on the home
-// page, and it answers the question a first-time visitor has before they will
-// search for anything: what actually happens if I do.
+// How It Works and Ask a Lawyer both live in the footer instead. Asking
+// without an account is offered where it fits — the floating button, the popup
+// and the band on practice-area pages — rather than as a header link.
 export const MAIN_NAV = [
   { label: 'Find Lawyers', href: '/lawyers' },
   { label: 'Legal Services', href: '/legal-services' },
@@ -21,7 +21,6 @@ export const MAIN_NAV = [
   // with a fixed scope and a fixed price — a company registered, a notice
   // drafted, a trademark filed.
   { label: 'Services', href: '/services' },
-  { label: 'How It Works', href: '/#how-it-works' },
 ];
 
 /** Primary calls-to-action shown in the header and mobile drawer. */
@@ -38,6 +37,7 @@ export const FOOTER_NAV = [
     title: 'Platform',
     links: [
       { label: 'Find Lawyers', href: '/lawyers' },
+      { label: 'Ask a Lawyer — free', href: '/ask' },
       { label: 'Legal Services', href: '/legal-services' },
       { label: 'Services', href: '/services' },
       { label: 'Browse Cities', href: '/cities' },

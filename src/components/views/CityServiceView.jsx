@@ -21,6 +21,7 @@ import { getMatterDescription } from '@/data/matterContent';
 import { getServiceContent } from '@/data/serviceContent';
 import { WhenToConsult } from '@/components/views/sections/ContentSections';
 import { pluralize } from '@/utils/formatters';
+import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[service]-in-[city]` — one legal service, scoped to one city. */
 
@@ -118,6 +119,7 @@ export default async function CityServiceView({ city, service }) {
       />
 
       <Container className="py-10 sm:py-14">
+        <AskQueryBand category={service.name} city={city.name} className="mb-8" />
         {/* ── Intro + quick facts ───────────────────────────────────── */}
         <SectionReveal>
           <div className="grid gap-6 lg:grid-cols-3">

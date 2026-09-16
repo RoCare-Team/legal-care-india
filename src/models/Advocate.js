@@ -355,6 +355,13 @@ const AdvocateSchema = new Schema(
     },
     planExpiresAt: { type: Date, default: null },
 
+    // Client query credits spent in the current monthly cycle of the plan.
+    // `queryCreditCycle` names the cycle (its start date) the count belongs
+    // to; a different cycle means the count is stale and starts again from
+    // zero. See lib/queryCredits.
+    queryCreditCycle: { type: String, default: '' },
+    queryCreditsUsed: { type: Number, default: 0, min: 0 },
+
     // Every membership payment, newest last. Kept on the lawyer because it is
     // their billing history: what they paid, for which plan, and the Razorpay
     // ids that prove it — which is also what makes crediting idempotent when
@@ -372,6 +379,13 @@ const AdvocateSchema = new Schema(
             razorpayPaymentId: { type: String, default: '' },
             startedAt: { type: Date, default: Date.now },
             expiresAt: { type: Date, required: true },
+            // Paid online through Razorpay, or set by hand from the admin
+            // panel (an offline payment, a complimentary plan, a correction).
+            source: { type: String, enum: ['razorpay', 'admin'], default: 'razorpay' },
+            // 'grant' gives or extends a plan; 'cancel' ends one early.
+            action: { type: String, enum: ['grant', 'cancel'], default: 'grant' },
+            grantedBy: { type: String, default: '' },
+            note: { type: String, default: '' },
           },
           { _id: true }
         ),

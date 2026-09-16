@@ -18,6 +18,7 @@ import {
 } from '@/lib/serviceRoutes';
 import { getSubServiceLinks } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
+import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[matter]-lawyer-in-[city]` — one specific matter, scoped to one city. */
 
@@ -90,6 +91,7 @@ export default async function CityMatterView({ city, service, subService, subSlu
       />
 
       <Container className="py-10 sm:py-14">
+        <AskQueryBand category={subService} city={city.name} className="mb-8" />
         {/* ── Intro + quick facts ───────────────────────────────────── */}
         <SectionReveal>
           <div className="grid gap-6 lg:grid-cols-3">

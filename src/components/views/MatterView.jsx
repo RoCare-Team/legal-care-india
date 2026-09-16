@@ -18,6 +18,7 @@ import { servicePath, matterPath, cityMatterPath } from '@/lib/serviceRoutes';
 import { getSubServiceLinks } from '@/data/categories';
 import { getServiceContent } from '@/data/serviceContent';
 import { getMatterDescription } from '@/data/matterContent';
+import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[matter]-lawyer` — one specific matter, across all of India. */
 
@@ -108,6 +109,7 @@ export default async function MatterView({ service, subService, subSlug }) {
       />
 
       <Container className="py-10 sm:py-14">
+        <AskQueryBand category={subService} className="mb-8" />
         {/* Content on the left; the lawyer rail pinned alongside it. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
           {/* The lawyer rail leads on a narrow screen. Stacked in source order

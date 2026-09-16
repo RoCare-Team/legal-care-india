@@ -7,6 +7,8 @@ import {
 import { adminGetAdvocateById } from '@/lib/admin';
 import { AdminAvatar } from '@/components/admin/DataTable';
 import AdvocatePhoneEditor from '@/components/admin/AdvocatePhoneEditor';
+import AdvocatePlanManager from '@/components/admin/AdvocatePlanManager';
+import AdminDeleteButton from '@/components/admin/AdminDeleteButton';
 import {
   DetailBack, InfoCard, InfoRow, StatTile, ConsultationList, WalletList,
 } from '@/components/admin/DetailKit';
@@ -58,7 +60,10 @@ export default async function AdminAdvocateDetailPage({ params }) {
           </h2>
           <p className="font-mono text-xs text-ink/40">{adv.legalCareId} · joined {formatDate(adv.createdAt)}</p>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${adv.membership.planId === 'premium' ? 'bg-amber-500/12 text-amber-700' : adv.membership.planId === 'professional' ? 'bg-primary/10 text-primary' : 'bg-ink/6 text-ink/50'}`}>
+            {adv.membership.planName}
+          </span>
           <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${adv.status === 'published' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
             {adv.status}
           </span>
@@ -70,6 +75,7 @@ export default async function AdminAdvocateDetailPage({ params }) {
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             View profile
           </Link>
+          <AdminDeleteButton kind="advocate" id={id} name={adv.name} />
         </div>
       </div>
 
@@ -105,6 +111,10 @@ export default async function AdminAdvocateDetailPage({ params }) {
             <p className="mb-1.5 flex items-center gap-1.5 text-sm text-ink/50"><Languages className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />Languages</p>
             <Chips items={adv.languages} tone="bg-blue-500/10 text-blue-600" />
           </div>
+        </InfoCard>
+
+        <InfoCard title="Plan & membership" className="lg:col-span-2">
+          <AdvocatePlanManager id={id} membership={adv.membership} />
         </InfoCard>
 
         {adv.about && (

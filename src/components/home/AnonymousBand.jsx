@@ -51,16 +51,27 @@ export default function AnonymousBand() {
               </p>
             </div>
 
-            <Link
-              href="/lawyers"
-              className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-6 py-3.5 text-sm font-bold text-[#0F172A] shadow-lg transition-all hover:bg-[#E7C766] hover:shadow-xl"
-            >
-              Start Consultation
-              <ArrowRight
-                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-                aria-hidden="true"
-              />
-            </Link>
+            {/* Two ways in, because there are two visitors here: one knows
+                they want a lawyer now, the other only knows what went wrong.
+                The second used to have nowhere to go but the directory. */}
+            <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row lg:flex-col xl:flex-row">
+              <Link
+                href="/lawyers"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-6 py-3.5 text-sm font-bold text-[#0F172A] shadow-lg transition-all hover:bg-[#E7C766] hover:shadow-xl"
+              >
+                Start Consultation
+                <ArrowRight
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+              <Link
+                href="/ask"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/10"
+              >
+                Ask a question — free
+              </Link>
+            </div>
           </div>
 
           {/* The three claims, on their own rule under the pitch. Divided

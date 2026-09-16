@@ -9,6 +9,7 @@ import { getAllAdvocates } from '@/lib/advocates';
 import { toCardAdvocate } from '@/lib/advocateCard';
 import { getServiceByAnySlug, getSubServiceByAnySlug } from '@/data/categories';
 import { getAllCities } from '@/lib/cities';
+import AskQueryBand from '@/components/queries/AskQueryBand';
 
 export const metadata = createMetadata({
   title: 'Find Verified Lawyers in India',
@@ -172,6 +173,7 @@ export default async function AdvocatesPage({ searchParams }) {
           over the hero would have its first group cut off by it. */}
       <Container size="wide" className="relative z-20 pb-10 pt-4 sm:pb-12 sm:pt-5">
         <AdvocateListing advocates={advocates.map(toCardAdvocate)} initial={initial} cities={cities} />
+        <AskQueryBand className="mt-8" />
 
         {/* Below the list, because the list is what the visitor came for — but
             on the page, because a directory with no explanation of how to read

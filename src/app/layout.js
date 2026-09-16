@@ -18,6 +18,7 @@ import AdvocateCallListener from '@/components/consultation/AdvocateCallListener
 import PresenceProvider from '@/components/consultation/PresenceProvider';
 import LocationProvider from '@/components/location/LocationProvider';
 import LocationGate from '@/components/location/LocationGate';
+import AskQueryPopup from '@/components/queries/AskQueryPopup';
 
 /** Root metadata for every route (extend per-page with createMetadata). */
 export const metadata = baseMetadata;
@@ -133,6 +134,9 @@ export default async function RootLayout({ children }) {
                 by itself on arrival when no location has been set. */}
             <HideOnAdmin>
               <LocationGate />
+              {/* "Have a legal problem?" — the floating button, the popup it
+                  opens, and the one automatic offer. It picks its own pages. */}
+              <AskQueryPopup />
             </HideOnAdmin>
           </LocationProvider>
         </PresenceProvider>

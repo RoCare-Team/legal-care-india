@@ -11,6 +11,7 @@ import {
   WalletList,
 } from '@/components/admin/DetailKit';
 import WalletAdjust from '@/components/admin/WalletAdjust';
+import AdminDeleteButton from '@/components/admin/AdminDeleteButton';
 import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
 
@@ -57,12 +58,15 @@ export default async function AdminUserDetailPage({ params, searchParams }) {
           <h2 className="font-display text-2xl font-semibold text-ink">{user.name}</h2>
           <p className="text-sm text-ink/50">Client · joined {formatDate(user.createdAt)}</p>
         </div>
-        {user.anonymous && (
-          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-ink/8 px-3 py-1.5 text-xs font-semibold text-ink/60">
-            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-            Anonymous mode
-          </span>
-        )}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {user.anonymous && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/8 px-3 py-1.5 text-xs font-semibold text-ink/60">
+              <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+              Anonymous mode
+            </span>
+          )}
+          <AdminDeleteButton kind="user" id={user.id} name={user.name} />
+        </div>
       </div>
 
       {/* Stats */}

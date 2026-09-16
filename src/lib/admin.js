@@ -10,6 +10,8 @@ import Activity from '@/models/Activity';
 import ContactMessage from '@/models/ContactMessage';
 import { advocateRates } from '@/constants/callRates';
 import { completionOf } from '@/lib/profileCompletion';
+import { membershipSummary } from '@/lib/adminMembership';
+import { activePlan, getPlan, FREE_PLAN_ID } from '@/constants/membershipPlans';
 
 /**
  * Admin access + read-only data for the /admin panel.
@@ -113,7 +115,7 @@ export async function adminGetAdvocates() {
       $project: {
         name: 1, email: 1, phone: 1, city: 1, state: 1, legalCareId: 1, slug: 1,
         status: 1, verified: 1, specializations: 1, consultationFee: 1,
-        experience: 1, createdAt: 1, _flat: 1,
+        experience: 1, createdAt: 1, _flat: 1, planId: 1, planExpiresAt: 1,
       },
     },
     { $sort: { createdAt: -1 } },
@@ -137,6 +139,14 @@ export async function adminGetAdvocates() {
       experience: r.experience || 0,
       createdAt: iso(r.createdAt),
       completion: { percent, done, total },
+      plan: {
+        id: activePlan(r).id,
+        name: activePlan(r).name,
+        // A paid plan on record that has run out, so the list can say so.
+        lapsed: Boolean(r.planId && r.planId !== FREE_PLAN_ID && activePlan(r).id === FREE_PLAN_ID),
+        lapsedName: getPlan(r.planId).name,
+        expiresAt: iso(r.planExpiresAt),
+      },
     };
   });
 }
@@ -300,6 +310,7 @@ export async function adminGetAdvocateById(id) {
     },
     walletBalance: adv.walletBalance || 0,
     walletTransactions: (adv.walletTransactions || []).map(toWalletRow).reverse(),
+    membership: membershipSummary(adv),
     createdAt: iso(adv.createdAt),
     consultations: rows,
     enquiries: enquiries.map((e) => ({

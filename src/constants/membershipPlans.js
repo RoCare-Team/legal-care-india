@@ -1,8 +1,9 @@
 /**
  * What a lawyer's membership buys them.
  *
- * Two things, and they are the only two: how much of their practice they may
- * list, and where they sit in a search. Nothing here touches consultations —
+ * Three things: how much of their practice they may list, where they sit in a
+ * search, and a monthly allowance of client query credits (see lib/queryCredits).
+ * Nothing here touches consultations —
  * a lawyer on the free plan takes chats, calls and video on exactly the same
  * terms as one paying ₹499, sets the same slot prices and is paid the same
  * way. This is about being found, not about being paid.
@@ -27,6 +28,11 @@ export const TERM_MONTHS = 12;
  *
  * `areas`, `matters` and `cities` are ceilings on `specializations`,
  * `subSpecializations` and `practiceCities`. `null` means no ceiling.
+ *
+ * `queryCredits` is the monthly allowance for taking client queries — the
+ * questions posted from the public "ask a lawyer" form. One credit takes one
+ * query. A plan with none does not see the query pool at all. See
+ * lib/queryCredits for how the month is counted.
  */
 export const MEMBERSHIP_PLANS = [
   {
@@ -38,6 +44,7 @@ export const MEMBERSHIP_PLANS = [
     areas: 2,
     matters: 4,
     cities: 2,
+    queryCredits: 0,
     // Said as a fact about the ordering, not as a promise about a position.
     placement: 'Listed in search results',
     features: [
@@ -55,9 +62,11 @@ export const MEMBERSHIP_PLANS = [
     areas: 5,
     matters: 10,
     cities: 5,
+    queryCredits: 10,
     placement: 'Ranked above Starter lawyers in every search',
     features: [
       'Everything in Starter',
+      '10 client query credits every month',
       '5 practice areas, 10 matters and 5 cities',
       'Ranked above free listings',
       'Professional badge on your profile',
@@ -72,9 +81,11 @@ export const MEMBERSHIP_PLANS = [
     areas: null,
     matters: null,
     cities: null,
+    queryCredits: 25,
     placement: 'Top of every search, above all other lawyers',
     features: [
       'Everything in Professional',
+      '25 client query credits every month',
       'Unlimited practice areas, matters and cities',
       'Top placement in search results',
       'Premium badge on your profile',

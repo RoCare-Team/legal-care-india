@@ -278,6 +278,8 @@ const PRIVATE_FIELDS = [
   'bankAccounts',
   'openPayoutId',
   'commissionAppliedAt',
+  'queryCreditCycle',
+  'queryCreditsUsed',
   '__v',
 ];
 

@@ -18,6 +18,7 @@ import { servicePath, matterPath } from '@/lib/serviceRoutes';
 import { getSubServiceLinks, CATEGORIES } from '@/data/categories';
 import { getServiceContent } from '@/data/serviceContent';
 import { pluralize } from '@/utils/formatters';
+import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[service]` — one practice area across all of India. */
 
@@ -109,6 +110,7 @@ export default async function ServiceView({ service }) {
       />
 
       <Container className="py-10 sm:py-14">
+        <AskQueryBand category={service.name} className="mb-8" />
         {/* Content on the left; the lawyer rail pinned alongside it. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
           {/* The lawyer rail leads on a narrow screen. Stacked in source order
