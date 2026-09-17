@@ -3,7 +3,6 @@ import { MapPin, Star, BadgeCheck, ArrowRight, CalendarDays, Languages } from 'l
 import { Avatar } from '@/components/ui';
 import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
-import { slotsFor } from '@/constants/consultationSlots';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 
@@ -72,10 +71,6 @@ export default function AdvocateListCard({ advocate }) {
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
 
-  // The slot quoted when there is no per-minute rate to show — see the grid
-  // card for why the two are never shown together.
-  const hasPerMinute = chatRate > 0 || audioRate > 0 || videoRate > 0;
-  const bookSlot = hasPerMinute ? null : slotsFor(advocate, 'chat')[0] || null;
 
   // "Advocate · Civil Law" — standing and headline practice, the two things a
   // name alone doesn't say.
@@ -199,14 +194,6 @@ export default function AdvocateListCard({ advocate }) {
       <div
         className={`flex shrink-0 flex-col justify-center gap-2.5 border-t ${HAIRLINE} pt-3.5 sm:w-[204px] sm:self-stretch sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0`}
       >
-        {/* The same rule as the grid card: a lawyer with no per-minute rate
-            quotes a bookable slot here, so no card goes out without a price. */}
-        {bookSlot && (
-          <p className="rounded-xl border border-dashed border-emerald-300/70 bg-emerald-50/60 px-3 py-2 text-center text-[12.5px] text-emerald-800/70">
-            Book {bookSlot.minutes} min{' '}
-            <span className="text-[14px] font-bold text-emerald-900">₹{bookSlot.price.toLocaleString('en-IN')}</span>
-          </p>
-        )}
 
         {/* The three live channels, each labelled with its rate. One per row in
             the wide card's narrow column; two by two on a phone, with View
