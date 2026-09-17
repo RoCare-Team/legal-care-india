@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   Mail, Phone, MapPin, Wallet, BadgeCheck, ExternalLink, Circle,
-  GraduationCap, Award, Languages, Scale,
+  GraduationCap, Award, Languages, Scale, FileText,
 } from 'lucide-react';
 import { adminGetAdvocateById } from '@/lib/admin';
 import { AdminAvatar } from '@/components/admin/DataTable';
@@ -111,6 +111,49 @@ export default async function AdminAdvocateDetailPage({ params }) {
             <p className="mb-1.5 flex items-center gap-1.5 text-sm text-ink/50"><Languages className="h-3.5 w-3.5 text-ink/35" aria-hidden="true" />Languages</p>
             <Chips items={adv.languages} tone="bg-blue-500/10 text-blue-600" />
           </div>
+        </InfoCard>
+
+        {/* What the lawyer uploaded to be verified — opened through an
+            admin-only route, never a public URL. */}
+        <InfoCard title="Verification documents" className="lg:col-span-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              ['bar_council_certificate', 'Bar Council Certificate'],
+              ['government_id', 'Government ID Proof'],
+            ].map(([kind, label]) => {
+              const doc = (adv.documents || []).find((d) => d.kind === kind);
+              return (
+                <div key={kind} className="flex items-center gap-3 rounded-xl border border-ink/8 p-3.5">
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg ${doc ? 'bg-emerald-500/10 text-emerald-600' : 'bg-ink/5 text-ink/35'}`}>
+                    <FileText className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink">{label}</p>
+                    <p className="truncate text-xs text-ink/50">
+                      {doc
+                        ? `${doc.fileName || doc.mimeType} · ${(doc.size / 1024).toFixed(0)} KB · ${formatDate(doc.uploadedAt)}`
+                        : 'Not uploaded yet'}
+                    </p>
+                  </div>
+                  {doc && (
+                    <a
+                      href={`/api/admin/advocates/documents/${doc.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-ink/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> View
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {adv.barCouncilNumber && (
+            <p className="mt-3 text-xs text-ink/50">
+              Bar Council ID given: <span className="font-mono font-semibold text-ink/75">{adv.barCouncilNumber}</span>
+            </p>
+          )}
         </InfoCard>
 
         <InfoCard title="Plan & membership" className="lg:col-span-2">

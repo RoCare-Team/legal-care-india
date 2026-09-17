@@ -88,6 +88,31 @@ function last10(value) {
   return normalizeIndianMobile(value || '').slice(-10);
 }
 
+/**
+ * Every Indian mobile number anywhere in a Smartflo record, as last-10 digits.
+ * Walks nested objects and arrays, because the provider's field names for the
+ * two legs of a call are not the same across its APIs.
+ */
+function phoneNumbersIn(value, found = new Set(), depth = 0) {
+  if (value == null || depth > 4) return found;
+  if (typeof value === 'string' || typeof value === 'number') {
+    const digits = String(value).replace(/\D/g, '');
+    if (digits.length >= 10 && digits.length <= 13) {
+      const ten = digits.slice(-10);
+      if (/^[6-9]\d{9}$/.test(ten)) found.add(ten);
+    }
+    return found;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) phoneNumbersIn(v, found, depth + 1);
+    return found;
+  }
+  if (typeof value === 'object') {
+    for (const v of Object.values(value)) phoneNumbersIn(v, found, depth + 1);
+  }
+  return found;
+}
+
 /** "YYYY-MM-DD HH:MM:SS" in IST — the format and timezone Smartflo reports in. */
 function istStamp(date) {
   // 'sv-SE' formats as YYYY-MM-DD HH:MM:SS, which is exactly Smartflo's Y-m-d H:i:s.
@@ -166,11 +191,28 @@ export async function checkCallOutcome({ agentNumber, clientNumber, since }) {
   const client = last10(clientNumber);
 
   // 1. Connected right now?
-  const live = await get('/v1/live_calls', { agent_number: agent });
-  const liveRows = Array.isArray(live) ? live : (live?.results ?? live?.data ?? []);
-  if (Array.isArray(liveRows)) {
-    const match = liveRows.find((r) => last10(r?.customer_number) === client);
+  //
+  // Matched on every phone number in the row, not on one named field. A
+  // click-to-call leg is not always reported as `customer_number` — it can come
+  // back as the destination, the dialled number or a nested leg — and relying
+  // on one field name left an answered call looking unanswered: both people
+  // talking while the app sat on "Connecting" with no clock running. Nor is the
+  // `agent_number` query filter relied on; the rows are filtered here.
+  const live = await get('/v1/live_calls');
+  const liveRows = Array.isArray(live) ? live : (live?.results ?? live?.data ?? live?.calls ?? []);
+  if (Array.isArray(liveRows) && liveRows.length) {
+    const match = liveRows.find((r) => {
+      const numbers = phoneNumbersIn(r);
+      return numbers.has(client) && (numbers.has(agent) || numbers.size <= 2);
+    });
     if (match) return { state: 'answered', seconds: 0 };
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[dialer] live calls did not include this pair', {
+        client,
+        agent,
+        sample: liveRows.slice(0, 3).map((r) => [...phoneNumbersIn(r)]),
+      });
+    }
   }
 
   // 2. Over already — did it ever get answered?
@@ -189,7 +231,7 @@ export async function checkCallOutcome({ agentNumber, clientNumber, since }) {
     // instant it started.
     const floor = new Date(since).getTime() - 10 * 1000;
     const match = rows.find((r) => {
-      const isPair = last10(r?.client_number) === client || last10(r?.destination) === client;
+      const isPair = phoneNumbersIn(r).has(client);
       if (!isPair) return false;
       const stamp = istToDate(r?.end_stamp || `${r?.date} ${r?.time}`);
       return !stamp || stamp.getTime() >= floor;

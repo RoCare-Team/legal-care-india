@@ -3,7 +3,8 @@ import { revalidateTag } from 'next/cache';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { getSessionAdvocateId, clearAuthCookie } from '@/lib/auth';
-import { getAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
+import { getAdvocateById, getRawAdvocateById, ADVOCATES_TAG } from '@/lib/advocates';
+import { fromRecord, completionOf } from '@/lib/profileCompletion';
 import { normalizeRate } from '@/constants/callRates';
 import {
   CONSULTATION_SLOTS, CONSULTATION_CHANNELS, normalizeSlotPrice, slotKey,
@@ -48,9 +49,22 @@ export async function GET() {
   const id = await getSessionAdvocateId();
   if (!id) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
 
-  const advocate = await getAdvocateById(id);
+  const [advocate, raw] = await Promise.all([getAdvocateById(id), getRawAdvocateById(id)]);
   if (!advocate) return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
-  return NextResponse.json({ advocate });
+
+  // The same score the web dashboard shows, counted on the record as stored
+  // (not on the public profile, which fills gaps in). The mobile app reads it
+  // here, with what is still missing, so both show one number.
+  const { percent, done, total, steps } = completionOf(fromRecord(raw || {}));
+  const completion = {
+    percent,
+    done,
+    total,
+    missing: steps.flatMap((step) =>
+      step.items.filter((i) => !i.done).map((i) => ({ key: i.key, label: i.label, step: step.title }))
+    ),
+  };
+  return NextResponse.json({ advocate, completion });
 }
 
 /**

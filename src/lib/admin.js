@@ -11,6 +11,7 @@ import ContactMessage from '@/models/ContactMessage';
 import { advocateRates } from '@/constants/callRates';
 import { completionOf } from '@/lib/profileCompletion';
 import { membershipSummary } from '@/lib/adminMembership';
+import { listVerificationDocuments } from '@/lib/verificationDocuments';
 import { activePlan, getPlan, FREE_PLAN_ID } from '@/constants/membershipPlans';
 
 /**
@@ -249,12 +250,13 @@ export async function adminGetAdvocateById(id) {
   }
   if (!adv) return null;
 
-  const [consultations, enquiries] = await Promise.all([
+  const [consultations, enquiries, documents] = await Promise.all([
     Consultation.find({ advocateId: id })
       .sort({ createdAt: -1 })
       .select('userName advocateName minutes price status messages createdAt')
       .lean(),
     Enquiry.find({ advocateId: id }).sort({ createdAt: -1 }).lean(),
+    listVerificationDocuments(id),
   ]);
 
   const rows = consultations.map(toConsultationRow);
@@ -311,6 +313,7 @@ export async function adminGetAdvocateById(id) {
     walletBalance: adv.walletBalance || 0,
     walletTransactions: (adv.walletTransactions || []).map(toWalletRow).reverse(),
     membership: membershipSummary(adv),
+    documents,
     createdAt: iso(adv.createdAt),
     consultations: rows,
     enquiries: enquiries.map((e) => ({
