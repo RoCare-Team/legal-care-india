@@ -69,6 +69,7 @@ function testLoginConfig() {
  */
 const FIXED_TEST_LOGINS = {
   7740847114: '1234',
+  7988140115: '1234',
 };
 
 /** The fixed code for a test number, or '' when the number has none. */
