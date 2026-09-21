@@ -28,6 +28,16 @@ export const SIGNUP_COOKIE = 'lci_phone_ok';
  */
 export const SIGNUP_TOKEN_TTL_SECONDS = 20 * 60;
 
+/**
+ * What a phone-only account (the app's `minimal` signup) carries until the lawyer
+ * fills in the real ones on the Professional Profile step. The email domain is
+ * `.invalid`, which is reserved and can never be delivered to, and the account
+ * email is unique, so it is built from the number. The profile route recognises
+ * the suffix and lets the lawyer's real email replace it.
+ */
+export const PLACEHOLDER_NAME = 'New Advocate';
+export const PLACEHOLDER_EMAIL_SUFFIX = '@pending.invalid';
+
 function secret() {
   const s = process.env.JWT_SECRET;
   if (!s) throw new Error('JWT_SECRET is not set in .env.local');

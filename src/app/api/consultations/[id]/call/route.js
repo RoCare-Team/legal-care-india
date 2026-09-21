@@ -4,6 +4,7 @@ import {
   startCall,
   answerCall,
   hangUpCall,
+  markCallConnected,
   pushCallSignal,
   getCallState,
 } from '@/lib/consultations';
@@ -70,6 +71,7 @@ export async function GET(request, { params }) {
  * POST /api/consultations/[id]/call
  *   { action: 'start' }                      — client rings the lawyer
  *   { action: 'accept' | 'reject' }          — lawyer answers the ring
+ *   { action: 'connected' }                  — media is flowing; starts the paid clock
  *   { action: 'end', reason? }               — either side hangs up
  *   { action: 'signal', callId, offer? , answer?, candidate? }
  */
@@ -108,6 +110,11 @@ export async function POST(request, { params }) {
       }
       const call = await answerCall(id, s.id, action === 'accept');
       return NextResponse.json({ ok: true, call }, { headers: NO_STORE });
+    }
+
+    if (action === 'connected') {
+      const clock = await markCallConnected(id, s.id, s.role);
+      return NextResponse.json({ ok: true, ...clock }, { headers: NO_STORE });
     }
 
     if (action === 'end') {

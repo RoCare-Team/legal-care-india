@@ -153,6 +153,13 @@ const ConsultationSchema = new Schema(
 
     startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)
+
+    // An audio or video session is billed from the moment the call's media is
+    // actually up, not from the lawyer's tap on Accept — the seconds spent
+    // ringing and connecting are nobody's fault and nobody's bill. The first
+    // time either side reports "connected" (see markCallConnected) the clock
+    // moves to that moment, once, and this marks it done.
+    callClockStarted: { type: Boolean, default: false },
     endedAt: { type: Date, default: null },   // when it actually ended
 
     // Free "resume" of leftover time. When a session ends early, the unused

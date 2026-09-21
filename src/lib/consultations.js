@@ -115,6 +115,9 @@ export function serializeSession(doc) {
     createdAt: s.createdAt || null,
     startedAt: s.startedAt || null,
     endsAt: s.endsAt || null,
+    // True once an audio/video call has connected and the paid clock is
+    // running from that moment; false while it is still ringing or connecting.
+    callClockStarted: Boolean(s.callClockStarted),
     remainingMs,
     call: callSummary(s.call),
     // Just enough to fetch playback with — never the disk path itself.
@@ -735,6 +738,47 @@ export async function answerCall(id, advocateId, accept) {
   }
   await session.save();
   return callSummary(session.call);
+}
+
+/**
+ * One side reports that the call's audio/video is really flowing. For an audio
+ * or video consultation that is when billing starts: `startedAt` moves from the
+ * lawyer's Accept to now, and `endsAt` moves by the same amount so the paid time
+ * is still the whole of what was bought. Only the first report does anything —
+ * both phones report, and a call that drops and reconnects reports again — so
+ * the move is claimed atomically and happens once.
+ *
+ * A chat session with a call inside it is untouched: its clock is the chat's.
+ */
+export async function markCallConnected(id, participantId, role) {
+  const session = await loadForCall(id, participantId, role);
+  const started = session.startedAt ? new Date(session.startedAt) : null;
+  const isCallSession = session.type === 'audio' || session.type === 'video';
+
+  if (
+    started &&
+    isCallSession &&
+    session.status === 'active' &&
+    session.call?.status === 'active' &&
+    !session.callClockStarted
+  ) {
+    const now = new Date();
+    const shift = Math.max(0, now.getTime() - started.getTime());
+    const set = { startedAt: now, callClockStarted: true };
+    if (session.endsAt) set.endsAt = new Date(new Date(session.endsAt).getTime() + shift);
+
+    await Consultation.updateOne(
+      { _id: session._id, status: 'active', callClockStarted: { $ne: true } },
+      { $set: set }
+    );
+  }
+
+  const fresh = await Consultation.findById(session._id).select('startedAt endsAt callClockStarted').lean();
+  return {
+    startedAt: fresh?.startedAt || null,
+    endsAt: fresh?.endsAt || null,
+    callClockStarted: Boolean(fresh?.callClockStarted),
+  };
 }
 
 /** Either side hangs up (or their browser gives up on the connection). */

@@ -12,6 +12,9 @@ import {
 import { activePlan, checkPlanLimits } from '@/constants/membershipPlans';
 import { slugify } from '@/utils/slugify';
 import { geocodeAddress } from '@/lib/geocode';
+import { PLACEHOLDER_EMAIL_SUFFIX } from '@/lib/advocateOtp';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * The lawyer's own slot prices, as a Map keyed by minutes.
@@ -232,6 +235,27 @@ export async function PUT(request) {
 
   try {
     await connectDB();
+
+    // A phone-only account (the app's onboarding) starts with a temporary
+    // account email. Saving a real one replaces it, so the lawyer can be
+    // reached and no other account can hold the same address. An account that
+    // already has a real email is left alone: this is the contact email only.
+    if (email !== undefined) {
+      const wanted = String(email).trim().toLowerCase();
+      const current = await Advocate.findById(id).select('email').lean();
+      if (current && String(current.email || '').endsWith(PLACEHOLDER_EMAIL_SUFFIX) && wanted) {
+        if (!EMAIL_RE.test(wanted)) {
+          return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
+        }
+        if (await Advocate.exists({ email: wanted, _id: { $ne: id } })) {
+          return NextResponse.json(
+            { error: 'email-taken', message: 'That email is already on another account. Try a different one.' },
+            { status: 409 }
+          );
+        }
+        update.email = wanted;
+      }
+    }
 
     if (locationTouched) {
       const current = await Advocate.findById(id).select('office city state').lean();

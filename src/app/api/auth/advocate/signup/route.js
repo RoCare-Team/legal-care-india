@@ -8,7 +8,10 @@ import { signToken, setAuthCookie } from '@/lib/auth';
 import { nextLegalCareId } from '@/lib/legalCareId';
 import { slugify } from '@/utils/slugify';
 import { CITIES } from '@/data/cities';
-import { SIGNUP_COOKIE, readSignupToken, clearSignupCookie } from '@/lib/advocateOtp';
+import {
+  SIGNUP_COOKIE, readSignupToken, clearSignupCookie,
+  PLACEHOLDER_NAME, PLACEHOLDER_EMAIL_SUFFIX,
+} from '@/lib/advocateOtp';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +25,17 @@ function stateFor(city) {
 
 /**
  * POST /api/auth/advocate/signup  { name, email, city }
+ * POST /api/auth/advocate/signup  { minimal: true }
  *
  * Creates a lawyer's account from the three things asked after the code is
  * confirmed, and signs them in.
+ *
+ * `minimal` is the mobile app's path: the account is made from the verified
+ * number alone, with a temporary name and email, and the lawyer supplies the real
+ * ones inside the onboarding. The app needs the account to exist first because
+ * onboarding uploads documents and can sell a plan, and both need an account.
+ * The account is still `pending`, so it stays out of the directory until it has
+ * been reviewed. The website never sends this.
  *
  * The phone number is NOT taken from the body. It comes from the httpOnly
  * proof set by the verify route, so this endpoint can only ever create an
@@ -53,18 +64,23 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const name = String(body?.name || '').trim();
-  const email = String(body?.email || '').trim().toLowerCase();
-  const city = String(body?.city || '').trim();
+  const minimal = body?.minimal === true;
+  const name = minimal ? PLACEHOLDER_NAME : String(body?.name || '').trim();
+  const email = minimal
+    ? `${phone}${PLACEHOLDER_EMAIL_SUFFIX}`
+    : String(body?.email || '').trim().toLowerCase();
+  const city = minimal ? '' : String(body?.city || '').trim();
 
-  if (name.length < 2) {
-    return NextResponse.json({ error: 'Please enter your full name.' }, { status: 400 });
-  }
-  if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
-  }
-  if (!city) {
-    return NextResponse.json({ error: 'Please choose the city you practise in.' }, { status: 400 });
+  if (!minimal) {
+    if (name.length < 2) {
+      return NextResponse.json({ error: 'Please enter your full name.' }, { status: 400 });
+    }
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
+    }
+    if (!city) {
+      return NextResponse.json({ error: 'Please choose the city you practise in.' }, { status: 400 });
+    }
   }
 
   try {
@@ -102,8 +118,9 @@ export async function POST(request) {
       slug: slugify(name) || 'advocate',
       legalCareId: await nextLegalCareId(),
       // The city they practise from is always one of the cities they serve.
-      practiceCities: [city],
-      contact: { phone, whatsapp: phone, email },
+      practiceCities: city ? [city] : [],
+      // A temporary email is not a way to reach anyone, so it is not published.
+      contact: { phone, whatsapp: phone, email: minimal ? '' : email },
       // No password is set. Signing in is a code to this number, and an empty
       // hash cannot be matched by anything.
       passwordHash: '',
