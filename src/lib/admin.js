@@ -457,7 +457,9 @@ function mapRecordings(list) {
       ? `${who}'s app · their own voice`
       : id.endsWith('-app-out')
         ? `${who}'s app · the other side`
-        : 'Web · both voices';
+        : /-web(-|$)/.test(id)
+          ? `${who}'s browser · both voices`
+          : 'Web · both voices';
     return {
       callId: id,
       label,

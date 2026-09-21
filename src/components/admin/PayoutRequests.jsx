@@ -91,6 +91,7 @@ function PayoutCard({ payout: p }) {
         <CopyValue label="Account holder" value={p.bank.holderName} />
         <CopyValue label="Account number" value={p.bank.accountNumber || `••${p.bank.accountLast4}`} />
         <CopyValue label="IFSC" value={p.bank.ifsc} />
+        {p.bank.pan && <CopyValue label="PAN" value={p.bank.pan} />}
         <div className="flex items-center gap-2 rounded-lg bg-muted/70 px-3 py-2">
           <Landmark className="h-4 w-4 text-ink/40" aria-hidden="true" />
           <p className="truncate text-sm capitalize text-ink">

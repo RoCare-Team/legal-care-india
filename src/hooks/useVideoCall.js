@@ -156,6 +156,9 @@ const RECONNECT_GRACE_MS = 15000;
 // enough to be an answer rather than a wait.
 const CONNECT_TIMEOUT_MS = 20000;
 
+// How often the recording so far is sent up while the call is running.
+const FLUSH_MS = 8000;
+
 /** Human wording for why a call stopped. */
 function endMessage(reason, endedBy, viewerRole, hasTurn = true) {
   if (reason === 'rejected') return 'The lawyer declined the video call.';
@@ -219,13 +222,15 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
   const connectTimerRef = useRef(null);
 
   // Recording: both sides' audio, mixed client-side via the Web Audio API into
-  // one MediaStream a MediaRecorder can capture — see startRecording/
-  // stopRecording below.
+  // one MediaStream a MediaRecorder can capture, and streamed up to the server
+  // in parts while the call runs — see startRecording/finalizeRecording below.
+  // `recRef` is the live recording: { id, chunks, sent }.
   const audioCtxRef = useRef(null);
   const mixDestRef = useRef(null);
   const recorderRef = useRef(null);
-  const recordedChunksRef = useRef([]);
-  const recordingStartedRef = useRef(false);
+  const recRef = useRef(null);
+  const flushTimerRef = useRef(null);
+  const uploadChainRef = useRef(Promise.resolve());
 
   phaseRef.current = phase;
   const isClient = viewerRole === 'user';
@@ -246,50 +251,82 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
   );
 
   /**
-   * Stop the recorder, if one is running, and release the AudioContext. Safe
-   * to call more than once — a no-op past the first call.
+   * Send whatever chunks of `rec` the server has not got yet.
+   *
+   * Uploads run one at a time, in order (a chain of promises), because the
+   * server appends each part to the file and parts landing out of order would
+   * corrupt it. Best-effort throughout — a failed upload must never surface as
+   * a failed call, and whatever did not go is retried on the next flush since
+   * `sent` only moves forward on success. The server answers a mismatch with
+   * how many chunks it holds (`expected`), which is how a lost response is
+   * recovered from.
    */
-  const stopRecording = useCallback(async () => {
+  const flushRecording = useCallback(
+    (rec) => {
+      const run = async () => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const start = rec.sent;
+          if (!rec.id || !sessionId || rec.chunks.length <= start) return;
+          const batch = rec.chunks.slice(start);
+          const form = new FormData();
+          form.append('callId', rec.id);
+          form.append('startIndex', String(start));
+          form.append('chunkCount', String(batch.length));
+          form.append('file', new Blob(batch, { type: 'audio/webm' }), `${rec.id}.webm`);
+          try {
+            const res = await fetch(`/api/consultations/${sessionId}/recording`, { method: 'POST', body: form });
+            if (res.ok) {
+              rec.sent = start + batch.length;
+            } else if (res.status === 409) {
+              const data = await res.json().catch(() => ({}));
+              if (Number.isInteger(data.expected)) rec.sent = Math.min(data.expected, rec.chunks.length);
+              else return;
+            } else {
+              return;
+            }
+          } catch {
+            return;
+          }
+        }
+      };
+      uploadChainRef.current = uploadChainRef.current.then(run, run);
+      return uploadChainRef.current;
+    },
+    [sessionId]
+  );
+
+  /**
+   * End the recording: stop the recorder (which hands over its last chunk),
+   * release the AudioContext, and send whatever is still unsent. Safe to call
+   * more than once — everything is claimed synchronously up front, so a second
+   * call finds nothing left to do rather than racing the first.
+   */
+  const finalizeRecording = useCallback(async () => {
     const recorder = recorderRef.current;
+    const ctx = audioCtxRef.current;
+    const rec = recRef.current;
     recorderRef.current = null;
+    audioCtxRef.current = null;
+    mixDestRef.current = null;
+    recRef.current = null;
+    if (flushTimerRef.current) {
+      clearInterval(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+
     if (recorder && recorder.state !== 'inactive') {
       await new Promise((resolve) => {
         recorder.onstop = resolve;
         try { recorder.stop(); } catch { resolve(); }
       });
     }
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => {});
-      audioCtxRef.current = null;
-    }
-    mixDestRef.current = null;
-    recordingStartedRef.current = false;
-  }, []);
-
-  /**
-   * Stop recording (flushing whatever's buffered) and upload it. Best-effort
-   * throughout — a failed upload must never surface as a failed call; the two
-   * are unrelated as far as the person on the call is concerned.
-   */
-  const uploadRecording = useCallback(async (callId) => {
-    await stopRecording();
-    const chunks = recordedChunksRef.current;
-    recordedChunksRef.current = [];
-    if (!chunks.length || !callId || !sessionId) return;
-    try {
-      const blob = new Blob(chunks, { type: 'audio/webm' });
-      const form = new FormData();
-      form.append('callId', callId);
-      form.append('file', blob, `${callId}.webm`);
-      await fetch(`/api/consultations/${sessionId}/recording`, { method: 'POST', body: form });
-    } catch {
-      /* a lost recording must never take the call down with it */
-    }
-  }, [sessionId, stopRecording]);
+    if (ctx) ctx.close().catch(() => {});
+    if (rec) await flushRecording(rec);
+  }, [flushRecording]);
 
   /** Drop the peer connection and release the camera. Safe to call twice. */
   const teardown = useCallback(() => {
-    stopRecording().catch(() => {});
+    finalizeRecording().catch(() => {});
     if (dropTimerRef.current) {
       clearTimeout(dropTimerRef.current);
       dropTimerRef.current = null;
@@ -302,6 +339,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       pcRef.current.onicecandidate = null;
       pcRef.current.ontrack = null;
       pcRef.current.onconnectionstatechange = null;
+      pcRef.current.oniceconnectionstatechange = null;
       try { pcRef.current.close(); } catch { /* already closed */ }
       pcRef.current = null;
     }
@@ -324,18 +362,17 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     setReconnecting(false);
     setMicOn(true);
     setCamOn(true);
-  }, [stopRecording]);
+  }, [finalizeRecording]);
 
-  /** Wind the call down locally and show why. Uploads the recording (if any)
-   * before teardown releases the devices it was capturing. */
+  /** Wind the call down locally and show why. `teardown` also finalises the
+   * recording, so the last part goes up whichever way the call ended. */
   const finish = useCallback(
     (reason, endedBy = '') => {
-      uploadRecording(callIdRef.current).catch(() => {});
       teardown();
       setEndNote(endMessage(reason, endedBy, viewerRole, hasTurnRef.current));
       setPhase('ended');
     },
-    [uploadRecording, teardown, viewerRole]
+    [teardown, viewerRole]
   );
 
   /**
@@ -355,24 +392,33 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     }
   }, []);
 
-  /** Start the mixed recording once the call actually connects. No-op past
-   * the first call for a given call attempt. */
+  /**
+   * Start the mixed recording as soon as the two devices are connected. No-op
+   * past the first call for a given call attempt.
+   *
+   * Every few seconds what has been recorded so far is sent up, so the server
+   * already holds the call by the time it ends — a hang-up racing the final
+   * upload, or a tab closed right after, costs seconds rather than everything.
+   * Each browser's copy carries its own id (`-web-<role>` on the call id — the
+   * call id itself is shared by both sides), so the two never append to one file.
+   */
   const startRecording = useCallback(() => {
-    if (recordingStartedRef.current || !mixDestRef.current) return;
-    recordingStartedRef.current = true;
+    if (recorderRef.current || !mixDestRef.current || !callIdRef.current) return;
     try {
       const mimeType = window.MediaRecorder?.isTypeSupported?.('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : 'audio/webm';
       const recorder = new MediaRecorder(mixDestRef.current.stream, { mimeType });
-      recordedChunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data?.size) recordedChunksRef.current.push(e.data); };
+      const rec = { id: `${callIdRef.current}-web-${viewerRole}`, chunks: [], sent: 0 };
+      recorder.ondataavailable = (e) => { if (e.data?.size) rec.chunks.push(e.data); };
       recorder.start(1000);
       recorderRef.current = recorder;
+      recRef.current = rec;
+      flushTimerRef.current = setInterval(() => flushRecording(rec), FLUSH_MS);
     } catch {
       /* MediaRecorder unavailable — the call still works, just unrecorded */
     }
-  }, []);
+  }, [flushRecording, viewerRole]);
 
   /** Build the peer connection, wired to trickle ICE through the API. */
   const createPeer = useCallback(async () => {
@@ -420,6 +466,13 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     connectTimerRef.current = setTimeout(() => {
       if (pc.connectionState !== 'connected') giveUp();
     }, CONNECT_TIMEOUT_MS);
+
+    // ICE settles a few seconds before the connection reports 'connected'
+    // (the DTLS handshake is still finishing); recording from here means a call
+    // hung up in that window is not lost entirely.
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') startRecording();
+    };
 
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;

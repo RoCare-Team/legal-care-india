@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { getAdminSession } from '@/lib/admin';
-import { saveCallRecording, readCallRecording } from '@/lib/callRecordings';
+import { saveCallRecording, appendCallRecording, readCallRecording } from '@/lib/callRecordings';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,19 +34,37 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: 'Missing recording or call id.' }, { status: 400 });
   }
 
+  // Present when the browser is streaming its recording up in parts during the
+  // call; absent for a single whole-file upload (the phone app).
+  const rawStart = form.get('startIndex');
+  const startIndex = rawStart === null ? null : Number.parseInt(String(rawStart), 10);
+  const chunkCount = Number.parseInt(String(form.get('chunkCount') || '0'), 10) || 0;
+  if (startIndex !== null && (!Number.isInteger(startIndex) || startIndex < 0)) {
+    return NextResponse.json({ error: 'Invalid part index.' }, { status: 400 });
+  }
+
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const saved = await saveCallRecording({
+    const common = {
       consultationId: id,
       participantId: s.id,
       role: s.role,
       callId,
       buffer,
       mimeType: file.type || 'audio/webm',
-    });
+    };
+    const saved =
+      startIndex === null
+        ? await saveCallRecording(common)
+        : await appendCallRecording({ ...common, startIndex, chunkCount });
     return NextResponse.json({ ok: true, ...saved });
   } catch (err) {
-    if (err.status) return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err.status) {
+      return NextResponse.json(
+        { error: err.message, ...(err.expected !== undefined ? { expected: err.expected } : {}) },
+        { status: err.status }
+      );
+    }
     console.error('recording upload failed', err);
     return NextResponse.json({ error: 'Could not save the recording.' }, { status: 500 });
   }

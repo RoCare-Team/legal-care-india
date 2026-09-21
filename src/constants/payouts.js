@@ -25,6 +25,9 @@ export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 /** Indian bank account numbers run from 9 to 18 digits. */
 export const ACCOUNT_NUMBER_PATTERN = /^\d{9,18}$/;
 
+/** Permanent Account Number: five letters, four digits, one letter. */
+export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
 /** Rupees to the paisa. Money here is never rounded to whole rupees silently. */
 export function round2(value) {
   return Math.round((Number(value) || 0) * 100) / 100;

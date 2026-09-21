@@ -327,6 +327,10 @@ const AdvocateSchema = new Schema(
             accountType: { type: String, enum: ['savings', 'current'], default: 'savings' },
             accountLast4: { type: String, default: '' },
             accountNumberEnc: { type: String, required: true },
+            // PAN the payouts are reported under. Optional (the web form does
+            // not ask for it); sealed like the account number, last four shown.
+            panEnc: { type: String, default: '' },
+            panLast4: { type: String, default: '' },
             isPrimary: { type: Boolean, default: false },
             createdAt: { type: Date, default: Date.now },
           },

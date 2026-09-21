@@ -523,7 +523,7 @@ export async function getAdvocateById(id) {
   await connectDB();
   // The sealed account numbers never leave the server through this reader — it
   // feeds /api/auth/me and the dashboard profile, both of which reach a browser.
-  const advocate = await Advocate.findById(id).select('-bankAccounts.accountNumberEnc').lean();
+  const advocate = await Advocate.findById(id).select('-bankAccounts.accountNumberEnc -bankAccounts.panEnc').lean();
   return advocate ? buildAdvocateProfile(serialize(advocate)) : null;
 }
 
@@ -563,8 +563,8 @@ export async function getRawAdvocateById(id, { withImages = false } = {}) {
     },
     {
       $project: withImages
-        ? { passwordHash: 0, 'bankAccounts.accountNumberEnc': 0 }
-        : { photo: 0, coverImage: 0, passwordHash: 0, 'bankAccounts.accountNumberEnc': 0 },
+        ? { passwordHash: 0, 'bankAccounts.accountNumberEnc': 0, 'bankAccounts.panEnc': 0 }
+        : { photo: 0, coverImage: 0, passwordHash: 0, 'bankAccounts.accountNumberEnc': 0, 'bankAccounts.panEnc': 0 },
     },
   ]);
 

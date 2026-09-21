@@ -69,9 +69,9 @@ export default async function AdminRecordingsPage({ searchParams }) {
                 {c.recordings.length === 0 ? (
                   <p className="mt-4 rounded-xl bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-700">
                     No recording for this call
-                    {c.call.connected
-                      ? ' — it connected, but the recording did not upload (browser without recording support, or the tab closed before it finished).'
-                      : ' — the call never connected.'}
+                    {c.call.attempted
+                      ? ' — the lawyer answered, but recording only starts once the two devices are actually linked, so nothing was captured if the call was hung up before audio connected (or the browser cannot record).'
+                      : ' — the call was never placed, so there was nothing to record.'}
                   </p>
                 ) : (
                   <div className="mt-4 grid gap-3 md:grid-cols-2">

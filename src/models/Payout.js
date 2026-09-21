@@ -41,6 +41,7 @@ const PayoutSchema = new Schema(
       accountLast4: { type: String, default: '' },
       // Sealed with lib/secretBox — only the admin view opens it.
       accountNumberEnc: { type: String, default: '' },
+      panEnc: { type: String, default: '' },
     },
 
     // Bank transfer reference, entered when the admin marks it paid.

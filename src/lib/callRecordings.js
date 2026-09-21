@@ -1,4 +1,4 @@
-import { writeFile, mkdir, readFile } from 'fs/promises';
+import { writeFile, appendFile, mkdir, readFile } from 'fs/promises';
 import path from 'path';
 import { connectDB } from '@/lib/db';
 import Consultation from '@/models/Consultation';
@@ -16,12 +16,16 @@ import Consultation from '@/models/Consultation';
  * participants and admin, never served unauthenticated.
  */
 
-const MAX_BYTES = 40 * 1024 * 1024; // 40MB — generous for an audio-only recording
+const MAX_BYTES = 40 * 1024 * 1024; // 40MB — generous for one upload
+// A whole streamed recording: opus runs ~1MB a minute, and a session can last
+// as long as the client's wallet does.
+const MAX_TOTAL_BYTES = 150 * 1024 * 1024;
 const ROOT = path.join(process.cwd(), 'recordings');
 
-function httpError(message, status = 400) {
+function httpError(message, status = 400, extra = {}) {
   const e = new Error(message);
   e.status = status;
+  Object.assign(e, extra);
   return e;
 }
 
@@ -68,6 +72,7 @@ export async function saveCallRecording({ consultationId, participantId, role, c
     mimeType: mimeType || 'audio/webm',
     size: buffer.length,
     by: role === 'advocate' ? 'advocate' : 'user',
+    chunks: 0,
   };
 
   if (existing) {
@@ -80,6 +85,65 @@ export async function saveCallRecording({ consultationId, participantId, role, c
   }
 
   return { callId: record.callId, size: record.size, mimeType: record.mimeType };
+}
+
+/**
+ * Add the next part of a recording that is being streamed up during the call.
+ *
+ * The browser sends its one-second MediaRecorder chunks in order, and joined
+ * end to end they are the whole webm file — so each part is simply appended.
+ * `startIndex` is how many chunks the browser had already sent; it has to match
+ * how many are stored, otherwise a part was lost or repeated and appending would
+ * corrupt the file. A mismatch is answered with the count the server has
+ * (`expected`) so the browser can carry on from there. `startIndex` 0 starts the
+ * recording afresh, which is also how a browser that lost track begins again.
+ */
+export async function appendCallRecording({
+  consultationId, participantId, role, callId, startIndex, chunkCount, buffer, mimeType,
+}) {
+  if (!buffer?.length) throw httpError('No recording received.');
+  if (buffer.length > MAX_BYTES) throw httpError('Recording part is too large.');
+  if (!callId) throw httpError('Missing call id.');
+
+  await connectDB();
+  const session = await Consultation.findById(consultationId).select('userId advocateId recordings').lean();
+  if (!session) throw httpError('Not found.', 404);
+  assertParticipant(session, participantId, role);
+
+  const existing = (session.recordings || []).find((r) => r.callId === callId);
+  const have = existing?.chunks || 0;
+  const restart = startIndex === 0;
+
+  if (!restart && startIndex !== have) {
+    throw httpError('Recording part out of order.', 409, { expected: have });
+  }
+  const priorSize = restart ? 0 : existing?.size || 0;
+  if (priorSize + buffer.length > MAX_TOTAL_BYTES) throw httpError('Recording is too large.');
+
+  const filePath = fileFor(consultationId, callId, mimeType);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  if (restart) await writeFile(filePath, buffer);
+  else await appendFile(filePath, buffer);
+
+  const record = {
+    callId: String(callId),
+    path: path.relative(ROOT, filePath),
+    mimeType: mimeType || 'audio/webm',
+    size: priorSize + buffer.length,
+    by: role === 'advocate' ? 'advocate' : 'user',
+    chunks: startIndex + (chunkCount || 0),
+  };
+
+  if (existing) {
+    await Consultation.updateOne(
+      { _id: consultationId, 'recordings.callId': callId },
+      { $set: { 'recordings.$': record } }
+    );
+  } else {
+    await Consultation.updateOne({ _id: consultationId }, { $push: { recordings: record } });
+  }
+
+  return { callId: record.callId, size: record.size, received: record.chunks };
 }
 
 /**

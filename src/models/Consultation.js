@@ -71,6 +71,11 @@ const RecordingSchema = new Schema(
     // app recording is one channel of the uploader's device, so admin needs to
     // know whose device it came from.
     by: { type: String, enum: ['user', 'advocate', ''], default: '' },
+    // A browser streams its recording up in parts while the call runs, so a
+    // hang-up race or a closed tab loses seconds rather than the whole call.
+    // This is how many one-second chunks have been stored so far, which is what
+    // the next part has to line up with.
+    chunks: { type: Number, default: 0 },
   },
   { _id: false, timestamps: { createdAt: true, updatedAt: false } }
 );

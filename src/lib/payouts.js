@@ -6,7 +6,7 @@ import Payout from '@/models/Payout';
 import { seal, open } from '@/lib/secretBox';
 import {
   COMMISSION_RATE, COMMISSION_LABEL, MIN_PAYOUT, MAX_BANK_ACCOUNTS,
-  IFSC_PATTERN, ACCOUNT_NUMBER_PATTERN, round2, formatMoney,
+  IFSC_PATTERN, ACCOUNT_NUMBER_PATTERN, PAN_PATTERN, round2, formatMoney,
 } from '@/constants/payouts';
 
 /**
@@ -90,6 +90,7 @@ function publicAccount(a) {
     ifsc: a.ifsc,
     accountType: a.accountType || 'savings',
     accountLast4: a.accountLast4,
+    panLast4: a.panLast4 || '',
     isPrimary: Boolean(a.isPrimary),
     createdAt: a.createdAt || null,
   };
@@ -99,7 +100,7 @@ function publicAccount(a) {
  * Validates and adds a bank account. The first one becomes primary.
  *
  * @param {string} advocateId
- * @param {{holderName:string, accountNumber:string, ifsc:string, bankName?:string, accountType?:string}} input
+ * @param {{holderName:string, accountNumber:string, ifsc:string, bankName?:string, accountType?:string, pan?:string}} input
  */
 export async function addBankAccount(advocateId, input) {
   const holderName = String(input?.holderName || '').trim().replace(/\s+/g, ' ');
@@ -107,6 +108,7 @@ export async function addBankAccount(advocateId, input) {
   const ifsc = String(input?.ifsc || '').trim().toUpperCase();
   const bankName = String(input?.bankName || '').trim().slice(0, 80);
   const accountType = input?.accountType === 'current' ? 'current' : 'savings';
+  const pan = String(input?.pan || '').replace(/\s+/g, '').toUpperCase();
 
   if (holderName.length < 3 || holderName.length > 100) {
     throw httpError('Enter the account holder’s name exactly as the bank has it.');
@@ -116,6 +118,10 @@ export async function addBankAccount(advocateId, input) {
   }
   if (!IFSC_PATTERN.test(ifsc)) {
     throw httpError('That IFSC does not look right — it is 11 characters, like HDFC0001234.');
+  }
+  // Optional, but never stored half-right: a PAN that is present must be valid.
+  if (pan && !PAN_PATTERN.test(pan)) {
+    throw httpError('That PAN does not look right — it is 10 characters, like ABCDE1234F.');
   }
 
   await connectDB();
@@ -138,6 +144,7 @@ export async function addBankAccount(advocateId, input) {
     accountType,
     accountLast4: last4,
     accountNumberEnc: seal(accountNumber),
+    ...(pan ? { panEnc: seal(pan), panLast4: pan.slice(-4) } : {}),
     isPrimary: existing.length === 0,
     createdAt: new Date(),
   };
@@ -280,6 +287,7 @@ export async function requestPayout(advocateId, input) {
         accountType: account.accountType,
         accountLast4: account.accountLast4,
         accountNumberEnc: account.accountNumberEnc,
+        panEnc: account.panEnc || '',
       },
     });
     return publicPayout(payout.toObject());
@@ -440,6 +448,7 @@ export async function adminListPayouts({ status } = {}) {
         ...publicPayout(p).bank,
         accountType: p.bank?.accountType || 'savings',
         accountNumber: open(p.bank?.accountNumberEnc) || '',
+        pan: open(p.bank?.panEnc) || '',
       },
       processedBy: p.processedBy || '',
     })),
