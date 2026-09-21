@@ -444,6 +444,73 @@ export async function adminGetPhoneCalls() {
 }
 
 /**
+ * A session's recordings, labelled for the admin player. The web client uploads
+ * one file with both voices; the phone app uploads two, one per audio channel
+ * of the uploader's device (`-app-in` is their own mic, `-app-out` is what they
+ * heard), so the label says whose device and which side.
+ */
+function mapRecordings(list) {
+  return (list || []).map((rec) => {
+    const id = rec.callId || '';
+    const who = rec.by === 'advocate' ? 'Lawyer' : 'Client';
+    const label = id.endsWith('-app-in')
+      ? `${who}'s app · their own voice`
+      : id.endsWith('-app-out')
+        ? `${who}'s app · the other side`
+        : 'Web · both voices';
+    return {
+      callId: id,
+      label,
+      mimeType: rec.mimeType || 'audio/webm',
+      size: rec.size || 0,
+      createdAt: iso(rec.createdAt),
+    };
+  });
+}
+
+/**
+ * Every audio and video consultation that actually ran, newest first, each with
+ * whatever recordings it has — the admin's one place to review calls. A call
+ * with no recording is still listed, so a gap (a browser without recording
+ * support, a dropped upload) is visible instead of silently missing.
+ */
+export async function adminGetRecordedCalls({ page = 1, perPage = 20 } = {}) {
+  await connectDB();
+  const filter = { type: { $in: ['audio', 'video'] }, status: { $in: ['active', 'ended'] } };
+
+  const [total, rows] = await Promise.all([
+    Consultation.countDocuments(filter),
+    Consultation.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage)
+      .select('userName advocateName type status minutes price startedAt endedAt createdAt call recordings')
+      .lean(),
+  ]);
+
+  return {
+    total,
+    page,
+    perPage,
+    totalPages: Math.max(1, Math.ceil(total / perPage)),
+    rows: rows.map((r) => ({
+      id: String(r._id),
+      userName: r.userName || 'Client',
+      advocateName: r.advocateName || 'Lawyer',
+      type: r.type,
+      status: r.status,
+      minutes: r.minutes || 0,
+      price: r.price || 0,
+      startedAt: iso(r.startedAt),
+      endedAt: iso(r.endedAt),
+      createdAt: iso(r.createdAt),
+      call: mapCall(r.call),
+      recordings: mapRecordings(r.recordings),
+    })),
+  };
+}
+
+/**
  * The video-call leg of a consultation, flattened for the admin screens.
  *
  * Only the *latest* attempt survives in the record — the signalling sub-document
@@ -507,6 +574,7 @@ export async function adminGetConsultationById(id) {
     minutes: r.minutes || 0,
     price: r.price || 0,
     status: r.status || 'pending',
+    type: r.type || 'chat',
     charged: ['active', 'ended'].includes(r.status),
     messages: (r.messages || []).map((m) => ({
       id: String(m._id),
@@ -515,6 +583,7 @@ export async function adminGetConsultationById(id) {
       at: iso(m.at),
     })),
     call: mapCall(r.call),
+    recordings: mapRecordings(r.recordings),
     hiddenForUser: Boolean(r.hiddenForUser),
     hiddenForAdvocate: Boolean(r.hiddenForAdvocate),
     startedAt: iso(r.startedAt),

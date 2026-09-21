@@ -29,13 +29,14 @@ function ControlButton({ label, short, onClick, active = true, danger = false, c
 }
 
 /**
- * CallControls — the floating bar along the bottom of a connected video call.
+ * CallControls — the floating bar along the bottom of a connected call.
  *
  * A muted mic / stopped camera flips its button to a solid light fill, the
- * convention every calling app uses for "this is off".
+ * convention every calling app uses for "this is off". `video = false` drops
+ * the camera and flip-camera buttons for an audio-only call.
  */
 export default function CallControls({
-  micOn, camOn, onToggleMic, onToggleCam, onFlipCamera, onEnd, onMinimize,
+  micOn, camOn, onToggleMic, onToggleCam, onFlipCamera, onEnd, onMinimize, video = true,
 }) {
   return (
     <div className="flex items-end justify-center gap-3 rounded-full bg-black/35 px-4 py-3 backdrop-blur-xl sm:gap-5 sm:rounded-3xl sm:px-6">
@@ -48,22 +49,26 @@ export default function CallControls({
         {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
       </ControlButton>
 
-      <ControlButton
-        label={camOn ? 'Turn camera off' : 'Turn camera on'}
-        short={camOn ? 'Camera' : 'Camera off'}
-        onClick={onToggleCam}
-        active={camOn}
-      >
-        {camOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-      </ControlButton>
+      {video && (
+        <ControlButton
+          label={camOn ? 'Turn camera off' : 'Turn camera on'}
+          short={camOn ? 'Camera' : 'Camera off'}
+          onClick={onToggleCam}
+          active={camOn}
+        >
+          {camOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+        </ControlButton>
+      )}
 
       <ControlButton label="End call" short="End" onClick={onEnd} danger>
         <PhoneOff className="h-6 w-6" />
       </ControlButton>
 
-      <ControlButton label="Switch camera" short="Flip" onClick={onFlipCamera}>
-        <SwitchCamera className="h-5 w-5" />
-      </ControlButton>
+      {video && (
+        <ControlButton label="Switch camera" short="Flip" onClick={onFlipCamera}>
+          <SwitchCamera className="h-5 w-5" />
+        </ControlButton>
+      )}
 
       {onMinimize && (
         <ControlButton label="Back to chat" short="Chat" onClick={onMinimize}>

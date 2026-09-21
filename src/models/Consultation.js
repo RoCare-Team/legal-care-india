@@ -53,6 +53,29 @@ const CallSchema = new Schema(
 );
 
 /**
+ * Recording — one call attempt's audio, mixed client-side (both parties'
+ * mics via the Web Audio API) and uploaded once the call ends.
+ *
+ * Kept as its own array on the consultation rather than nested in `CallSchema`
+ * above, because `call` is wiped and re-stamped with a fresh `id` on every new
+ * call attempt within the same session (a reconnect) — a recording tied to a
+ * finished attempt would otherwise vanish the moment the next one starts.
+ */
+const RecordingSchema = new Schema(
+  {
+    callId: { type: String, default: '' },
+    path: { type: String, required: true },
+    mimeType: { type: String, default: 'audio/webm' },
+    size: { type: Number, default: 0 },
+    // Who uploaded it. A web recording is both voices whoever sent it; a phone
+    // app recording is one channel of the uploader's device, so admin needs to
+    // know whose device it came from.
+    by: { type: String, enum: ['user', 'advocate', ''], default: '' },
+  },
+  { _id: false, timestamps: { createdAt: true, updatedAt: false } }
+);
+
+/**
  * Consultation — a live session a user books with a lawyer, billed by the
  * minute.
  *
@@ -119,6 +142,9 @@ const ConsultationSchema = new Schema(
 
     // Video-call signalling for this session (see CallSchema above).
     call: { type: CallSchema, default: () => ({}) },
+
+    // Audio recordings of this session's call attempts (see RecordingSchema).
+    recordings: { type: [RecordingSchema], default: [] },
 
     startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)

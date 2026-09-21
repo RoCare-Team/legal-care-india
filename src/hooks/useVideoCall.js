@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * useVideoCall — the WebRTC engine behind the video call inside a live
- * consultation.
+ * useVideoCall — the WebRTC engine behind both video and audio calls inside a
+ * live consultation. Pass `video: false` for an audio-only call (used by
+ * AudioCallStage) — camera capture and its controls are skipped, everything
+ * else (signalling, ICE, reconnect handling) is shared.
  *
  * The two browsers stream directly to each other; the server only relays the
  * handshake. Because the rest of the app is poll-based (no websockets), so is
  * the signalling: once a call is up we poll /api/consultations/[id]/call every
  * second for the other side's description and ICE candidates. While idle we
  * poll nothing — the ordinary 2s chat poll already carries `session.call`,
- * which is what makes the lawyer's phone ring.
+ * which is what makes the other side's ring show up.
  *
  * Direction matches the booking: the client rings, the lawyer accepts.
  *
@@ -173,21 +175,22 @@ function endMessage(reason, endedBy, viewerRole, hasTurn = true) {
 }
 
 /** Friendly text for a getUserMedia rejection. */
-function mediaError(err) {
+function mediaError(err, video = true) {
+  const device = video ? 'Camera and microphone' : 'Microphone';
   const name = err?.name || '';
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return 'Camera and microphone access was blocked. Allow it in your browser settings and try again.';
+    return `${device} access was blocked. Allow it in your browser settings and try again.`;
   }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    return 'No camera or microphone was found on this device.';
+    return video ? 'No camera or microphone was found on this device.' : 'No microphone was found on this device.';
   }
   if (name === 'NotReadableError') {
-    return 'Your camera is already in use by another app.';
+    return video ? 'Your camera is already in use by another app.' : 'Your microphone is already in use by another app.';
   }
-  return 'Could not start your camera. Please try again.';
+  return video ? 'Could not start your camera. Please try again.' : 'Could not start your microphone. Please try again.';
 }
 
-export default function useVideoCall({ sessionId, viewerRole, call, sessionActive }) {
+export default function useVideoCall({ sessionId, viewerRole, call, sessionActive, video = true }) {
   const [phase, setPhase] = useState('idle');
   const [error, setError] = useState('');
   const [endNote, setEndNote] = useState('');
@@ -215,6 +218,15 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
   const dropTimerRef = useRef(null);
   const connectTimerRef = useRef(null);
 
+  // Recording: both sides' audio, mixed client-side via the Web Audio API into
+  // one MediaStream a MediaRecorder can capture — see startRecording/
+  // stopRecording below.
+  const audioCtxRef = useRef(null);
+  const mixDestRef = useRef(null);
+  const recorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingStartedRef = useRef(false);
+
   phaseRef.current = phase;
   const isClient = viewerRole === 'user';
 
@@ -233,8 +245,51 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     [sessionId]
   );
 
+  /**
+   * Stop the recorder, if one is running, and release the AudioContext. Safe
+   * to call more than once — a no-op past the first call.
+   */
+  const stopRecording = useCallback(async () => {
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder && recorder.state !== 'inactive') {
+      await new Promise((resolve) => {
+        recorder.onstop = resolve;
+        try { recorder.stop(); } catch { resolve(); }
+      });
+    }
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    mixDestRef.current = null;
+    recordingStartedRef.current = false;
+  }, []);
+
+  /**
+   * Stop recording (flushing whatever's buffered) and upload it. Best-effort
+   * throughout — a failed upload must never surface as a failed call; the two
+   * are unrelated as far as the person on the call is concerned.
+   */
+  const uploadRecording = useCallback(async (callId) => {
+    await stopRecording();
+    const chunks = recordedChunksRef.current;
+    recordedChunksRef.current = [];
+    if (!chunks.length || !callId || !sessionId) return;
+    try {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const form = new FormData();
+      form.append('callId', callId);
+      form.append('file', blob, `${callId}.webm`);
+      await fetch(`/api/consultations/${sessionId}/recording`, { method: 'POST', body: form });
+    } catch {
+      /* a lost recording must never take the call down with it */
+    }
+  }, [sessionId, stopRecording]);
+
   /** Drop the peer connection and release the camera. Safe to call twice. */
   const teardown = useCallback(() => {
+    stopRecording().catch(() => {});
     if (dropTimerRef.current) {
       clearTimeout(dropTimerRef.current);
       dropTimerRef.current = null;
@@ -269,17 +324,55 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     setReconnecting(false);
     setMicOn(true);
     setCamOn(true);
-  }, []);
+  }, [stopRecording]);
 
-  /** Wind the call down locally and show why. */
+  /** Wind the call down locally and show why. Uploads the recording (if any)
+   * before teardown releases the devices it was capturing. */
   const finish = useCallback(
     (reason, endedBy = '') => {
+      uploadRecording(callIdRef.current).catch(() => {});
       teardown();
       setEndNote(endMessage(reason, endedBy, viewerRole, hasTurnRef.current));
       setPhase('ended');
     },
-    [teardown, viewerRole]
+    [uploadRecording, teardown, viewerRole]
   );
+
+  /**
+   * Route one audio track into the recording mix, once. Called for the local
+   * track (from attachLocalMedia) and for each remote track (from ontrack) —
+   * whichever arrives, whenever it arrives, ends up in the same mixed output.
+   * Best-effort: a browser without Web Audio support just doesn't get a
+   * recording, the call itself is unaffected either way.
+   */
+  const feedRecording = useCallback((track) => {
+    if (!track || track.kind !== 'audio' || !mixDestRef.current || !audioCtxRef.current) return;
+    try {
+      const src = audioCtxRef.current.createMediaStreamSource(new MediaStream([track]));
+      src.connect(mixDestRef.current);
+    } catch {
+      /* one track failing to route in must not lose the rest of the mix */
+    }
+  }, []);
+
+  /** Start the mixed recording once the call actually connects. No-op past
+   * the first call for a given call attempt. */
+  const startRecording = useCallback(() => {
+    if (recordingStartedRef.current || !mixDestRef.current) return;
+    recordingStartedRef.current = true;
+    try {
+      const mimeType = window.MediaRecorder?.isTypeSupported?.('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+      const recorder = new MediaRecorder(mixDestRef.current.stream, { mimeType });
+      recordedChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data?.size) recordedChunksRef.current.push(e.data); };
+      recorder.start(1000);
+      recorderRef.current = recorder;
+    } catch {
+      /* MediaRecorder unavailable — the call still works, just unrecorded */
+    }
+  }, []);
 
   /** Build the peer connection, wired to trickle ICE through the API. */
   const createPeer = useCallback(async () => {
@@ -290,6 +383,16 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     const pc = new RTCPeerConnection({ iceServers, iceCandidatePoolSize: 4 });
     const remote = new MediaStream();
     remoteStreamRef.current = remote;
+
+    // Recording mixer for this call attempt — the local track is routed in by
+    // attachLocalMedia, remote tracks as they arrive below.
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      audioCtxRef.current = new AudioCtx();
+      mixDestRef.current = audioCtxRef.current.createMediaStreamDestination();
+    } catch {
+      /* Web Audio unavailable — the call still works, just unrecorded */
+    }
 
     pc.onicecandidate = (e) => {
       if (!e.candidate) return;
@@ -304,6 +407,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       e.streams[0]?.getTracks().forEach((t) => {
         if (!remote.getTracks().includes(t)) remote.addTrack(t);
       });
+      feedRecording(e.track);
       setRemoteLive(true);
     };
 
@@ -332,6 +436,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
         }
         setReconnecting(false);
         setPhase('connected');
+        startRecording();
         return;
       }
 
@@ -350,16 +455,19 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
 
     pcRef.current = pc;
     return pc;
-  }, [post, finish]);
+  }, [post, finish, feedRecording, startRecording]);
 
-  /** Grab the camera + mic and attach them to the peer connection. */
+  /** Grab the mic (and camera, unless this is an audio-only call) and attach
+   * them to the peer connection. */
   const attachLocalMedia = useCallback(async (pc) => {
-    const stream = await navigator.mediaDevices.getUserMedia(MEDIA);
+    const constraints = video ? MEDIA : { audio: MEDIA.audio, video: false };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     localStreamRef.current = stream;
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    stream.getAudioTracks().forEach(feedRecording);
     if (localVideoRef.current) localVideoRef.current.srcObject = stream;
     return stream;
-  }, []);
+  }, [video, feedRecording]);
 
   /* ── actions ──────────────────────────────────────────────────────────── */
 
@@ -381,7 +489,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
 
       const pc = await createPeer();
       await attachLocalMedia(pc);
-      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: video });
       await pc.setLocalDescription({ type: offer.type, sdp: withOpusParams(offer.sdp) });
       await tuneSenders(pc);
       await post({
@@ -390,16 +498,16 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
         offer: JSON.stringify(pc.localDescription),
       });
     } catch (err) {
-      // Most often: the user denied the camera prompt. Cancel the ring so the
-      // lawyer's phone isn't left buzzing for a call we can't make.
+      // Most often: the user denied the camera/mic prompt. Cancel the ring so
+      // the other side isn't left ringing for a call we can't make.
       await post({ action: 'end' }).catch(() => {});
       teardown();
       setPhase('idle');
-      setError(mediaError(err));
+      setError(mediaError(err, video));
     } finally {
       setBusy(false);
     }
-  }, [isClient, busy, post, createPeer, attachLocalMedia, teardown]);
+  }, [isClient, busy, post, createPeer, attachLocalMedia, teardown, video]);
 
   /** Lawyer accepts the ring — media starts, the poll finishes the handshake. */
   const accept = useCallback(async () => {
@@ -421,11 +529,11 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
       await post({ action: 'reject' }).catch(() => {});
       teardown();
       setPhase('idle');
-      setError(mediaError(err));
+      setError(mediaError(err, video));
     } finally {
       setBusy(false);
     }
-  }, [isClient, busy, createPeer, attachLocalMedia, post, teardown]);
+  }, [isClient, busy, createPeer, attachLocalMedia, post, teardown, video]);
 
   /** Lawyer declines the ring. */
   const reject = useCallback(async () => {
@@ -461,8 +569,10 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     setCamOn(track.enabled);
   }, []);
 
-  /** Swap between the front and rear camera without renegotiating. */
+  /** Swap between the front and rear camera without renegotiating. No-op on
+   * an audio-only call — there is no camera to flip. */
   const flipCamera = useCallback(async () => {
+    if (!video) return;
     const pc = pcRef.current;
     const stream = localStreamRef.current;
     if (!pc || !stream) return;
@@ -492,7 +602,7 @@ export default function useVideoCall({ sessionId, viewerRole, call, sessionActiv
     } catch {
       /* no second camera — stay on the current one */
     }
-  }, [camOn]);
+  }, [camOn, video]);
 
   /* ── incoming ring, from the ordinary chat poll ───────────────────────── */
 

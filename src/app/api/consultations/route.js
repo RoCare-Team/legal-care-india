@@ -4,10 +4,9 @@ import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { advocateRate, affordableMinutes, formatRate } from '@/constants/callRates';
-import { bridgeAudioCall } from '@/lib/phoneBridge';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
-  markAdvocateOnline, isAdvocateOnline, cancelConsultation,
+  markAdvocateOnline, isAdvocateOnline,
   getUserConsultations, getAdvocateConsultations,
 } from '@/lib/consultations';
 
@@ -117,19 +116,9 @@ export async function POST(request) {
         fromId: resumeFrom,
       });
 
-      // Leftover phone minutes come back as a phone call: ring them again, on
-      // the same terms as the paid call this time was bought with.
-      if (resumed?.type === 'audio') {
-        const bridged = await bridgeAudioCall({ userId: session.id, advocateId });
-        if (!bridged.ok) {
-          await cancelConsultation(resumed.id, session.id).catch(() => {});
-          return NextResponse.json(
-            { error: 'call-failed', message: bridged.error },
-            { status: bridged.status }
-          );
-        }
-      }
-
+      // Leftover audio minutes come back as an audio call, same as leftover
+      // video minutes come back as video: both ring over the in-house WebRTC
+      // engine once the lawyer accepts, same as a fresh booking.
       return NextResponse.json({ ok: true, session: resumed }, { status: 201 });
     } catch (err) {
       if (err.code === 'NOT_FOUND') {
@@ -186,21 +175,8 @@ export async function POST(request) {
     type,
   });
 
-  // ── Audio: dial straight away, no accept step ────────────────────────────
-  // The lawyer's phone is the accept screen — it rings and they either pick up
-  // or they don't. The session stays PENDING and free while it rings: the
-  // wallet is charged only once Smartflo confirms the call was answered, which
-  // the GET route checks on each poll. A declined call must cost nothing.
-  if (type === 'audio') {
-    const bridged = await bridgeAudioCall({ userId: session.id, advocateId });
-    if (!bridged.ok) {
-      await cancelConsultation(created.id, session.id).catch(() => {});
-      return NextResponse.json(
-        { error: 'call-failed', message: bridged.error },
-        { status: bridged.status }
-      );
-    }
-  }
-
+  // Audio now rings the same way video does: PENDING until the lawyer accepts
+  // (see AdvocateCallListener), then the in-house WebRTC engine connects the
+  // call over the internet — no telephony provider involved.
   return NextResponse.json({ ok: true, session: created }, { status: 201 });
 }

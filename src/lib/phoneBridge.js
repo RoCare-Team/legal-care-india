@@ -2,6 +2,7 @@ import { connectDB } from '@/lib/db';
 import User from '@/models/User';
 import Advocate from '@/models/Advocate';
 import { placeClickToCall, isDialerConfigured, checkCallOutcome } from '@/lib/tataDialer';
+import { isCallingEnabled } from '@/lib/callSettings';
 
 /** Both sides' phone numbers, straight from the database. */
 async function numbersFor(userId, advocateId) {
@@ -54,6 +55,14 @@ export async function checkAudioCall({ userId, advocateId, since }) {
 export async function bridgeAudioCall({ userId, advocateId }) {
   if (!isDialerConfigured()) {
     return { ok: false, status: 503, error: 'Phone calling is not available right now.' };
+  }
+
+  // The Smartflo token being set only means calling *could* work — an admin
+  // still has to switch it on from the panel. Off by default, so this stays a
+  // deliberate opt-in rather than something that starts dialling the moment a
+  // token lands in .env.
+  if (!(await isCallingEnabled())) {
+    return { ok: false, status: 503, error: 'Phone calling is turned off right now.' };
   }
 
   const { advocateNumber, advocateName, userNumber } = await numbersFor(userId, advocateId);

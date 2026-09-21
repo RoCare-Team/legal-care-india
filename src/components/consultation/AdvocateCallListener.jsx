@@ -5,10 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { playIncomingChime } from '@/utils/beep';
 import VideoCallStage from './VideoCallStage';
+import AudioCallStage from './AudioCallStage';
 import MinimizedCallBar from './MinimizedCallBar';
 import IncomingRequestPopup from './lawyer/IncomingRequestPopup';
 import LiveConsultationWindow from './lawyer/LiveConsultationWindow';
-import PhoneCallAlert from './lawyer/PhoneCallAlert';
 import { RESTORE_CONSULTATION_EVENT } from '@/utils/consultationEvents';
 
 /**
@@ -17,17 +17,14 @@ import { RESTORE_CONSULTATION_EVENT } from '@/utils/consultationEvents';
  * accept/reject + live-chat flow. Charges happen server-side on accept.
  *
  * What it puts on screen, in order of precedence:
- *   a live video consultation  → the full-screen call
- *   a live chat                → the chat window (or its minimized dock)
- *   a new chat/video request   → the ringing request popup
- *   an audio consultation      → a "your phone is ringing / on call" card,
- *                                since those are answered on the handset
+ *   a live video/audio consultation  → the full-screen call
+ *   a live chat                      → the chat window (or its minimized dock)
+ *   a new chat/video/audio request   → the ringing request popup
  */
 export default function AdvocateCallListener() {
   const { role } = useAuth();
   const [incoming, setIncoming] = useState(null);
   const [queued, setQueued] = useState(0);
-  const [phone, setPhone] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [minimized, setMinimized] = useState(false);
   // Minimizing unmounts ChatPanel, which owns the video call — so while a call
@@ -35,7 +32,6 @@ export default function AdvocateCallListener() {
   const [callActive, setCallActive] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [note, setNote] = useState('');
-  const [hiddenPhone, setHiddenPhone] = useState('');
   const chimed = useRef(new Set());
   const dismissed = useRef(new Set());
 
@@ -49,13 +45,8 @@ export default function AdvocateCallListener() {
       try {
         const res = await fetch('/api/consultations', { cache: 'no-store' });
         if (!res.ok) return;
-        const { sessions = [] } = await res.json();
+        const { sessions: live = [] } = await res.json();
         if (!alive) return;
-
-        // Audio consultations are pure phone calls — the lawyer's handset
-        // rings, nothing is answered here. They get their own small card.
-        setPhone(sessions.find((s) => s.type === 'audio' && ['pending', 'active'].includes(s.status)) || null);
-        const live = sessions.filter((s) => s.type !== 'audio');
 
         const act = live.find((s) => s.status === 'active');
         if (act) setActiveId((cur) => cur || act.id);
@@ -173,20 +164,16 @@ export default function AdvocateCallListener() {
     refresh();
   };
 
-  const phoneKey = phone ? `${phone.id}:${phone.status}` : '';
-  const phoneCard = (raised) => phone && hiddenPhone !== phoneKey && (
-    <PhoneCallAlert session={phone} raised={raised} onDismiss={() => setHiddenPhone(phoneKey)} />
-  );
-
-  // ── Live video call (after accepting a video-type request) ──────────────
+  // ── Live video/audio call (after accepting a call-type request) ─────────
   if (
     activeId && activeSession &&
-    activeSession.type === 'video' &&
+    (activeSession.type === 'video' || activeSession.type === 'audio') &&
     activeSession.status === 'active' &&
     (activeSession.remainingMs ?? 0) > 0
   ) {
+    const Stage = activeSession.type === 'video' ? VideoCallStage : AudioCallStage;
     return (
-      <VideoCallStage
+      <Stage
         session={activeSession}
         viewerRole="advocate"
         otherName={activeSession.userName}
@@ -196,28 +183,24 @@ export default function AdvocateCallListener() {
   }
 
   // ── Live chat (after accepting) ─────────────────────────────────────────
-  // Video sessions are handled above and must NOT fall in here — otherwise an
-  // ended video call would drop the lawyer back into a chat window. (Audio
-  // never reaches this component at all; it happens on the phone network.)
+  // Video/audio sessions are handled above and must NOT fall in here —
+  // otherwise an ended call would drop the lawyer back into a chat window.
   if (
     activeId && activeSession &&
-    activeSession.type !== 'video' &&
+    activeSession.type === 'chat' &&
     (activeSession.status === 'active' || activeSession.status === 'ended')
   ) {
     // Minimizing only tucks the chat away (like backgrounding a call) — it
     // never hangs up. Ending is the red button inside the chat.
     if (minimized && !callActive) {
       return (
-        <>
-          <MinimizedCallBar
-            name={activeSession.userName}
-            endsAt={activeSession.endsAt}
-            startedAt={activeSession.startedAt}
-            onRestore={() => setMinimized(false)}
-            onEnd={activeSession.status === 'active' ? endNow : undefined}
-          />
-          {phoneCard(true)}
-        </>
+        <MinimizedCallBar
+          name={activeSession.userName}
+          endsAt={activeSession.endsAt}
+          startedAt={activeSession.startedAt}
+          onRestore={() => setMinimized(false)}
+          onEnd={activeSession.status === 'active' ? endNow : undefined}
+        />
       );
     }
     return (
@@ -246,5 +229,5 @@ export default function AdvocateCallListener() {
     );
   }
 
-  return phoneCard(false) || null;
+  return null;
 }

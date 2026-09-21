@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Video, PhoneOff, Loader2 } from 'lucide-react';
+import { Video, Phone, PhoneOff, Loader2 } from 'lucide-react';
 import { playIncomingChime } from '@/utils/beep';
 
 /**
  * IncomingCallCard — what the lawyer sees when a client rings them for video
- * during a live consultation. Chimes on arrival and every few seconds while it
- * rings, the way a phone does.
+ * or audio during a live consultation. Chimes on arrival and every few
+ * seconds while it rings, the way a phone does.
  */
-export default function IncomingCallCard({ callerName, busy, onAccept, onReject }) {
+export default function IncomingCallCard({ callerName, busy, onAccept, onReject, video = true }) {
   useEffect(() => {
     playIncomingChime();
     const t = setInterval(playIncomingChime, 3500);
@@ -31,8 +31,12 @@ export default function IncomingCallCard({ callerName, busy, onAccept, onReject 
       <div>
         <h4 className="font-display text-3xl font-semibold text-white">{callerName}</h4>
         <p className="mt-1.5 inline-flex items-center gap-1.5 text-sm text-white/65">
-          <Video className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-          Incoming video call
+          {video ? (
+            <Video className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+          ) : (
+            <Phone className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+          )}
+          {video ? 'Incoming video call' : 'Incoming call'}
         </p>
       </div>
 
@@ -46,7 +50,7 @@ export default function IncomingCallCard({ callerName, busy, onAccept, onReject 
 
         <button type="button" onClick={onAccept} disabled={busy} className="flex flex-col items-center gap-2 disabled:opacity-50">
           <span className="grid h-16 w-16 animate-bounce place-items-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-900/40 transition-colors [animation-duration:1.4s] hover:bg-emerald-600">
-            {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Video className="h-6 w-6" />}
+            {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : video ? <Video className="h-6 w-6" /> : <Phone className="h-6 w-6" />}
           </span>
           <span className="text-xs font-medium text-white/70">Accept</span>
         </button>

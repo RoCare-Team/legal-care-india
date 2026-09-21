@@ -36,3 +36,6 @@ yarn-error.log*
 
 # Admin-uploaded images (city photos, etc.)
 /public/uploads/
+
+# Call recordings (private — never served unauthenticated, never in git)
+/recordings/

@@ -57,6 +57,9 @@ function Initial({ name, size = 'h-28 w-28 text-5xl' }) {
 
 /**
  * VideoCallOverlay — the full-screen call surface that sits above the chat.
+ * Shared by video and audio consultations alike — pass `video={false}` for an
+ * audio-only call: no camera is captured, so there's no remote video or local
+ * preview to show, and the camera controls disappear from the bar.
  *
  * It stays mounted while minimized (hidden with CSS rather than unmounted) so
  * the <video> elements keep their streams and the call carries on in the
@@ -67,13 +70,14 @@ function Initial({ name, size = 'h-28 w-28 text-5xl' }) {
  * @param {string} [props.endsAt]    the consultation's hard end time
  * @param {string} [props.startedAt] when the consultation connected
  * @param {boolean} props.minimized
+ * @param {boolean} [props.video]    false for an audio-only call
  * @param {string} [props.dismissLabel]  wording on the "call ended" button. In a
  *   chat consultation the call is one leg of a session that carries on, so it
- *   really is "Back to chat"; in a video consultation the call IS the session
- *   and there is no chat behind it to go back to.
+ *   really is "Back to chat"; in a video/audio consultation the call IS the
+ *   session and there is no chat behind it to go back to.
  */
 export default function VideoCallOverlay({
-  call, otherName, endsAt, startedAt, minimized = false, onMinimize, dismissLabel = 'Back to chat',
+  call, otherName, endsAt, startedAt, minimized = false, onMinimize, dismissLabel = 'Back to chat', video = true,
 }) {
   const {
     phase, endNote, busy, micOn, camOn, remoteLive, reconnecting,
@@ -86,10 +90,10 @@ export default function VideoCallOverlay({
   const live = phase === 'connecting' || phase === 'connected';
   const status =
     phase === 'calling' ? 'Ringing…'
-      : phase === 'incoming' ? 'Incoming video call'
+      : phase === 'incoming' ? (video ? 'Incoming video call' : 'Incoming call')
         : phase === 'connecting' ? 'Connecting…'
           : phase === 'connected'
-            ? (reconnecting ? 'Reconnecting…' : remoteLive ? 'Connected' : 'Waiting for video…')
+            ? (reconnecting ? 'Reconnecting…' : !video ? 'Connected' : remoteLive ? 'Connected' : 'Waiting for video…')
             : 'Call ended';
 
   return (
@@ -97,7 +101,7 @@ export default function VideoCallOverlay({
       className={`fixed inset-0 z-[70] flex flex-col bg-[#070D18] ${minimized ? 'hidden' : ''}`}
       role="dialog"
       aria-modal="true"
-      aria-label={`Video call with ${otherName}`}
+      aria-label={`${video ? 'Video' : 'Audio'} call with ${otherName}`}
     >
       {/* Ambient glow behind everything that is not live video. */}
       <span className="pointer-events-none absolute left-1/2 top-1/3 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/30 blur-[120px]" aria-hidden="true" />
@@ -105,8 +109,9 @@ export default function VideoCallOverlay({
       {/* Body */}
       <div className="relative min-h-0 flex-1">
         {/* Remote video — the call itself. Always mounted while live so the
-            stream survives a minimize. */}
-        {live && (
+            stream survives a minimize. Audio-only has no picture to show, so
+            it stays on the avatar throughout instead. */}
+        {live && video && (
           <>
             <video
               ref={remoteVideoRef}
@@ -135,6 +140,31 @@ export default function VideoCallOverlay({
           </>
         )}
 
+        {/* Audio-only: the avatar stays put for the whole call — there is no
+            picture to switch to once connected, just the far side's voice. */}
+        {live && !video && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-white/70">
+            {/* remoteVideoRef still holds the <audio> element the far side's
+                voice plays through — muted from view, not from sound. */}
+            <audio ref={remoteVideoRef} autoPlay className="hidden" />
+            <span className="relative">
+              {(!remoteLive || reconnecting) && (
+                <span className="absolute inset-0 animate-ping rounded-full bg-primary-light/30" />
+              )}
+              <Initial name={otherName} size="h-32 w-32 text-6xl" />
+            </span>
+            <p className="flex items-center gap-2 text-sm">
+              {!remoteLive ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Connecting to {otherName}…</>
+              ) : reconnecting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Reconnecting…</>
+              ) : (
+                'On call'
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Ringing (client side) */}
         {phase === 'calling' && (
           <div className="relative flex h-full flex-col items-center justify-center gap-6 px-6 text-center">
@@ -157,7 +187,7 @@ export default function VideoCallOverlay({
 
         {/* Ringing (lawyer side) */}
         {phase === 'incoming' && (
-          <IncomingCallCard callerName={otherName} busy={busy} onAccept={accept} onReject={reject} />
+          <IncomingCallCard callerName={otherName} busy={busy} onAccept={accept} onReject={reject} video={video} />
         )}
 
         {/* Ended */}
@@ -167,7 +197,7 @@ export default function VideoCallOverlay({
               <PhoneOff className="h-8 w-8" />
             </span>
             <div>
-              <h4 className="font-display text-2xl font-semibold text-white">Video call ended</h4>
+              <h4 className="font-display text-2xl font-semibold text-white">{video ? 'Video call ended' : 'Call ended'}</h4>
               <p className="mt-1 text-sm text-white/60">{endNote}</p>
             </div>
             <button
@@ -180,8 +210,9 @@ export default function VideoCallOverlay({
           </div>
         )}
 
-        {/* Local preview — a picture-in-picture tile above the control bar. */}
-        {(live || phase === 'calling') && (
+        {/* Local preview — a picture-in-picture tile above the control bar.
+            Audio-only has no camera feed to show here. */}
+        {video && (live || phase === 'calling') && (
           <div className="absolute bottom-28 right-4 h-36 w-24 overflow-hidden rounded-2xl bg-black shadow-2xl ring-2 ring-white/20 sm:bottom-32 sm:right-6 sm:h-48 sm:w-36">
             <video
               ref={localVideoRef}
@@ -214,7 +245,7 @@ export default function VideoCallOverlay({
               )}
               {status}
               <span className="hidden items-center gap-1 text-white/40 sm:inline-flex">
-                · <Lock className="h-3 w-3" aria-hidden="true" /> Private
+                · <Lock className="h-3 w-3" aria-hidden="true" /> Private · This call may be recorded
               </span>
             </p>
           </div>
@@ -246,6 +277,7 @@ export default function VideoCallOverlay({
             onFlipCamera={flipCamera}
             onEnd={end}
             onMinimize={onMinimize}
+            video={video}
           />
         </div>
       )}

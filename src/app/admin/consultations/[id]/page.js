@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { MessageSquare, Scale, User as UserIcon, ExternalLink } from 'lucide-react';
+import { MessageSquare, Scale, User as UserIcon, ExternalLink, Mic, Download } from 'lucide-react';
 import { adminGetConsultationById } from '@/lib/admin';
 import {
   DetailBack,
@@ -38,6 +38,13 @@ function formatTime(value) {
     minute: '2-digit',
     hour12: true,
   });
+}
+
+/** "2.4 MB" from a byte count. */
+function formatBytes(bytes) {
+  if (!bytes) return '0 KB';
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
@@ -81,6 +88,7 @@ export default async function AdminConsultationDetailPage({ params }) {
   const userMsgs = c.messages.filter((m) => m.from === 'user').length;
   const advocateMsgs = c.messages.length - userMsgs;
   const call = c.call;
+  const callLabel = c.type === 'audio' ? 'Audio call' : 'Video call';
 
   return (
     <div>
@@ -114,9 +122,9 @@ export default async function AdminConsultationDetailPage({ params }) {
           tone={c.charged ? 'text-emerald-600' : 'text-ink/40'}
         />
         <StatTile label="Messages" value={c.messages.length} />
-        {/* Video is bundled into the same fee — this is time on camera, not a charge. */}
+        {/* The call is bundled into the same fee — this is time connected, not a charge. */}
         <StatTile
-          label={call.connected ? 'On video' : 'Video call'}
+          label={call.connected ? `On ${callLabel.toLowerCase()}` : callLabel}
           value={call.connected ? formatCallDuration(call.durationSec) : call.attempted ? 'Missed' : 'None'}
           tone={call.connected ? 'text-emerald-600' : call.attempted ? 'text-amber-600' : 'text-ink/40'}
         />
@@ -244,9 +252,9 @@ export default async function AdminConsultationDetailPage({ params }) {
             <InfoRow label="From lawyer">{advocateMsgs}</InfoRow>
           </InfoCard>
 
-          {/* Video call — the last attempt on this session. The signalling record
+          {/* The call — the last attempt on this session. The signalling record
               is reused on every ring, so earlier attempts are not kept. */}
-          <InfoCard title="Video call" action={<CallPill call={call} showDuration={false} />}>
+          <InfoCard title={callLabel} action={<CallPill call={call} showDuration={false} />}>
             {call.attempted ? (
               <>
                 <InfoRow label="Rang at">{call.ringingAt ? formatDateTime(call.ringingAt) : null}</InfoRow>
@@ -264,11 +272,45 @@ export default async function AdminConsultationDetailPage({ params }) {
               </>
             ) : (
               <p className="text-xs leading-relaxed text-ink/45">
-                No video call was placed on this session — the client never rang the lawyer.
-                Video is included in the consultation fee, so this costs nothing either way.
+                No {callLabel.toLowerCase()} was placed on this session — the client never rang the
+                lawyer. It&apos;s included in the consultation fee, so this costs nothing either way.
               </p>
             )}
           </InfoCard>
+
+          {c.recordings.length > 0 && (
+            <InfoCard title="Recordings">
+              <div className="space-y-3">
+                {c.recordings.map((rec) => (
+                  <div key={rec.callId} className="rounded-xl border border-ink/8 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-ink/60">
+                        <Mic className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                        {rec.label}
+                      </span>
+                      <span className="text-xs text-ink/40">
+                        {rec.createdAt ? `${formatDateTime(rec.createdAt)} · ` : ''}
+                        {formatBytes(rec.size)}
+                      </span>
+                    </div>
+                    <audio
+                      controls
+                      preload="none"
+                      className="w-full"
+                      src={`/api/consultations/${c.id}/recording?callId=${encodeURIComponent(rec.callId)}`}
+                    />
+                    <a
+                      href={`/api/consultations/${c.id}/recording?callId=${encodeURIComponent(rec.callId)}`}
+                      download
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                    >
+                      <Download className="h-3.5 w-3.5" aria-hidden="true" /> Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </InfoCard>
+          )}
 
           <InfoCard title="Participants">
             <div className="space-y-2">

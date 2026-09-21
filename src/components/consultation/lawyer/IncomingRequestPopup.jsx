@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MessagesSquare, Video, Check, X, Loader2, Clock, IndianRupee, RotateCcw, Users } from 'lucide-react';
+import { MessagesSquare, Video, Phone, Check, X, Loader2, Clock, IndianRupee, RotateCcw, Users } from 'lucide-react';
 import { playIncomingChime } from '@/utils/beep';
 import { formatRate } from '@/constants/callRates';
 
 const TYPE = {
   chat: { label: 'Chat consultation', verb: 'wants to chat with you', icon: MessagesSquare },
   video: { label: 'Video consultation', verb: 'wants a video call with you', icon: Video },
+  audio: { label: 'Audio consultation', verb: 'wants to call you', icon: Phone },
 };
 
 /** "0:07" since the request arrived. */
@@ -106,7 +107,7 @@ export default function IncomingRequestPopup({ request, queued = 0, accepting, n
           <div className="grid grid-cols-3 divide-x divide-ink/8 rounded-2xl border border-ink/8 bg-muted/40 py-3 text-center">
             <div className="px-2">
               <Icon className="mx-auto h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="mt-1 text-xs font-semibold text-ink">{request.type === 'video' ? 'Video' : 'Chat'}</p>
+              <p className="mt-1 text-xs font-semibold text-ink">{type.label.replace(' consultation', '')}</p>
               <p className="text-[11px] text-ink/45">Type</p>
             </div>
             <div className="px-2">

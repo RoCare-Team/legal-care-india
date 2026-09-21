@@ -192,7 +192,6 @@ export function IncomingRequests({ initialAvailable }) {
           {pending.map((s) => {
             const meta = TYPE_META[s.type] || TYPE_META.chat;
             const Icon = meta.icon;
-            const phone = s.type === 'audio';
             return (
               <li key={s.id} className="rounded-xl border border-ink/8 p-4 transition-colors hover:border-primary/20">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -211,45 +210,38 @@ export function IncomingRequests({ initialAvailable }) {
                     </div>
                   </div>
 
-                  {phone ? (
-                    <span className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 sm:self-center">
-                      <PhoneCall className="h-3.5 w-3.5 animate-pulse" aria-hidden="true" />
-                      Ringing on your phone
-                    </span>
-                  ) : (
-                    <div className="flex gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => act(s.id, 'reject')}
-                        disabled={Boolean(busy)}
-                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-300 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 sm:flex-none"
-                      >
-                        {busy === `${s.id}:reject` ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        Decline
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => act(s.id, 'accept')}
-                        disabled={Boolean(busy) || inSession}
-                        title={inSession ? 'Finish your current consultation first' : undefined}
-                        className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:flex-none"
-                      >
-                        {busy === `${s.id}:accept` ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Check className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        Accept
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => act(s.id, 'reject')}
+                      disabled={Boolean(busy)}
+                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-300 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 sm:flex-none"
+                    >
+                      {busy === `${s.id}:reject` ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Decline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => act(s.id, 'accept')}
+                      disabled={Boolean(busy) || inSession}
+                      title={inSession ? 'Finish your current consultation first' : undefined}
+                      className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50 sm:flex-none"
+                    >
+                      {busy === `${s.id}:accept` ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Accept
+                    </button>
+                  </div>
                 </div>
                 {notes[s.id] && <p className="mt-2 text-xs text-red-600">{notes[s.id]}</p>}
-                {!phone && inSession && (
+                {inSession && (
                   <p className="mt-2 text-xs text-ink/45">Finish your current consultation to accept this one.</p>
                 )}
               </li>

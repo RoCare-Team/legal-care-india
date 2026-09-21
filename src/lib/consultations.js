@@ -117,6 +117,13 @@ export function serializeSession(doc) {
     endsAt: s.endsAt || null,
     remainingMs,
     call: callSummary(s.call),
+    // Just enough to fetch playback with — never the disk path itself.
+    recordings: (s.recordings || []).map((r) => ({
+      callId: r.callId || '',
+      mimeType: r.mimeType || 'audio/webm',
+      size: r.size || 0,
+      createdAt: r.createdAt || null,
+    })),
     messages: (s.messages || []).map((m) => ({
       id: m._id,
       from: m.from,

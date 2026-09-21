@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Scale, Phone, PhoneCall } from 'lucide-react';
 import { adminGetPhoneCalls } from '@/lib/admin';
+import { getCallSettingsForAdmin } from '@/lib/callSettings';
 import DataTable, { AdminPageHeader, AdminAvatar } from '@/components/admin/DataTable';
+import CallDialerToggle from '@/components/admin/CallDialerToggle';
 import Pagination from '@/components/admin/Pagination';
 import { formatDate } from '@/utils/formatters';
 
@@ -29,7 +31,7 @@ function formatTime(value) {
  * which is not wired up.
  */
 export default async function AdminCallsPage({ searchParams }) {
-  const calls = await adminGetPhoneCalls();
+  const [calls, callSettings] = await Promise.all([adminGetPhoneCalls(), getCallSettingsForAdmin()]);
 
   // Distinct callers across the whole set, not just the visible page.
   const callers = new Set(calls.map((c) => c.userId)).size;
@@ -106,6 +108,8 @@ export default async function AdminCallsPage({ searchParams }) {
         subtitle="Every call a client placed to a lawyer through the dialler."
         count={calls.length}
       />
+
+      <CallDialerToggle settings={callSettings} />
 
       <div className="mb-6 flex flex-wrap gap-3">
         <div className="inline-flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface px-5 py-3.5 shadow-card">
