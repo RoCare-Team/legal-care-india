@@ -50,6 +50,11 @@ function isResumable() {
   return false;
 }
 
+/** Audio or video — a request that rings the phone, not just a chat window. */
+function isCall(session) {
+  return session.type === 'audio' || session.type === 'video';
+}
+
 /** Heartbeat: mark the lawyer as currently present. */
 export async function markAdvocateOnline(advocateId) {
   await connectDB();
@@ -310,13 +315,37 @@ async function settleCharges(session) {
   return true;
 }
 
+// A pending audio/video request nobody has answered this long is a missed
+// call, not a request that waits forever — the same ring length the app
+// itself uses (see push.js's RING_MS).
+const CALL_REQUEST_LIMIT_MS = 60 * 1000;
+
 /**
  * Flip an active-but-expired session to `ended` (lazy, on read), settle what it
  * cost, and close a call that outlived it or that nobody ever picked up.
+ *
+ * Also cancels a *pending* call request once it has sat unanswered past
+ * `CALL_REQUEST_LIMIT_MS` — otherwise a client who goes offline before the
+ * lawyer answers (phone dies, connection drops) leaves that request pending
+ * forever, since nothing else is left to cancel it. Run on every read that
+ * touches a session — the lawyer's inbox poll (every few seconds) and a
+ * single session fetch both go through here, so no separate cron is needed.
  */
 async function settleIfExpired(session) {
   if (!session) return session;
   let dirty = false;
+  let expiredCallRequest = false;
+
+  if (
+    session.status === 'pending' &&
+    isCall(session) &&
+    session.createdAt &&
+    Date.now() - new Date(session.createdAt).getTime() > CALL_REQUEST_LIMIT_MS
+  ) {
+    session.status = 'cancelled';
+    dirty = true;
+    expiredCallRequest = true;
+  }
 
   if (session.status === 'active' && session.endsAt && new Date(session.endsAt) <= new Date()) {
     // Ran to the ceiling the wallet could afford.
@@ -343,6 +372,11 @@ async function settleIfExpired(session) {
   }
 
   if (dirty) await session.save();
+  // After the save, so a lawyer whose other device reads the fresh status
+  // first never races the push that is supposed to close its call screen.
+  if (expiredCallRequest) {
+    notifyCallEnded(session).catch((err) => console.error('push: expired call request', err));
+  }
   return session;
 }
 
