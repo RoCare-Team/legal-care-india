@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { formatExperience, formatCompactNumber } from '@/utils/formatters';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import PlanTierBadge from '@/components/shared/PlanTierBadge';
 import Container from '@/components/ui/Container';
 import ProfileConsultPanel from './ProfileConsultPanel';
 
@@ -31,7 +32,7 @@ export default function ProfileHeader({ advocate }) {
   const {
     name, photo, city, state, experience, rating, reviews, verified,
     barCouncilNumber, tagline, languages = [], metrics = {}, legalCareId, _id,
-    designation, specializations = [],
+    designation, specializations = [], planId, planExpiresAt,
   } = advocate;
 
   const standing = [designation || 'Advocate', specializations[0]].filter(Boolean).join(' · ');
@@ -118,6 +119,7 @@ export default function ProfileHeader({ advocate }) {
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <PlanTierBadge planId={planId} planExpiresAt={planExpiresAt} />
                   {verified && (
                     <Pill className="bg-emerald-50 text-emerald-700 ring-emerald-200/80">
                       <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />

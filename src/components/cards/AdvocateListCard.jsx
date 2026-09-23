@@ -5,6 +5,7 @@ import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import PlanTierBadge from '@/components/shared/PlanTierBadge';
 
 /** Hairline used for the card edge and the rule inside it. */
 const HAIRLINE = 'border-[#E8ECF2]';
@@ -66,6 +67,8 @@ export default function AdvocateListCard({ advocate }) {
     specializations = [],
     languages = [],
     contact,
+    planId,
+    planExpiresAt,
   } = advocate;
 
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
@@ -136,6 +139,7 @@ export default function AdvocateListCard({ advocate }) {
                 <BadgeCheck className="hidden h-4 w-4 shrink-0 text-primary sm:block" aria-label="Verified" />
               )}
               <PresenceIndicator id={advocate._id} variant="label" />
+              <PlanTierBadge planId={planId} planExpiresAt={planExpiresAt} />
             </div>
 
             <Link href={profileHref} className={`hidden h-9 shrink-0 px-3.5 sm:inline-flex ${profileButton}`}>

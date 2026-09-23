@@ -5,6 +5,7 @@ import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import PlanTierBadge from '@/components/shared/PlanTierBadge';
 
 /** Hairline used for the card edge and the rules inside it. */
 const HAIRLINE = 'border-[#E8ECF2]';
@@ -90,6 +91,8 @@ export default function AdvocateGridCard({ advocate }) {
     specializations = [],
     languages = [],
     contact,
+    planId,
+    planExpiresAt,
   } = advocate;
 
   const profileHref = `/lawyers/${advocateProfilePath(advocate)}`;
@@ -135,9 +138,7 @@ export default function AdvocateGridCard({ advocate }) {
           here, and nothing below has to make room for them. */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <PresenceIndicator id={advocate._id} variant="label" />
-
-
-
+        <PlanTierBadge planId={planId} planExpiresAt={planExpiresAt} />
       </div>
 
       {/* ── Identity ──────────────────────────────────────────────────── */}

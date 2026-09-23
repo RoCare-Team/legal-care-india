@@ -7,6 +7,7 @@ import { advocateProfilePath } from '@/utils/advocateUrl';
 import { advocateRates } from '@/constants/callRates';
 import CardContactActions from './CardContactActions';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
+import PlanTierBadge from '@/components/shared/PlanTierBadge';
 
 /** Hairline used for the card edge and the rules inside it. */
 const HAIRLINE = 'border-[#E8ECF2]';
@@ -101,6 +102,8 @@ export default function AdvocateCard({ advocate }) {
     consultationFee,
     contact,
     _distance,
+    planId,
+    planExpiresAt,
   } = advocate;
 
   // Present only during a "near me" search — how far this office is from the user.
@@ -205,6 +208,7 @@ export default function AdvocateCard({ advocate }) {
           <FeePill amount={feeText} unit={feeUnit} quoted={feeQuoted} />
           <PresenceIndicator id={advocate._id} variant="profile" />
           {verified && <VerifiedChip />}
+          <PlanTierBadge planId={planId} planExpiresAt={planExpiresAt} />
           {rating > 0 && (
             <span className="inline-flex items-center gap-1.5 text-[13px]">
               <Star className="h-4 w-4 shrink-0 fill-amber-400 text-amber-400" aria-hidden="true" />
@@ -307,6 +311,7 @@ export default function AdvocateCard({ advocate }) {
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {verified && <VerifiedChip />}
+            <PlanTierBadge planId={planId} planExpiresAt={planExpiresAt} />
             <PresenceIndicator id={advocate._id} variant="profile" />
             <Link
               href={profileHref}

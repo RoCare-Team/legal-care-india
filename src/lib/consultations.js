@@ -6,7 +6,7 @@ import Advocate from '@/models/Advocate';
 import { chargeForDuration } from '@/constants/callRates';
 import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
 import { applyLegacyCommission } from '@/lib/payouts';
-import { sendPushToAdvocate } from '@/lib/push';
+import { notifyNewRequest, notifyCallEnded, sendPushToAdvocate } from '@/lib/push';
 
 /**
  * Consultation data-access + the wallet transfer that settles a session.
@@ -457,12 +457,6 @@ export async function hideConsultationFor(id, participantId, viewer) {
   return true;
 }
 
-/** "New chat request" / "New audio request" / "New video request". */
-function requestPushCopy(type, userName) {
-  const kind = type === 'video' ? 'video call' : type === 'audio' ? 'audio call' : 'chat';
-  return { title: `New ${kind} request`, body: `${userName || 'A client'} wants to talk.` };
-}
-
 /**
  * Create a pending consultation request. No charge — the rate is only
  * recorded here, along with the ceiling the user's wallet can cover, and the
@@ -478,11 +472,8 @@ export async function createConsultation({
   });
   // Never awaited into the response — a client booking a lawyer must not wait
   // on Firebase, and a push that fails must not fail the booking it rides on
-  // (sendPushToAdvocate already guards its own errors).
-  sendPushToAdvocate(advocateId, {
-    ...requestPushCopy(type, userName),
-    data: { kind: 'consultation-request', consultationId: String(doc._id) },
-  });
+  // (notifyNewRequest already guards its own errors).
+  notifyNewRequest(doc, userName).catch((err) => console.error('push: new request', err));
   return serializeSession(doc.toObject());
 }
 
@@ -551,10 +542,7 @@ export async function resumeConsultation({ userId, userName, advocateId, advocat
     type: parent.type || 'chat',
     resumedFromId: parent._id,
   });
-  sendPushToAdvocate(advocateId, {
-    ...requestPushCopy(doc.type, userName),
-    data: { kind: 'consultation-request', consultationId: String(doc._id) },
-  });
+  notifyNewRequest(doc, userName).catch((err) => console.error('push: resumed request', err));
   return serializeSession(doc.toObject());
 }
 
@@ -611,6 +599,9 @@ export async function acceptConsultation(id, advocateId) {
   session.startedAt = startedAt;
   session.endsAt = new Date(startedAt.getTime() + (session.maxMinutes || 0) * 60 * 1000);
   await session.save();
+  // Closes the full-screen call screen on the lawyer's other devices — the one
+  // that accepted already knows and moved on without waiting for a push.
+  notifyCallEnded(session).catch((err) => console.error('push: accepted', err));
   return withPairHistory(serializeSession(session.toObject()));
 }
 
@@ -622,6 +613,7 @@ export async function rejectConsultation(id, advocateId) {
   if (session.status === 'pending') {
     session.status = 'rejected';
     await session.save();
+    notifyCallEnded(session).catch((err) => console.error('push: rejected', err));
   }
   return serializeSession(session.toObject());
 }
@@ -634,6 +626,7 @@ export async function cancelConsultation(id, userId) {
   if (session.status === 'pending') {
     session.status = 'cancelled';
     await session.save();
+    notifyCallEnded(session).catch((err) => console.error('push: cancelled', err));
   }
   return serializeSession(session.toObject());
 }
@@ -735,6 +728,13 @@ export async function startCall(id, userId) {
     endedAt: null,
   };
   await session.save();
+  // Unchanged by the incoming_call/call_cancelled push work above: this is a
+  // separate ring, for the WebRTC handshake inside an already-accepted
+  // session, not the consultation request itself. Left as an ordinary
+  // notification (not the new full-screen treatment) until it's confirmed
+  // whether the app still needs a push here at all now that accepting a
+  // request opens the call directly — see the handoff note this was added
+  // from.
   sendPushToAdvocate(session.advocateId, {
     title: 'Incoming call',
     body: `${session.userName || 'A client'} is calling you.`,
