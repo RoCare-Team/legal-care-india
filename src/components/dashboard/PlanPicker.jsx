@@ -27,10 +27,17 @@ import {
  * @param {object} props
  * @param {object} props.advocate  needs planId, planExpiresAt, and the current
  *   specializations/subSpecializations so a downgrade can be refused honestly
+ * @param {boolean} [props.hideHeading=false]  drops the "Your plan" heading and
+ *   intro line — for SectionPlan, which embeds this in the guided setup, where
+ *   the step panel around it already carries a title.
+ * @param {(result: object, planId: string) => void} [props.onUpgraded]  when
+ *   given, called on a successful purchase INSTEAD of this page's own
+ *   `returnTo`/refresh handling — SectionPlan uses it to fold the new plan
+ *   straight into the setup draft, the same way the in-form upgrade modal does.
  */
 const ICONS = { free: ShieldCheck, professional: Sparkles, premium: Crown };
 
-export default function PlanPicker({ advocate }) {
+export default function PlanPicker({ advocate, hideHeading = false, onUpgraded }) {
   const router = useRouter();
   const params = useSearchParams();
   // The plan just paid for, so the page can confirm it even when there is no
@@ -42,6 +49,11 @@ export default function PlanPicker({ advocate }) {
   // that sells the same plans from inside the profile form.
   const { buy, busy, error } = useMembershipCheckout((result, planId) => {
     setBought(planId);
+
+    if (onUpgraded) {
+      onUpgraded(result, planId);
+      return;
+    }
 
     // Straight back to the section they were filling in, with the new
     // allowance already applied — not to a dashboard where they have to find
@@ -76,17 +88,19 @@ export default function PlanPicker({ advocate }) {
 
   return (
     <div>
-      <div className="mb-5">
-        <h2 className="font-display text-xl font-bold text-ink">Your plan</h2>
-        <p className="mt-1 text-sm text-ink/60">
-          You are on <span className="font-semibold text-ink">{current.name}</span>
-          {expiryLabel && current.monthly > 0 ? ` until ${expiryLabel}` : ''}. Using{' '}
-          <span className="font-semibold text-ink">{areasUsed}</span>
-          {current.areas === null ? '' : ` of ${current.areas}`} practice areas and{' '}
-          <span className="font-semibold text-ink">{mattersUsed}</span>
-          {current.matters === null ? '' : ` of ${current.matters}`} matters.
-        </p>
-      </div>
+      {!hideHeading && (
+        <div className="mb-5">
+          <h2 className="font-display text-xl font-bold text-ink">Your plan</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            You are on <span className="font-semibold text-ink">{current.name}</span>
+            {expiryLabel && current.monthly > 0 ? ` until ${expiryLabel}` : ''}. Using{' '}
+            <span className="font-semibold text-ink">{areasUsed}</span>
+            {current.areas === null ? '' : ` of ${current.areas}`} practice areas and{' '}
+            <span className="font-semibold text-ink">{mattersUsed}</span>
+            {current.matters === null ? '' : ` of ${current.matters}`} matters.
+          </p>
+        </div>
+      )}
 
       {bought && (
         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3">

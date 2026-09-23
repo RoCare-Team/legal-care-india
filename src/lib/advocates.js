@@ -216,6 +216,11 @@ export function buildAdvocateProfile(a) {
       mapQuery: `${area}, ${a.city}, ${a.state}`,
     },
     timing: a.timing || OFFICE_TIMING,
+    // Unlike the office timing above, never invented: this is "usually online
+    // for a live consultation", and a client who tries at a made-up hour and
+    // finds no one is worse off than one told nothing at all.
+    availabilitySchedule: a.availabilitySchedule || [],
+    timezone: a.timezone || 'Asia/Kolkata',
     contact: a.contact || {
       phone,
       whatsapp: phone.replace(/[^0-9]/g, ''),
@@ -240,6 +245,7 @@ export function buildAdvocateProfile(a) {
       cases: a.metrics?.cases || 0,
       clients: a.metrics?.clients || 0,
       successRate: a.metrics?.successRate || 0,
+      cashHandled: a.metrics?.cashHandled || 0,
     },
   };
 }

@@ -1,4 +1,5 @@
 import { advocateRate } from '@/constants/callRates';
+import { MAX_AI_AVATARS } from '@/constants/avatarAi';
 
 /**
  * The stored lawyer record, flattened into what the profile form edits.
@@ -24,6 +25,10 @@ export function toEditableSnapshot(a) {
     // writes by name, so sending it back changes nothing.
     planId: a.planId || 'free',
     planExpiresAt: a.planExpiresAt || null,
+    // Not editable — how many of the two AI avatar generations are left. The
+    // route re-checks this itself; it is carried here only so the button can
+    // show "1 left" without a separate fetch.
+    aiAvatarRemaining: Math.max(0, MAX_AI_AVATARS - (Number(a.aiAvatarCount) || 0)),
     // Keyed by slot minutes; blank entries mean the platform default applies.
     slotPrices: a.slotPrices ? { ...a.slotPrices } : {},
     photo: a.photo || '',
@@ -40,16 +45,19 @@ export function toEditableSnapshot(a) {
     practiceCities: a.practiceCities || [],
     barCouncil: a.barCouncilNumber || '',
     experience: String(a.experience || ''),
-    cases: String(a.metrics?.cases || ''),
+    cases: String(a.metrics?.cases || ''),
 
     casesWon: String(a.metrics?.casesWon || ''),
     clients: String(a.metrics?.clients || ''),
     successRate: String(a.metrics?.successRate || ''),
+    cashHandled: String(a.metrics?.cashHandled || ''),
     education: a.education || [],
     officeName: a.office?.name || '',
     officeAddress: a.office?.address || '',
     pincode: a.office?.pincode || '',
     timing: a.timing || [],
+    availabilitySchedule: a.availabilitySchedule || [],
+    timezone: a.timezone || 'Asia/Kolkata',
     phone: a.contact?.phone || a.phone || '',
     whatsapp: a.contact?.whatsapp || '',
     email: a.contact?.email || a.email || '',

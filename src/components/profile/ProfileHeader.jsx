@@ -1,9 +1,9 @@
 import Image from 'next/image';
 import {
   BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint, Star, Sparkles,
-  Check, Users, TrendingUp, FolderCheck,
+  Check, Users, TrendingUp, FolderCheck, IndianRupee,
 } from 'lucide-react';
-import { formatExperience } from '@/utils/formatters';
+import { formatExperience, formatCompactNumber } from '@/utils/formatters';
 import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 import Container from '@/components/ui/Container';
 import ProfileConsultPanel from './ProfileConsultPanel';
@@ -45,6 +45,7 @@ export default function ProfileHeader({ advocate }) {
     { icon: Briefcase, label: 'Experience', value: formatExperience(experience).replace(' experience', '') },
     { icon: Scale, label: 'Bar Council No.', value: barCouncilNumber },
     { icon: Languages, label: 'Languages', value: languages.join(', ') },
+    metrics.cashHandled > 0 && { icon: IndianRupee, label: 'Cash Handled', value: `₹${formatCompactNumber(metrics.cashHandled)}+` },
     metrics.cases > 0 && { icon: FolderCheck, label: 'Cases Handled', value: `${metrics.cases}+` },
     metrics.clients > 0 && { icon: Users, label: 'Clients Advised', value: `${metrics.clients}+` },
     metrics.successRate > 0 && { icon: TrendingUp, label: 'Success Rate', value: `${metrics.successRate}%` },

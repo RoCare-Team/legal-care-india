@@ -241,6 +241,20 @@ const AdvocateSchema = new Schema(
     },
     timing: { type: [TimingSchema], default: [] },
 
+    // When a lawyer usually takes live consultations — shown on the profile
+    // as "Usually online" and on their own dashboard next to the actual
+    // Online/Offline switch. Informational only: it never flips `available`
+    // by itself, so it can never disagree with the switch the lawyer is
+    // actually looking at. Same row shape as `timing` on purpose, so the one
+    // day-and-hours picker (OfficeTimingRow) edits both.
+    availabilitySchedule: { type: [TimingSchema], default: [] },
+
+    // Which IANA zone `availabilitySchedule`'s clock times are in. Every
+    // lawyer we have signed up so far practises in India, hence the default —
+    // but a schedule of plain "10:00 PM"s means nothing without saying which
+    // 10pm, so this travels with it rather than being assumed.
+    timezone: { type: String, default: 'Asia/Kolkata', trim: true },
+
     contact: {
       phone: { type: String, default: '' },
       whatsapp: { type: String, default: '' },
@@ -263,6 +277,13 @@ const AdvocateSchema = new Schema(
     reviews: { type: Number, default: 0 },
     reviewsList: { type: [ReviewSchema], default: [] },
 
+    // How many times this lawyer has generated a profile-photo avatar with AI
+    // (Professional plan and above). Capped at MAX_AI_AVATARS
+    // (constants/avatarAi.js) in the avatar route — kept here rather than
+    // computed, since a generation costs real money and the count has to
+    // survive a plan that later lapses.
+    aiAvatarCount: { type: Number, default: 0 },
+
     // Practice highlights shown on the profile (entered by the lawyer).
     metrics: {
       cases: { type: Number, default: 0 },
@@ -270,6 +291,10 @@ const AdvocateSchema = new Schema(
       casesWon: { type: Number, default: 0 },
       clients: { type: Number, default: 0 },
       successRate: { type: Number, default: 0 },
+      // Total value of the matters handled, in rupees — recoveries negotiated,
+      // deals closed, claims settled. Optional like the rest of this group;
+      // 0 hides it rather than printing "₹0" as though nothing has been done.
+      cashHandled: { type: Number, default: 0 },
     },
 
     // Presence — bumped by the lawyer's call listener while they have the
@@ -343,6 +368,14 @@ const AdvocateSchema = new Schema(
     // Visibility
     status: { type: String, enum: ['pending', 'published'], default: 'published' },
     verified: { type: Boolean, default: false },
+
+    // Firebase Cloud Messaging registration tokens — one per device this
+    // lawyer has signed into the app on, so a push (a new request, an
+    // incoming call) reaches them whether or not the app is open. A list
+    // rather than one token because a lawyer's phone and tablet are both
+    // real devices; sending to all of them is not a bug. Pruned as tokens
+    // are reported dead — see lib/push.js.
+    fcmTokens: { type: [String], default: [] },
 
     // ── Membership ─────────────────────────────────────────────────────────
     // What the lawyer is paying for: how much of their practice they may list,

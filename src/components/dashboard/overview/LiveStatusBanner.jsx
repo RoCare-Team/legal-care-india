@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Zap, Moon, Loader2 } from 'lucide-react';
 import { useAvailability } from '@/hooks/useAvailability';
 
@@ -41,6 +42,16 @@ export default function LiveStatusBanner({ initialAvailable }) {
             ? 'Clients can now chat, call or video call you.'
             : 'Clients can’t book you right now. Go online to start receiving requests.'}
         </p>
+        {/* This switch is still entirely manual — the schedule set here only
+            tells clients when to expect you, it never flips this on its own. */}
+        <Link
+          href="/dashboard/profile#availability"
+          className={`mt-1 inline-block text-[12.5px] font-medium underline-offset-2 hover:underline ${
+            available ? 'text-emerald-800/60' : 'text-amber-900/60'
+          }`}
+        >
+          Set your usual online hours
+        </Link>
       </div>
 
       <button

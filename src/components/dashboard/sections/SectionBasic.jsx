@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { UserRound, Upload, X, ImageIcon } from 'lucide-react';
+import { UserRound, Upload, X, ImageIcon, Sparkles, Loader2, Lock } from 'lucide-react';
 import { FormField, Input, Select, Avatar } from '@/components/ui';
 import { CITIES } from '@/data/cities';
 import { STATES, allCitiesForState } from '@/data/indiaLocations';
 import { fileToResizedDataURL } from '@/utils/imageFile';
+import { activePlan } from '@/constants/membershipPlans';
 import DashboardSection from '../DashboardSection';
+import PlanUpgradeModal from '../PlanUpgradeModal';
 import SmartImage from '@/components/shared/SmartImage';
 
 /**
@@ -24,9 +26,15 @@ import SmartImage from '@/components/shared/SmartImage';
  *
  * `cities` merges the built-in list with admin-added cities; it falls back to
  * the built-ins when the prop isn't supplied.
+ *
+ * `showErrors` turns on the red state for the tagline once the lawyer has
+ * tried to move on without it — see EditProfileForm / ProfileSetupStepper for
+ * when that flips true. Before that a blank tagline is just an empty box, not
+ * a mistake being pointed at.
  */
-export default function SectionBasic({ data, set, cities = CITIES, identity = true }) {
+export default function SectionBasic({ data, set, cities = CITIES, identity = true, showErrors = false }) {
   const [error, setError] = useState('');
+  const taglineMissing = showErrors && !String(data.tagline || '').trim();
 
   // Suggestions for whichever state is selected, plus any city an admin added.
   const cityOptions = allCitiesForState(data.state, cities);
@@ -72,12 +80,16 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
           )}
         </div>
       </div>
+      <p className="mb-6 text-xs text-ink/45">
+        Recommended 1600×500px (a wide banner), landscape. JPG or PNG, up to 10MB — resized automatically.
+      </p>
 
       {/* Photo */}
-      <div className="mb-6 flex flex-wrap items-center gap-4">
+      <div className="mb-2 flex flex-wrap items-center gap-4">
         <Avatar src={data.photo} name={data.fullName} size="lg" />
         <div className="flex flex-wrap items-center gap-2">
           <UploadButton label="Upload Photo" icon={Upload} onFile={handlePhoto} />
+          <AiAvatarButton data={data} set={set} />
           {data.photo && (
             <button
               type="button"
@@ -89,6 +101,7 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
           )}
         </div>
       </div>
+      <p className="mb-6 text-xs text-ink/45">Square, at least 512×512px. JPG or PNG, up to 10MB — resized automatically.</p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
@@ -104,10 +117,12 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
           htmlFor="d-tagline"
           required
           className="sm:col-span-2"
-          hint="One line under your name — what you do, in a few words."
+          hint={taglineMissing ? '' : 'One line under your name — what you do, in a few words.'}
+          error={taglineMissing ? 'Add a headline before saving — it is what clients see under your name.' : ''}
         >
           <Input
             id="d-tagline"
+            invalid={taglineMissing}
             value={data.tagline}
             onChange={(e) => set('tagline', e.target.value)}
             placeholder="Criminal defence and bail matters"
@@ -167,6 +182,97 @@ function UploadButton({ label, icon: Icon = Upload, onFile, solid = false }) {
         }}
       />
     </label>
+  );
+}
+
+/**
+ * "Create with AI" — a profile-photo avatar generated on the spot, for
+ * Professional and Premium lawyers only. Starter sees the same button, locked,
+ * and tapping it opens the plans rather than doing nothing unexplained.
+ *
+ * Capped at MAX_AI_AVATARS tries per lawyer (the server holds the real limit;
+ * `data.aiAvatarRemaining` is only what the button shows before the first
+ * press). A generated image is not saved on its own — it lands in the photo
+ * slot exactly like an upload, and Save is still what keeps it.
+ */
+function AiAvatarButton({ data, set }) {
+  const [remaining, setRemaining] = useState(data.aiAvatarRemaining ?? 2);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [showPlans, setShowPlans] = useState(false);
+
+  const plan = activePlan(data);
+  const locked = plan.id === 'free';
+  const exhausted = !locked && remaining <= 0;
+
+  const generate = async () => {
+    if (locked) {
+      setShowPlans(true);
+      return;
+    }
+    if (exhausted || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/dashboard/avatar/generate', { method: 'POST' });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 402) {
+          setShowPlans(true);
+        } else {
+          setError(payload.error || 'Could not create an avatar just now.');
+          if (typeof payload.remaining === 'number') setRemaining(payload.remaining);
+        }
+        return;
+      }
+      set('photo', payload.photo);
+      setRemaining(payload.remaining ?? Math.max(0, remaining - 1));
+    } catch {
+      setError('Network error. Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={generate}
+        disabled={busy || (!locked && exhausted)}
+        title={
+          locked
+            ? 'AI avatars are for Professional and Premium plans'
+            : exhausted
+              ? 'You have used both of your AI avatar tries'
+              : undefined
+        }
+        className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-primary/30 px-4 py-2 text-sm font-medium text-primary transition-colors hover:border-primary/50 hover:bg-primary/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : locked || exhausted ? (
+          <Lock className="h-4 w-4" />
+        ) : (
+          <Sparkles className="h-4 w-4" />
+        )}
+        {busy ? 'Creating…' : locked ? 'Create with AI' : exhausted ? 'No AI tries left' : `Create with AI (${remaining} left)`}
+      </button>
+      {error && <p className="mt-1.5 w-full text-xs text-red-600">{error}</p>}
+
+      <PlanUpgradeModal
+        open={showPlans}
+        onClose={() => setShowPlans(false)}
+        currentPlan={plan}
+        blocked="AI avatar creation"
+        suggest="professional"
+        onUpgraded={(result) => {
+          set('planId', result.planId);
+          set('planExpiresAt', result.expiresAt || null);
+          setShowPlans(false);
+        }}
+      />
+    </>
   );
 }
 

@@ -1,29 +1,35 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, ArrowRight, Check, Loader2, Eye, Scale, UserRound,
   GraduationCap, Timer, Building2, X, PartyPopper, Sparkles, Clock, AlignLeft, Pencil,
+  BadgeIndianRupee,
 } from 'lucide-react';
 import Logo from '@/components/shared/Logo';
 import { fromDraft, completionOf } from '@/lib/profileCompletion';
 import SectionAboutServices from './sections/SectionAboutServices';
 import SectionBasic from './sections/SectionBasic';
 import SectionExperienceEducation from './sections/SectionExperienceEducation';
+import SectionVerificationDocuments from './sections/SectionVerificationDocuments';
 import SectionContactFees from './sections/SectionContactFees';
+import SectionAvailability from './sections/SectionAvailability';
 import SectionOfficeTiming from './sections/SectionOfficeTiming';
 import SectionGallerySocial from './sections/SectionGallerySocial';
 import SectionAbout from './sections/SectionAbout';
+import SectionPlan from './sections/SectionPlan';
 
 /**
  * The guided way through a profile, one step at a time.
  *
  * Registration now ends after a name, an email and a city, which leaves a
  * lawyer on a dashboard with a mostly empty profile and a long form somewhere
- * behind a link. Most will not go and find it. So this walks them: five steps,
- * a progress ring that moves as they type, and one thing being asked for at a
- * time instead of forty.
+ * behind a link. Most will not go and find it. So this walks them: seven
+ * steps, a progress ring that moves as they type, and one thing being asked
+ * for at a time instead of forty. The last of the seven, Plan, is not part of
+ * that ring — see PLAN_STEP.
  *
  * The steps are not new screens — they are the same section components the
  * profile editor uses, shown a group at a time. There is exactly one place
@@ -43,10 +49,45 @@ import SectionAbout from './sections/SectionAbout';
 const STEP_META = {
   practice: { icon: Scale, Section: SectionAboutServices },
   presence: { icon: UserRound, Section: SectionBasic },
-  credentials: { icon: GraduationCap, Section: SectionExperienceEducation },
-  consultations: { icon: Timer, Section: SectionContactFees },
+  credentials: { icon: GraduationCap, Section: SectionExperienceEducation, extra: SectionVerificationDocuments },
+  consultations: { icon: Timer, Section: SectionContactFees, extra: SectionAvailability },
   office: { icon: Building2, Section: SectionOfficeTiming, extra: SectionGallerySocial },
   about: { icon: AlignLeft, Section: SectionAbout },
+  plan: { icon: BadgeIndianRupee, Section: SectionPlan },
+};
+
+/**
+ * The one field on each step that has to be there before "Save & continue"
+ * moves on — the two fields marked required in the full editor too (tagline,
+ * office name). "Do this later" skips this check on purpose: it still saves
+ * whatever is filled in, it just does not insist on it.
+ */
+const REQUIRED_ON_STEP = {
+  presence: (d) => String(d.tagline || '').trim().length > 0,
+  office: (d) => String(d.officeName || '').trim().length > 0,
+};
+
+/**
+ * A seventh, synthetic step appended after the six the completion score is
+ * built from (see profileCompletion.js) — Plan, always last.
+ *
+ * It is deliberately not one of PROFILE_STEPS: Starter is a complete, valid
+ * plan on its own, so there is no "missing" state for this step to report,
+ * and folding it into the percentage would mean either every lawyer starts
+ * pre-credited for a plan they have not looked at, or the number can never
+ * reach 100 without a purchase. `done`/`total` are 1/1 so it reads as
+ * finished in the rail from the start, which is accurate — there is nothing
+ * to complete here, only a choice to make or skip.
+ */
+const PLAN_STEP = {
+  id: 'plan',
+  title: 'Choose Your Plan',
+  blurb:
+    'A bigger plan lists more of your practice and places you higher in search. Starter is free and always available — upgrade now or any time later, including from here.',
+  items: [],
+  done: 1,
+  total: 1,
+  complete: true,
 };
 
 export default function ProfileSetupStepper({
@@ -61,15 +102,23 @@ export default function ProfileSetupStepper({
   // not another form. `editing` is how they get back to the form from there —
   // being finished is a state to leave, not a door that locks.
   const [editing, setEditing] = useState(false);
+  // On once "Save & continue" is pressed with this step's required field still
+  // blank. Reset on every step change, so it never carries over onto a step
+  // that has nothing to complain about.
+  const [showErrors, setShowErrors] = useState(false);
 
   // Recomputed on every keystroke, which is the point: the ring has to move
   // while they are filling something in, or it reads as a static decoration.
+  // `progress` alone still drives the ring and the percentage — Plan is not
+  // one of its steps (see PLAN_STEP) — while `steps` is what the stepper
+  // actually walks through, six from `progress` plus Plan at the end.
   const progress = useMemo(() => completionOf(fromDraft(data)), [data]);
-  const step = progress.steps[index];
+  const steps = useMemo(() => [...progress.steps, PLAN_STEP], [progress.steps]);
+  const step = steps[index];
   const meta = STEP_META[step?.id] || {};
   const Section = meta.Section;
   const Extra = meta.extra;
-  const isLast = index === progress.steps.length - 1;
+  const isLast = index === steps.length - 1;
 
   const set = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -103,29 +152,52 @@ export default function ProfileSetupStepper({
   const go = (i) => {
     setIndex(i);
     setError('');
+    setShowErrors(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const next = async () => {
+  const finishHere = async () => {
     if (!(await save())) return;
     if (isLast) {
       setFinished(true);
+      // Otherwise a second "Save & finish" — reached by pressing "Edit my
+      // profile" from this very screen and coming back round to Plan — would
+      // find `editing` still true from that visit and never show this screen
+      // again; see the panel's own gating below.
+      setEditing(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     go(index + 1);
   };
 
+  /** "Save & continue" / "Save & finish" — the required field on this step,
+   * if any, has to be filled first; it turns red instead of silently letting
+   * the lawyer move past it. */
+  const next = async () => {
+    const requirement = REQUIRED_ON_STEP[step?.id];
+    if (requirement && !requirement(data)) {
+      setShowErrors(true);
+      setError('Please fill in the highlighted field before continuing.');
+      return;
+    }
+    await finishHere();
+  };
+
+  /** "Do this later" — a genuine skip. Saves whatever is there, same as
+   * `next`, but never blocks on what is still blank. */
+  const later = () => finishHere();
+
   return (
     <div className="min-h-screen bg-[#F7F8FA]">
       <SetupHeader percent={progress.percent} name={advocateName} />
 
       <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-        {/* Complete is complete, however they got there — by finishing the last
-            step or by filling the last gap on step two. Either way the useful
-            screen is the one that says where the profile now stands, and the
-            form is a click away rather than in the way. */}
-        {(finished || progress.percent === 100) && !editing ? (
+        {/* Only reached by actually pressing "Save & finish" on Plan, the
+            real last step now — filling the profile's own last gap on an
+            earlier step used to jump straight here, before Plan existed to
+            walk through first. */}
+        {finished && !editing ? (
           <FinishedPanel
             progress={progress}
             previewHref={previewHref}
@@ -149,16 +221,17 @@ export default function ProfileSetupStepper({
                 rail scrolling inside it. */}
             <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
               <ProgressCard progress={progress} />
-              <StepRail steps={progress.steps} index={index} onPick={go} />
+              <StepRail steps={steps} index={index} onPick={go} />
             </div>
 
             <div className="min-w-0">
-              <StepPanel step={step} index={index} total={progress.steps.length}>
+              <StepPanel step={step} index={index} total={steps.length}>
                 {Section && (
                   <Section
                     data={data}
                     set={set}
                     cities={cities}
+                    showErrors={showErrors}
                     // Step 1 is practice areas and matters; About is its own
                     // step at the end, where it can be drafted from them.
                     {...(step.id === 'practice' ? { showAbout: false } : {})}
@@ -185,6 +258,7 @@ export default function ProfileSetupStepper({
                 saving={saving}
                 onBack={() => go(index - 1)}
                 onNext={next}
+                onLater={later}
               />
             </div>
           </div>
@@ -213,7 +287,7 @@ function NewHere({ name, status }) {
         Welcome, {first} — your account is ready.
       </p>
       <p className="text-[12.5px] text-ink/55">
-        Six short steps, each saved as you go.
+        Seven short steps, each saved as you go.
       </p>
       {status === 'pending' && (
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[11.5px] font-semibold text-amber-800">
@@ -439,7 +513,7 @@ function StepPanel({ step, index, total, children }) {
 
 /* ------------------------------------------------------------------ footer */
 
-function Footer({ index, isLast, saving, onBack, onNext }) {
+function Footer({ index, isLast, saving, onBack, onNext, onLater }) {
   return (
     <div className="sticky bottom-4 z-20 mt-5 flex items-center justify-between gap-3 rounded-2xl border border-ink/8 bg-surface/95 p-3 shadow-[0_-2px_8px_rgba(16,24,40,0.04),0_12px_32px_-12px_rgba(16,24,40,0.2)] backdrop-blur-md sm:p-3.5">
       <button
@@ -454,11 +528,13 @@ function Footer({ index, isLast, saving, onBack, onNext }) {
 
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Not "skip" — nothing is lost by moving on, because this saves first.
-            "Later" is the honest word for it. */}
+            "Later" is the honest word for it. Unlike the button beside it,
+            this one never insists on the step's required field — that is the
+            whole difference between the two. */}
         {!isLast && (
           <button
             type="button"
-            onClick={onNext}
+            onClick={onLater}
             disabled={saving}
             className="rounded-xl px-3 py-2.5 text-sm font-medium text-ink/45 transition-colors hover:text-ink/75 disabled:opacity-50"
           >
@@ -495,10 +571,29 @@ function Footer({ index, isLast, saving, onBack, onNext }) {
  *   incomplete            — they pressed finish with gaps left. Saying "done"
  *                           here would be a lie they discover later.
  */
+/** How long the finished screen stays up before it sends a complete profile
+ * on to the dashboard by itself. Long enough to read the headline; short
+ * enough that "finish" actually finishes rather than waiting on a click. */
+const AUTO_REDIRECT_MS = 2500;
+
 function FinishedPanel({ progress, previewHref, status, onReview }) {
+  const router = useRouter();
   const complete = progress.percent === 100;
   const live = status === 'published';
   const missing = progress.steps.flatMap((s) => s.items).filter((i) => !i.done);
+
+  // A complete profile has nothing left to ask for, so this screen's job is
+  // done the moment it has said so — it moves on by itself. Only reachable
+  // now by way of Plan (the real last step), so there is nothing further to
+  // offer here — the dashboard is genuinely next. An incomplete panel
+  // (finished with gaps) stays put: there is still a "Finish the rest"
+  // decision for the lawyer to make, and that is not something to make for
+  // them.
+  useEffect(() => {
+    if (!complete) return undefined;
+    const timer = setTimeout(() => router.push('/dashboard?welcome=1'), AUTO_REDIRECT_MS);
+    return () => clearTimeout(timer);
+  }, [complete, router]);
 
   const tone = !complete
     ? { ring: 'bg-primary/10 text-primary', wash: 'from-primary/[0.06]' }
@@ -546,6 +641,13 @@ function FinishedPanel({ progress, previewHref, status, onReview }) {
             </div>
           )}
 
+          {complete && (
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-[12px] text-ink/40">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              Taking you to your dashboard…
+            </p>
+          )}
+
           {!complete && (
             <>
               <div className="mx-auto mt-5 h-2 w-full max-w-xs overflow-hidden rounded-full bg-ink/8">
@@ -571,14 +673,24 @@ function FinishedPanel({ progress, previewHref, status, onReview }) {
 
         <div className="flex flex-col gap-2.5 border-t border-ink/8 px-6 py-5 sm:flex-row sm:justify-center sm:px-10">
           {!complete ? (
-            <button
-              type="button"
-              onClick={onReview}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
-            >
-              Finish the rest
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onReview}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+              >
+                Finish the rest
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+              {/* The same way out the header's own "Finish later" gives —
+                  nothing here is lost, every step saves as it is filled in. */}
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/12 px-5 py-3 text-sm font-semibold text-ink/75 transition-colors hover:border-ink/25 hover:text-ink"
+              >
+                Finish later
+              </Link>
+            </>
           ) : (
             <Link
               href="/dashboard?welcome=1"

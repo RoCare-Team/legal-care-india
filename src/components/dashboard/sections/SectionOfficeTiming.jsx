@@ -2,6 +2,7 @@ import { Building2, Clock } from 'lucide-react';
 import { FormField, Input, Textarea } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
 import RepeatableList from '../RepeatableList';
+import OfficeTimingRow from '../OfficeTimingRow';
 
 /**
  * SectionOfficeTiming — office address and weekly timing rows.
@@ -12,15 +13,31 @@ import RepeatableList from '../RepeatableList';
  * clicking it did nothing and a screen reader announced an unnamed textbox.
  * The repeated timing rows take the row index, since two rows would otherwise
  * both claim the same id and the browser would bind both labels to the first.
+ *
+ * Each timing row is day chips + two time pickers (OfficeTimingRow), not free
+ * text — see that component for how it still writes the plain "Monday –
+ * Friday" / "10:00 AM – 7:00 PM" strings the public profile reads.
+ *
+ * `showErrors` reddens the office name once the lawyer has tried to move on
+ * without it — see EditProfileForm / ProfileSetupStepper.
  */
-export default function SectionOfficeTiming({ data, set }) {
+export default function SectionOfficeTiming({ data, set, showErrors = false }) {
+  const officeNameMissing = showErrors && !String(data.officeName || '').trim();
+
   return (
     <>
       <DashboardSection id="office" title="Office Details" description="Where clients can meet you." icon={Building2}>
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField label="Office / Chamber Name" htmlFor="d-office-name" required className="sm:col-span-2">
+          <FormField
+            label="Office / Chamber Name"
+            htmlFor="d-office-name"
+            required
+            className="sm:col-span-2"
+            error={officeNameMissing ? 'Add your office or chamber name before saving.' : ''}
+          >
             <Input
               id="d-office-name"
+              invalid={officeNameMissing}
               value={data.officeName}
               onChange={(e) => set('officeName', e.target.value)}
               placeholder="e.g. Sharma Legal Chambers"
@@ -48,31 +65,14 @@ export default function SectionOfficeTiming({ data, set }) {
         </div>
       </DashboardSection>
 
-      <DashboardSection id="timing" title="Office Timing" description="Set your availability for each day." icon={Clock}>
+      <DashboardSection id="timing" title="Office Timing" description="Pick the days and the hours you are there." icon={Clock}>
         <RepeatableList
           items={data.timing}
           onChange={(v) => set('timing', v)}
           template={{ day: '', hours: '', open: true }}
           addLabel="Add timing row"
           renderRow={(item, update, i) => (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Day(s)" htmlFor={`d-timing-day-${i}`}>
-                <Input
-                  id={`d-timing-day-${i}`}
-                  value={item.day}
-                  onChange={(e) => update({ day: e.target.value })}
-                  placeholder="e.g. Monday – Friday"
-                />
-              </FormField>
-              <FormField label="Hours" htmlFor={`d-timing-hours-${i}`}>
-                <Input
-                  id={`d-timing-hours-${i}`}
-                  value={item.hours}
-                  onChange={(e) => update({ hours: e.target.value })}
-                  placeholder="e.g. 10:00 AM – 7:00 PM"
-                />
-              </FormField>
-            </div>
+            <OfficeTimingRow item={item} update={update} index={i} idPrefix="office-timing" />
           )}
         />
       </DashboardSection>

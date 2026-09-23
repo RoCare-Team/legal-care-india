@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
-  Clock, FileBadge, Award, GraduationCap, Briefcase, Languages,
+  Clock, FileBadge, Award, GraduationCap, Briefcase, Languages, ShieldCheck, Wifi,
   Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee, Landmark, Inbox,
 } from 'lucide-react';
 
@@ -43,8 +43,10 @@ export const PROFILE_SECTIONS = [
   { label: 'Office Timing', href: '/dashboard/profile#timing', icon: Clock },
   { label: 'Contact Details', href: '/dashboard/profile#contact', icon: Phone },
   { label: 'Consultation Rates', href: '/dashboard/profile#slots', icon: IndianRupee },
+  { label: 'Usually Online', href: '/dashboard/profile#availability', icon: Wifi },
   { label: 'Education', href: '/dashboard/profile#education', icon: GraduationCap },
   { label: 'Experience', href: '/dashboard/profile#experience', icon: Briefcase },
+  { label: 'Verification Documents', href: '/dashboard/profile#verification', icon: ShieldCheck },
   { label: 'Languages', href: '/dashboard/profile#languages', icon: Languages },
   { label: 'Certificates', href: '/dashboard/profile#certificates', icon: FileBadge },
   { label: 'Awards', href: '/dashboard/profile#awards', icon: Award },

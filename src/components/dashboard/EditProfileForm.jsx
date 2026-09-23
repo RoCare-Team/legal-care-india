@@ -7,8 +7,10 @@ import SectionBasic from './sections/SectionBasic';
 import SectionAboutServices from './sections/SectionAboutServices';
 import SectionExperienceEducation from './sections/SectionExperienceEducation';
 import SectionOfficeTiming from './sections/SectionOfficeTiming';
+import SectionAvailability from './sections/SectionAvailability';
 import SectionContactFees from './sections/SectionContactFees';
 import SectionCredentials from './sections/SectionCredentials';
+import SectionVerificationDocuments from './sections/SectionVerificationDocuments';
 import SectionGallerySocial from './sections/SectionGallerySocial';
 
 /**
@@ -26,14 +28,35 @@ export default function EditProfileForm({ initial, cities, previewHref }) {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Flips on once a save is attempted with a required field still blank — see
+  // SectionBasic (tagline) and SectionOfficeTiming (office name), the two
+  // fields marked required on this page. Before that a blank box is just
+  // blank; after it, it is red until it is fixed.
+  const [showErrors, setShowErrors] = useState(false);
 
   const set = (field, value) => {
     setData((prev) => ({ ...prev, [field]: value }));
     setSaved(false);
   };
 
+  /** Which required field is empty, if any — checked before every save. */
+  const firstMissingRequired = () => {
+    if (!String(data.tagline || '').trim()) return 'basic';
+    if (!String(data.officeName || '').trim()) return 'office';
+    return '';
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
+
+    const missingSection = firstMissingRequired();
+    if (missingSection) {
+      setShowErrors(true);
+      setError('Please fill in the highlighted field before saving.');
+      document.getElementById(missingSection)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -48,6 +71,7 @@ export default function EditProfileForm({ initial, cities, previewHref }) {
         return;
       }
       setSaved(true);
+      setShowErrors(false);
     } catch {
       setError('Network error. Check your connection and try again.');
     } finally {
@@ -57,11 +81,13 @@ export default function EditProfileForm({ initial, cities, previewHref }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <SectionBasic data={data} set={set} cities={cities} />
+      <SectionBasic data={data} set={set} cities={cities} showErrors={showErrors} />
       <SectionAboutServices data={data} set={set} cities={cities} />
       <SectionExperienceEducation data={data} set={set} />
-      <SectionOfficeTiming data={data} set={set} />
+      <SectionVerificationDocuments />
+      <SectionOfficeTiming data={data} set={set} showErrors={showErrors} />
       <SectionContactFees data={data} set={set} />
+      <SectionAvailability data={data} set={set} />
       <SectionCredentials data={data} set={set} />
       <SectionGallerySocial data={data} set={set} />
 

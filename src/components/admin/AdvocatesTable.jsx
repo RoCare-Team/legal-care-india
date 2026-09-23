@@ -56,6 +56,60 @@ function StatusAction({ advocate }) {
   );
 }
 
+/**
+ * Mark verified / remove badge control for a single lawyer row — the same
+ * two actions the bulk bar offers, reachable without ticking a row first.
+ *
+ * Kept apart from StatusAction on purpose (see BulkBar's docblock): publishing
+ * and verifying are different claims, so this is its own button rather than a
+ * side effect of Approve — an admin who only meant to publish a profile
+ * should not find every lawyer quietly wearing a badge nobody checked for.
+ */
+function VerifyAction({ advocate }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const run = async (action) => {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/admin/advocates', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: advocate.id, action }),
+      });
+      if (res.ok) router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (busy) {
+    return <Loader2 className="h-4 w-4 animate-spin text-ink/40" aria-hidden="true" />;
+  }
+
+  return advocate.verified ? (
+    <button
+      type="button"
+      onClick={() => run('unverify')}
+      title="Remove the verified badge"
+      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-ink/45 transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+    >
+      <ShieldOff className="h-3.5 w-3.5" aria-hidden="true" />
+      Remove badge
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => run('verify')}
+      title="Mark this lawyer's Bar Council enrolment as checked"
+      className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
+    >
+      <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+      Mark verified
+    </button>
+  );
+}
+
 /** Destructive delete, kept apart from the approval controls in its own column. */
 function DeleteAction({ advocate }) {
   const router = useRouter();
@@ -549,6 +603,7 @@ export default function AdvocatesTable({ advocates }) {
     { key: 'plan', label: 'Plan', render: (a) => <PlanBadge plan={a.plan} /> },
     { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
     { key: 'action', label: 'Approval', render: (a) => <StatusAction advocate={a} /> },
+    { key: 'verify', label: 'Verified', render: (a) => <VerifyAction advocate={a} /> },
     { key: 'createdAt', label: 'Joined', render: (a) => <span className="whitespace-nowrap text-ink/60">{formatDate(a.createdAt)}</span> },
     { key: 'access', label: 'Access', render: (a) => <ImpersonateButton id={a.id} name={a.name} role="advocate" /> },
     {

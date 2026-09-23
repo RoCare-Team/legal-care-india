@@ -73,6 +73,10 @@ export default async function DashboardOverviewPage({ searchParams }) {
 
       <LiveStatusBanner initialAvailable={available} />
 
+      {/* Near the top, not buried under the day's activity — the score a
+          lawyer with an unfinished profile most needs to act on. */}
+      {progress.percent < 100 && <ProfileCompletion progress={progress} />}
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <DashboardStatCard
           icon={Users}
@@ -119,7 +123,6 @@ export default async function DashboardOverviewPage({ searchParams }) {
             credits={queries.credits}
           />
           <TodaySessions sessions={overview.today} />
-          {progress.percent < 100 && <ProfileCompletion progress={progress} />}
         </div>
 
         <div className="min-w-0 space-y-5 sm:space-y-6">

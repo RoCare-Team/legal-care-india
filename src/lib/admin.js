@@ -309,6 +309,7 @@ export async function adminGetAdvocateById(id) {
       cases: adv.metrics?.cases || 0,
       clients: adv.metrics?.clients || 0,
       successRate: adv.metrics?.successRate || 0,
+      cashHandled: adv.metrics?.cashHandled || 0,
     },
     walletBalance: adv.walletBalance || 0,
     walletTransactions: (adv.walletTransactions || []).map(toWalletRow).reverse(),

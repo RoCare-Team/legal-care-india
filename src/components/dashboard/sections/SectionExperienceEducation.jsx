@@ -1,4 +1,4 @@
-import { Briefcase, GraduationCap } from 'lucide-react';
+import { Briefcase, GraduationCap, IndianRupee } from 'lucide-react';
 import { FormField, Input } from '@/components/ui';
 import DashboardSection from '../DashboardSection';
 import RepeatableList from '../RepeatableList';
@@ -46,9 +46,20 @@ export default function SectionExperienceEducation({ data, set }) {
 
         <p className="mt-6 mb-3 text-sm font-medium text-ink">
           Practice Highlights{' '}
-          <span className="font-normal text-ink/45">(shown on your public profile — leave 0 to hide)</span>
+          <span className="font-normal text-ink/45">(shown on your public profile — leave blank or 0 to hide)</span>
         </p>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <FormField label="Cash Handled (₹)" htmlFor="d-cash-handled" hint="Total value of matters handled — recoveries, settlements, deals closed.">
+            <Input
+              id="d-cash-handled"
+              type="number"
+              min="0"
+              leftIcon={<IndianRupee className="h-4 w-4" />}
+              value={data.cashHandled ?? ''}
+              onChange={(e) => set('cashHandled', e.target.value)}
+              placeholder="e.g. 5000000"
+            />
+          </FormField>
           <FormField label="Cases Handled" htmlFor="d-cases">
             <Input id="d-cases" type="number" min="0" value={data.cases} onChange={(e) => set('cases', e.target.value)} placeholder="e.g. 250" />
           </FormField>
@@ -63,6 +74,7 @@ export default function SectionExperienceEducation({ data, set }) {
               type="number"
               min="0"
               max={handled ?? undefined}
+              invalid={wonTooMany}
               value={data.casesWon ?? ''}
               onChange={(e) => set('casesWon', e.target.value)}
               placeholder="e.g. 230"

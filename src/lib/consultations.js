@@ -6,6 +6,7 @@ import Advocate from '@/models/Advocate';
 import { chargeForDuration } from '@/constants/callRates';
 import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
 import { applyLegacyCommission } from '@/lib/payouts';
+import { sendPushToAdvocate } from '@/lib/push';
 
 /**
  * Consultation data-access + the wallet transfer that settles a session.
@@ -456,6 +457,12 @@ export async function hideConsultationFor(id, participantId, viewer) {
   return true;
 }
 
+/** "New chat request" / "New audio request" / "New video request". */
+function requestPushCopy(type, userName) {
+  const kind = type === 'video' ? 'video call' : type === 'audio' ? 'audio call' : 'chat';
+  return { title: `New ${kind} request`, body: `${userName || 'A client'} wants to talk.` };
+}
+
 /**
  * Create a pending consultation request. No charge — the rate is only
  * recorded here, along with the ceiling the user's wallet can cover, and the
@@ -468,6 +475,13 @@ export async function createConsultation({
   const doc = await Consultation.create({
     userId, userName, advocateId, advocateName,
     rate, maxMinutes, type, status: 'pending',
+  });
+  // Never awaited into the response — a client booking a lawyer must not wait
+  // on Firebase, and a push that fails must not fail the booking it rides on
+  // (sendPushToAdvocate already guards its own errors).
+  sendPushToAdvocate(advocateId, {
+    ...requestPushCopy(type, userName),
+    data: { kind: 'consultation-request', consultationId: String(doc._id) },
   });
   return serializeSession(doc.toObject());
 }
@@ -536,6 +550,10 @@ export async function resumeConsultation({ userId, userName, advocateId, advocat
     // a phone call, not as a chat window.
     type: parent.type || 'chat',
     resumedFromId: parent._id,
+  });
+  sendPushToAdvocate(advocateId, {
+    ...requestPushCopy(doc.type, userName),
+    data: { kind: 'consultation-request', consultationId: String(doc._id) },
   });
   return serializeSession(doc.toObject());
 }
@@ -717,6 +735,11 @@ export async function startCall(id, userId) {
     endedAt: null,
   };
   await session.save();
+  sendPushToAdvocate(session.advocateId, {
+    title: 'Incoming call',
+    body: `${session.userName || 'A client'} is calling you.`,
+    data: { kind: 'call-ringing', consultationId: String(session._id), callId: session.call.id },
+  });
   return callSummary(session.call);
 }
 

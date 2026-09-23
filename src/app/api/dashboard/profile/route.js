@@ -17,6 +17,28 @@ import { PLACEHOLDER_EMAIL_SUFFIX } from '@/lib/advocateOtp';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
+ * Whether this Node runtime recognises `zone` as a timezone. `timezone` is
+ * free text from a <select>, and a browser only ever offers what it built the
+ * list from — but the value still crosses the network, so it is checked
+ * rather than trusted on sight.
+ *
+ * Not checked against `Intl.supportedValuesOf('timeZone')` — that list is
+ * canonical names only, and India's own is not among them: it reports
+ * 'Asia/Calcutta', not the 'Asia/Kolkata' every picker actually shows and
+ * saves, which is a *recognised alias* rather than absent. `DateTimeFormat`
+ * itself is what accepts an alias, so it is what settles whether one is real.
+ */
+function isValidTimezone(zone) {
+  try {
+    // eslint-disable-next-line no-new
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The lawyer's own slot prices, as a Map keyed by minutes.
  *
  * Only the slots we actually offer, and only real figures — a blank or junk
@@ -89,8 +111,8 @@ export async function PUT(request) {
   const {
     fullName, photo, coverImage, gallery, tagline, city, state, about,
     services, subServices, languages, courts, practiceCities, barCouncil, experience,
-    cases, casesWon, clients,
-    education, certificates, awards, timing,
+    cases, casesWon, clients, cashHandled,
+    education, certificates, awards, timing, availabilitySchedule, timezone,
     officeName, officeAddress, pincode,
     phone, whatsapp, email, fee, social, chatRate, audioRate, videoRate, slotPrices,
   } = body || {};
@@ -170,6 +192,7 @@ export async function PUT(request) {
   if (cases !== undefined) update['metrics.cases'] = Number(cases) || 0;
   if (casesWon !== undefined) update['metrics.casesWon'] = Number(casesWon) || 0;
   if (clients !== undefined) update['metrics.clients'] = Number(clients) || 0;
+  if (cashHandled !== undefined) update['metrics.cashHandled'] = Math.max(0, Number(cashHandled) || 0);
 
   // The success rate is worked out here, from the two counts, and never
   // taken from the request. It is a claim clients choose a lawyer on, so it
@@ -186,6 +209,15 @@ export async function PUT(request) {
   if (Array.isArray(certificates)) update.certificates = certificates;
   if (Array.isArray(awards)) update.awards = awards;
   if (Array.isArray(timing)) update.timing = timing;
+  if (Array.isArray(availabilitySchedule)) update.availabilitySchedule = availabilitySchedule;
+  if (timezone !== undefined) {
+    const wanted = String(timezone).trim();
+    if (wanted && isValidTimezone(wanted)) {
+      update.timezone = wanted;
+    } else if (wanted) {
+      return NextResponse.json({ error: 'That is not a recognised timezone.' }, { status: 400 });
+    }
+  }
   if (fee !== undefined) update.consultationFee = Number(fee) || 0;
 
   // Per-minute rates, one per live channel. Anything blank or out of bounds
