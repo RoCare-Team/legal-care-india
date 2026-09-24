@@ -750,6 +750,54 @@ export async function endConsultation(id, participantId) {
   return serializeSession(session.toObject());
 }
 
+/**
+ * Finish every session that is already over but has never been told so.
+ *
+ * Sessions are settled lazily, by whichever read next touches them — a poll
+ * from either participant, or the lawyer's inbox. That is enough while someone
+ * has the screen open, and nothing at all once both sides close the app: a
+ * session whose wallet ceiling passed at midnight keeps reading "Active" for
+ * days, because no poll ever comes to notice. The admin panel was showing
+ * exactly those rows as live, so this runs the same lazy settlement over them
+ * before the panel reads, on the panel's own visit.
+ *
+ * Only sessions whose time is demonstrably up are touched — the wallet ceiling
+ * has passed, or a call request has been ringing past its limit. A session that
+ * is genuinely still running is never ended from here; that is what the End
+ * button is for.
+ *
+ * @returns {Promise<number>} how many were finished
+ */
+export async function settleExpiredSessions(limit = 100) {
+  await connectDB();
+  const now = new Date();
+  const rows = await Consultation.find({
+    $or: [
+      { status: 'active', endsAt: { $ne: null, $lte: now } },
+      {
+        status: 'pending',
+        type: { $in: ['audio', 'video'] },
+        createdAt: { $lte: new Date(now.getTime() - CALL_REQUEST_LIMIT_MS) },
+      },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  let finished = 0;
+  for (const row of rows) {
+    try {
+      await settleIfExpired(row);
+      finished += 1;
+    } catch (err) {
+      // One bad row must not stop the sweep, and must not fail the page that
+      // asked for it.
+      console.error('settleExpiredSessions', String(row._id), err);
+    }
+  }
+  return finished;
+}
+
 /* ── The admin panel's controls over a live session ─────────────────────── */
 
 /** An error the API layer turns into a status code rather than a 500. */

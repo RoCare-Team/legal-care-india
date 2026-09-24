@@ -10,6 +10,7 @@ import Activity from '@/models/Activity';
 import ContactMessage from '@/models/ContactMessage';
 import { advocateRates } from '@/constants/callRates';
 import { describeDiscount } from '@/constants/discounts';
+import { settleExpiredSessions } from '@/lib/consultations';
 import { completionOf } from '@/lib/profileCompletion';
 import { membershipSummary } from '@/lib/adminMembership';
 import { listVerificationDocuments } from '@/lib/verificationDocuments';
@@ -379,6 +380,9 @@ export async function adminGetTestimonials() {
  */
 export async function adminGetConsultations() {
   await connectDB();
+  // Same sweep as the live desk: a session that ran out days ago should read
+  // "Ended", with the bill it came to, not "Active" for ever.
+  await settleExpiredSessions();
   const rows = await Consultation.find({})
     .sort({ createdAt: -1 })
     .limit(500)
@@ -580,6 +584,9 @@ function mapDiscount(d) {
  */
 export async function adminGetLiveConsultations() {
   await connectDB();
+  // Anything whose time is already up is finished first, so this panel lists
+  // what is actually happening rather than every session nobody ever closed.
+  await settleExpiredSessions();
   const rows = await Consultation.find({ status: { $in: ['pending', 'active'] } })
     .sort({ createdAt: -1 })
     .limit(100)
