@@ -31,6 +31,21 @@ export async function GET(_request, { params }) {
 }
 
 /**
+ * The answer to an action, or a 404 when there was no such session for this
+ * caller.
+ *
+ * These helpers return null both for a session that does not exist and for one
+ * that belongs to somebody else, and this used to be answered with
+ * `{ ok: true, session: null }` — a 200 telling the caller their action worked
+ * on a session they never touched. Both apps read the session out of that
+ * reply, so the honest answer is the only useful one.
+ */
+function sessionOr404(session) {
+  if (!session) return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  return NextResponse.json({ ok: true, session });
+}
+
+/**
  * PATCH /api/consultations/[id]  { action: 'accept'|'reject'|'cancel'|'end' }
  * Drives the session lifecycle. accept/reject are lawyer-only; cancel is
  * user-only; end is either participant.
@@ -57,16 +72,16 @@ export async function PATCH(request, { params }) {
     if (action === 'reject') {
       if (s.role !== 'advocate') return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
       const session = await rejectConsultation(id, s.id);
-      return NextResponse.json({ ok: true, session });
+      return sessionOr404(session);
     }
     if (action === 'cancel') {
       if (s.role !== 'user') return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
       const session = await cancelConsultation(id, s.id);
-      return NextResponse.json({ ok: true, session });
+      return sessionOr404(session);
     }
     if (action === 'end') {
       const session = await endConsultation(id, s.id);
-      return NextResponse.json({ ok: true, session });
+      return sessionOr404(session);
     }
     return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
   } catch (err) {

@@ -675,6 +675,8 @@ export async function rejectConsultation(id, advocateId) {
   if (!session) return null;
   if (session.status === 'pending') {
     session.status = 'rejected';
+    // Declining also stops whatever was ringing on the session.
+    closeCall(session, 'rejected', 'advocate');
     await session.save();
     notifyCallEnded(session).catch((err) => console.error('push: rejected', err));
   }
@@ -688,6 +690,7 @@ export async function cancelConsultation(id, userId) {
   if (!session) return null;
   if (session.status === 'pending') {
     session.status = 'cancelled';
+    closeCall(session, 'session-ended');
     await session.save();
     notifyCallEnded(session).catch((err) => console.error('push: cancelled', err));
   }
@@ -695,9 +698,20 @@ export async function cancelConsultation(id, userId) {
 }
 
 /**
- * Either participant ends an active session — which is also where it is paid
- * for. The bill is the minutes between accept and this moment, so hanging up
- * early genuinely costs less.
+ * Either participant ends a session — which, for one that connected, is also
+ * where it is paid for. The bill is the minutes between accept and this
+ * moment, so hanging up early genuinely costs less.
+ *
+ * Every state is handled, not just `active`. This used to end an active
+ * session and silently do nothing to any other, which is what left a ringing
+ * audio call running: the client presses End while the lawyer's phone is still
+ * ringing, the session is `pending` at that instant, the request was left
+ * exactly as it was, and both screens carried on as though nothing had
+ * happened until the 60-second request timeout eventually cancelled it. A
+ * request that was never accepted is cancelled here instead — nobody is
+ * charged for it — and a session that is already over still has any call leg
+ * left open on it closed, so pressing End really does stop a call that is
+ * somehow still up.
  */
 export async function endConsultation(id, participantId) {
   await connectDB();
@@ -706,12 +720,32 @@ export async function endConsultation(id, participantId) {
     $or: [{ userId: participantId }, { advocateId: participantId }],
   });
   if (!session) return null;
-  if (session.status === 'active') {
+
+  let ended = false;
+  if (session.status === 'pending') {
+    // Never accepted: no clock ever started, so there is nothing to settle.
+    session.status = 'cancelled';
+    closeCall(session, 'session-ended');
+    await session.save();
+    ended = true;
+  } else if (session.status === 'active') {
     session.status = 'ended';
     session.endedAt = new Date();
     closeCall(session, 'hangup');
     await settleCharges(session);
     await session.save();
+    ended = true;
+  } else if (closeCall(session, 'session-ended')) {
+    // Already finished, but with a call still marked open on it.
+    await session.save();
+    ended = true;
+  }
+
+  // Tell the other device at once rather than leaving it to notice on its next
+  // poll — an incoming-call screen is full-screen and rings, and a ring that
+  // outlives the call it belongs to is the most annoying way to find out.
+  if (ended) {
+    notifyCallEnded(session).catch((err) => console.error('push: session ended', err));
   }
   return serializeSession(session.toObject());
 }
@@ -733,7 +767,7 @@ function sessionError(message, status = 400) {
  * ever received. Undoing a settled session means refunding it, which is a
  * different operation with two wallets to put back.
  */
-async function loadUnsettled(id) {
+async function loadSessionForAdmin(id) {
   await connectDB();
   let session = null;
   try {
@@ -742,6 +776,12 @@ async function loadUnsettled(id) {
     throw sessionError('Consultation not found.', 404);
   }
   if (!session) throw sessionError('Consultation not found.', 404);
+  return session;
+}
+
+/** The same, for the changes that only make sense before the money moves. */
+async function loadUnsettled(id) {
+  const session = await loadSessionForAdmin(id);
   if (session.settled || ['ended', 'rejected', 'cancelled'].includes(session.status)) {
     throw sessionError('This session is over — it can no longer be changed.', 409);
   }
@@ -792,16 +832,22 @@ export async function adminClearSessionDiscount(id) {
  * @param {string} by  the admin's email
  */
 export async function adminEndSession(id, by = '') {
-  const session = await loadUnsettled(id);
+  // Deliberately not `loadUnsettled`: a discount on a settled session is
+  // refused because the money has already moved, but ending one must always be
+  // possible. The panel's End button is the last resort for a call that is
+  // somehow still up, and a button that answers "this session is over" while
+  // the two of them are still talking is no use to anybody.
+  const session = await loadSessionForAdmin(id);
 
   if (session.status === 'pending') {
     session.status = 'cancelled';
-  } else {
+    session.endedByAdmin = by;
+  } else if (session.status === 'active') {
     session.status = 'ended';
     session.endedAt = new Date();
     await settleCharges(session);
+    session.endedByAdmin = by;
   }
-  session.endedByAdmin = by;
   closeCall(session, 'session-ended');
   await session.save();
 
@@ -1014,9 +1060,21 @@ export async function getCallState(id, participantId, role, since = 0) {
   const queue = theirs || [];
   const from = Math.max(0, Math.min(Number(since) || 0, queue.length));
 
+  const summary = callSummary(call);
+  // A call cannot outlive the consultation that paid for it. `settleIfExpired`
+  // above closes the call leg on any session that is no longer active, but the
+  // answer is forced here as well so that a row written before that was true —
+  // or one left open by a crash mid-save — still reports the call as over.
+  // This is the flag both apps hang up on, so it must never say "still live"
+  // about a session that has finished.
+  if (session.status !== 'active' && summary.status !== 'idle') {
+    summary.status = 'ended';
+    summary.endedReason = summary.endedReason || 'session-ended';
+  }
+
   return {
     call: {
-      ...callSummary(call),
+      ...summary,
       // Each side only ever needs the *other* side's description.
       offer: role === 'advocate' ? call.offer || '' : '',
       answer: role === 'user' ? call.answer || '' : '',
