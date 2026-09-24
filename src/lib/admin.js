@@ -9,6 +9,7 @@ import Consultation from '@/models/Consultation';
 import Activity from '@/models/Activity';
 import ContactMessage from '@/models/ContactMessage';
 import { advocateRates } from '@/constants/callRates';
+import { describeDiscount } from '@/constants/discounts';
 import { completionOf } from '@/lib/profileCompletion';
 import { membershipSummary } from '@/lib/adminMembership';
 import { listVerificationDocuments } from '@/lib/verificationDocuments';
@@ -381,7 +382,7 @@ export async function adminGetConsultations() {
   const rows = await Consultation.find({})
     .sort({ createdAt: -1 })
     .limit(500)
-    .select('userName advocateName minutes price status startedAt endedAt messages call createdAt')
+    .select('userName advocateName minutes price status startedAt endedAt messages call discount createdAt')
     .lean();
   return rows.map((r) => ({
     id: String(r._id),
@@ -392,6 +393,7 @@ export async function adminGetConsultations() {
     status: r.status || 'pending',
     // Only a connected session (accepted by the lawyer) actually cost money.
     charged: ['active', 'ended'].includes(r.status),
+    discount: mapDiscount(r.discount),
     messagesCount: (r.messages || []).length,
     // Latest video-call attempt on this session (see mapCall below).
     call: mapCall(r.call),
@@ -550,6 +552,63 @@ function mapCall(call) {
   };
 }
 
+/** The discount on a session, in the shape every admin screen reads it. */
+function mapDiscount(d) {
+  if (!d || !(Number(d.value) > 0)) return null;
+  return {
+    kind: d.kind,
+    value: d.value,
+    label: describeDiscount(d),
+    note: d.note || '',
+    by: d.by || '',
+    at: iso(d.at),
+    // Only once the session has settled: what it actually came to, and how
+    // much of it the lawyer funded.
+    off: d.off ?? null,
+    fromAdvocate: d.fromAdvocate ?? null,
+  };
+}
+
+/**
+ * Every session happening right now — waiting for a lawyer, or already
+ * running — for the panel that manages them.
+ *
+ * Deliberately raw: no elapsed time or running total is computed here. Those
+ * change every second, so they are worked out on the screen from `startedAt`
+ * and `rate` against `serverNow` (which the API sends alongside), rather than
+ * being frozen into a response that is stale before it arrives.
+ */
+export async function adminGetLiveConsultations() {
+  await connectDB();
+  const rows = await Consultation.find({ status: { $in: ['pending', 'active'] } })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .select(
+      'userId userName advocateId advocateName type rate maxMinutes status ' +
+        'discount messages call startedAt endsAt createdAt'
+    )
+    .lean();
+
+  return rows.map((r) => ({
+    id: String(r._id),
+    userId: r.userId ? String(r.userId) : '',
+    userName: r.userName || 'Client',
+    advocateId: r.advocateId ? String(r.advocateId) : '',
+    advocateName: r.advocateName || 'Lawyer',
+    type: r.type || 'chat',
+    status: r.status || 'pending',
+    // ₹ per minute, and the wallet ceiling the session cuts off at.
+    rate: r.rate || 0,
+    maxMinutes: r.maxMinutes || 0,
+    messagesCount: (r.messages || []).length,
+    call: mapCall(r.call),
+    discount: mapDiscount(r.discount),
+    startedAt: iso(r.startedAt),
+    endsAt: iso(r.endsAt),
+    createdAt: iso(r.createdAt),
+  }));
+}
+
 /**
  * One consultation in full, including the entire chat transcript, for the
  * admin drill-down. Returns null if the id is unknown or malformed.
@@ -578,7 +637,15 @@ export async function adminGetConsultationById(id) {
     price: r.price || 0,
     status: r.status || 'pending',
     type: r.type || 'chat',
+    rate: r.rate || 0,
+    maxMinutes: r.maxMinutes || 0,
+    settled: Boolean(r.settled),
     charged: ['active', 'ended'].includes(r.status),
+    // An admin's discount on this session — pending while it runs, and what it
+    // actually came to once it has settled.
+    discount: mapDiscount(r.discount),
+    // Set when an admin ended the session rather than either participant.
+    endedByAdmin: r.endedByAdmin || '',
     messages: (r.messages || []).map((m) => ({
       id: String(m._id),
       from: m.from === 'advocate' ? 'advocate' : 'user',

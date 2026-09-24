@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { Scale, MessageSquare, IndianRupee, Video } from 'lucide-react';
-import { adminGetConsultations } from '@/lib/admin';
+import { adminGetConsultations, adminGetLiveConsultations } from '@/lib/admin';
 import DataTable, { AdminPageHeader, AdminAvatar } from '@/components/admin/DataTable';
 import { CallPill, formatCallDuration } from '@/components/admin/DetailKit';
 import Pagination from '@/components/admin/Pagination';
+import LiveConsultations from '@/components/admin/LiveConsultations';
 import { formatDate } from '@/utils/formatters';
 
 const PER_PAGE = 20;
@@ -18,7 +19,13 @@ const STATUS_META = {
 };
 
 export default async function AdminConsultationsPage({ searchParams }) {
-  const consultations = await adminGetConsultations();
+  const [consultations, live] = await Promise.all([
+    adminGetConsultations(),
+    adminGetLiveConsultations(),
+  ]);
+  // The desk runs its own clocks against this, so a panel on a machine whose
+  // time is off still shows the bill the client is actually running up.
+  const serverNow = Date.now();
 
   // Total earned across every connected (charged) session — always the full set,
   // never just the visible page.
@@ -70,6 +77,13 @@ export default async function AdminConsultationsPage({ searchParams }) {
           <IndianRupee className="h-3.5 w-3.5" aria-hidden="true" />
           {c.price}
           {!c.charged && <span className="ml-1 text-[11px] font-normal text-ink/40">(not charged)</span>}
+          {/* A discounted session says so here, so the smaller number is never
+              read as a billing bug. */}
+          {c.discount && (
+            <span className="ml-1.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600">
+              {c.discount.label}
+            </span>
+          )}
         </span>
       ),
     },
@@ -119,6 +133,11 @@ export default async function AdminConsultationsPage({ searchParams }) {
         subtitle="Every paid live-chat session booked on the platform."
         count={consultations.length}
       />
+
+      {/* Everything happening right now, with the controls over it. First on
+          the page because it is the only part of this screen anyone can still
+          do something about. */}
+      <LiveConsultations initial={live} serverNow={serverNow} />
 
       {/* Summary strip — money collected, and how much of it went on video. */}
       <div className="mb-6 flex flex-wrap gap-3">

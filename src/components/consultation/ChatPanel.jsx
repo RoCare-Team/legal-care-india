@@ -5,6 +5,7 @@ import { Send, Clock, PhoneOff, Video, X, IndianRupee, Minimize2, MessagesSquare
 import useVideoCall from '@/hooks/useVideoCall';
 import VideoCallOverlay from './VideoCallOverlay';
 import { chargeForDuration } from '@/constants/callRates';
+import { previewDiscount } from '@/constants/discounts';
 
 /** MM:SS from milliseconds (HH:MM:SS once an hour is passed). */
 function fmt(ms) {
@@ -69,9 +70,14 @@ export default function ChatPanel({
   // What the session has run up so far. Derived from the elapsed time rather
   // than polled: it has to move with the countdown to be believable, and the
   // server's figure is only final once the session ends.
-  const runningCost = session.startedAt && session.rate
+  const billedSoFar = session.startedAt && session.rate
     ? chargeForDuration(Date.now() - new Date(session.startedAt).getTime(), session.rate).amount
     : 0;
+  // An admin can discount a session while it is running (see
+  // constants/discounts). When one is on this session the meter has to show
+  // the discounted figure: it is a promise of what this conversation will
+  // cost, and a number that is quietly wrong by half is worse than none.
+  const runningCost = previewDiscount(billedSoFar, session.discount).collected;
 
   // Video call. `session.call` rides along on the chat poll, which is what
   // makes the lawyer's side ring without a second poller.
@@ -236,6 +242,20 @@ export default function ChatPanel({
             >
               <IndianRupee className="h-3 w-3" aria-hidden="true" />
               {runningCost.toLocaleString('en-IN')}
+              {session.discount && (
+                <span className="font-medium text-emerald-700/70 line-through">
+                  {billedSoFar.toLocaleString('en-IN')}
+                </span>
+              )}
+            </span>
+          )}
+          {/* Why it is less than the clock suggests. */}
+          {session.discount && (
+            <span
+              className="hidden items-center rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-700 sm:inline-flex"
+              title={session.discount.note || 'Discount applied by JusticeLand'}
+            >
+              {session.discount.label}
             </span>
           )}
           {/* Only the client rings — the lawyer accepts, same as the booking. */}

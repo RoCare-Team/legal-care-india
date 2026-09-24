@@ -81,6 +81,33 @@ const RecordingSchema = new Schema(
 );
 
 /**
+ * Discount — an admin's instruction to charge this session less than it ran up.
+ *
+ * Left on the session while it is still going, and read once by
+ * `settleCharges` when the money moves; see constants/discounts for who pays
+ * for it. `off` and `fromAdvocate` are written at that moment, so a settled
+ * session records what the discount actually came to rather than only what was
+ * asked for — a percentage means nothing once the session it applied to is
+ * over.
+ */
+const DiscountSchema = new Schema(
+  {
+    kind: { type: String, enum: ['percent', 'flat'], required: true },
+    value: { type: Number, required: true, min: 0 },
+    note: { type: String, default: '', maxlength: 200 },
+    // The admin who granted it, and when. This is the whole audit trail for a
+    // discount, so it is never optional in practice.
+    by: { type: String, default: '' },
+    at: { type: Date, default: Date.now },
+    // Filled in at settlement: ₹ taken off the bill, and how much of that the
+    // lawyer funded once our commission ran out.
+    off: { type: Number, default: null },
+    fromAdvocate: { type: Number, default: null },
+  },
+  { _id: false }
+);
+
+/**
  * Consultation — a live session a user books with a lawyer, billed by the
  * minute.
  *
@@ -129,6 +156,10 @@ const ConsultationSchema = new Schema(
     price: { type: Number, default: 0, min: 0 },
     settled: { type: Boolean, default: false },
 
+    // An admin's discount on this session, applied when it settles (null for
+    // the overwhelming majority of sessions, which are charged in full).
+    discount: { type: DiscountSchema, default: null },
+
     // How `price` was split when it settled: JusticeLand's commission and the
     // lawyer's share credited to their wallet. Absent on sessions settled
     // before commission existed — readers work those out at the current rate.
@@ -150,6 +181,10 @@ const ConsultationSchema = new Schema(
 
     // Audio recordings of this session's call attempts (see RecordingSchema).
     recordings: { type: [RecordingSchema], default: [] },
+
+    // Set when an admin ended or cancelled the session from the panel rather
+    // than either participant hanging up: their email, so the record says who.
+    endedByAdmin: { type: String, default: '' },
 
     startedAt: { type: Date, default: null }, // when the lawyer accepted
     endsAt: { type: Date, default: null },    // startedAt + minutes (planned end)

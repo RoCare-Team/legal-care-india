@@ -13,6 +13,7 @@ import {
   formatCallDuration,
 } from '@/components/admin/DetailKit';
 import { AdminAvatar } from '@/components/admin/DataTable';
+import { LiveSessionCard } from '@/components/admin/LiveConsultations';
 import { formatDate } from '@/utils/formatters';
 
 export const metadata = { title: 'Consultation', robots: { index: false, follow: false } };
@@ -90,6 +91,23 @@ export default async function AdminConsultationDetailPage({ params }) {
   const call = c.call;
   const callLabel = c.type === 'audio' ? 'Audio call' : 'Video call';
 
+  // Still going: the same desk as the list page, for this one session.
+  const live = ['pending', 'active'].includes(c.status)
+    ? {
+      id: c.id,
+      userName: c.userName,
+      advocateName: c.advocateName,
+      type: c.type,
+      status: c.status,
+      rate: c.rate,
+      maxMinutes: c.maxMinutes,
+      messagesCount: c.messages.length,
+      discount: c.discount,
+      startedAt: c.startedAt,
+      createdAt: c.createdAt,
+    }
+    : null;
+
   return (
     <div>
       <DetailBack href="/admin/consultations" label="Back to consultations" />
@@ -113,6 +131,33 @@ export default async function AdminConsultationDetailPage({ params }) {
         </div>
         <ConsultStatusPill status={c.status} />
       </div>
+
+      {live && (
+        <div className="mb-6">
+          <LiveSessionCard session={live} serverNow={Date.now()} />
+        </div>
+      )}
+
+      {/* What a discount on this session came to, once it has settled. While it
+          is still running the live card above says the same thing, and says it
+          as a forecast rather than as a fact. */}
+      {!live && c.discount && (
+        <p className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-3.5 text-sm text-emerald-700">
+          <span className="font-semibold">Discounted {c.discount.label}</span>
+          {c.discount.off !== null && <span>· ₹{c.discount.off} off the bill</span>}
+          {c.discount.fromAdvocate > 0 && (
+            <span className="text-amber-700">· ₹{c.discount.fromAdvocate} of it from the lawyer</span>
+          )}
+          {c.discount.note && <span className="text-emerald-700/75">&ldquo;{c.discount.note}&rdquo;</span>}
+          {c.discount.by && <span className="text-emerald-700/60">by {c.discount.by}</span>}
+        </p>
+      )}
+
+      {c.endedByAdmin && (
+        <p className="mb-6 rounded-2xl border border-ink/8 bg-surface px-5 py-3.5 text-sm text-ink/60 shadow-card">
+          Ended from the admin panel by <strong className="text-ink">{c.endedByAdmin}</strong>.
+        </p>
+      )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Plan" value={`${c.minutes} min`} />

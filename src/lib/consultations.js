@@ -5,6 +5,7 @@ import User from '@/models/User';
 import Advocate from '@/models/Advocate';
 import { chargeForDuration } from '@/constants/callRates';
 import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
+import { discountOff, settlementSplit, describeDiscount, normalizeDiscount } from '@/constants/discounts';
 import { applyLegacyCommission } from '@/lib/payouts';
 import { notifyNewRequest, notifyCallEnded, sendPushToAdvocate } from '@/lib/push';
 
@@ -115,6 +116,19 @@ export function serializeSession(doc) {
     // A free reconnection of leftover time (no charge). Lets both sides label
     // the session correctly instead of showing "₹0".
     isResume: Boolean(s.resumedFromId),
+    // An admin's discount, if one was granted. Both participants see it: the
+    // client is going to be charged less than the meter on their screen says,
+    // and a bill that comes out lower than the number they watched climbing
+    // needs explaining before it happens, not after.
+    discount: s.discount && s.discount.value > 0
+      ? {
+        kind: s.discount.kind,
+        value: s.discount.value,
+        label: describeDiscount(s.discount),
+        note: s.discount.note || '',
+        off: s.discount.off ?? null,
+      }
+      : null,
     status: s.status,
     // When the request was made — an audio call needs it to know how long the
     // lawyer's phone has been ringing.
@@ -258,7 +272,17 @@ async function settleCharges(session) {
     amount = minutes * rate;
   }
 
-  const note = (who) => `${minutes} min ${session.type || 'chat'} consultation with ${who}`;
+  // An admin's discount comes off before anything is taken from the wallet —
+  // see constants/discounts for who funds it. `billed` stays what the session
+  // actually ran up, so the discount can be reported rather than just quietly
+  // making the bill smaller.
+  const billed = amount;
+  const discount = session.discount && session.discount.value > 0 ? session.discount : null;
+  const saved = discountOff(billed, discount);
+  amount = Math.round((billed - saved) * 100) / 100;
+
+  const suffix = saved > 0 ? ` (${describeDiscount(discount)})` : '';
+  const note = (who) => `${minutes} min ${session.type || 'chat'} consultation with ${who}${suffix}`;
 
   // Debit the full amount if it's there; otherwise sweep what remains.
   let charged = amount;
@@ -289,8 +313,8 @@ async function settleCharges(session) {
   // The lawyer is credited their share; JusticeLand keeps the commission. Any
   // balance from before commission existed is adjusted first, so this credit
   // is never swept into that one-time deduction.
-  const split = splitEarning(charged);
-  if (charged > 0) {
+  const split = settlementSplit(billed, charged, discount);
+  if (split.earning > 0) {
     await applyLegacyCommission(session.advocateId);
     await Advocate.findByIdAndUpdate(session.advocateId, {
       $inc: { walletBalance: split.earning },
@@ -300,7 +324,7 @@ async function settleCharges(session) {
           kind: 'earning',
           amount: split.earning,
           gross: split.gross,
-          commission: split.commission,
+          commission: Math.max(0, split.gross - split.earning),
           note: note(session.userName),
         },
       },
@@ -312,6 +336,11 @@ async function settleCharges(session) {
   session.commissionRate = COMMISSION_RATE;
   session.commission = split.commission;
   session.advocateEarning = split.earning;
+  // What the discount came to in the end, against the session it applied to.
+  if (discount) {
+    session.discount.off = saved;
+    session.discount.fromAdvocate = split.fromAdvocate;
+  }
   return true;
 }
 
@@ -684,6 +713,99 @@ export async function endConsultation(id, participantId) {
     await settleCharges(session);
     await session.save();
   }
+  return serializeSession(session.toObject());
+}
+
+/* ── The admin panel's controls over a live session ─────────────────────── */
+
+/** An error the API layer turns into a status code rather than a 500. */
+function sessionError(message, status = 400) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+
+/**
+ * The session an admin is acting on, loaded and checked.
+ *
+ * A settled session is refused: the money has already moved, and a discount
+ * written after the fact would sit on the record claiming a reduction nobody
+ * ever received. Undoing a settled session means refunding it, which is a
+ * different operation with two wallets to put back.
+ */
+async function loadUnsettled(id) {
+  await connectDB();
+  let session = null;
+  try {
+    session = await Consultation.findById(id);
+  } catch {
+    throw sessionError('Consultation not found.', 404);
+  }
+  if (!session) throw sessionError('Consultation not found.', 404);
+  if (session.settled || ['ended', 'rejected', 'cancelled'].includes(session.status)) {
+    throw sessionError('This session is over — it can no longer be changed.', 409);
+  }
+  return session;
+}
+
+/**
+ * Discount a session that is still running.
+ *
+ * Nothing moves here: the discount is stored, and `settleCharges` reads it
+ * when the session ends. That is what makes it safe to change or clear it
+ * while the session is live — right up until the moment the session settles,
+ * whatever is on the record at that instant is what the client is charged.
+ *
+ * @param {string} id
+ * @param {{kind:string, value:any, note?:string}} input
+ * @param {string} by  the admin's email, kept as the audit trail
+ */
+export async function adminSetSessionDiscount(id, input, by = '') {
+  const session = await loadUnsettled(id);
+  const discount = normalizeDiscount(input);
+  if (!discount) throw sessionError('Enter how much to take off.', 400);
+
+  session.discount = { ...discount, by, at: new Date(), off: null, fromAdvocate: null };
+  await session.save();
+  return serializeSession(session.toObject());
+}
+
+/** Take a discount back off a session that has not settled yet. */
+export async function adminClearSessionDiscount(id) {
+  const session = await loadUnsettled(id);
+  session.discount = null;
+  await session.save();
+  return serializeSession(session.toObject());
+}
+
+/**
+ * End a live session from the panel — the admin's hang-up.
+ *
+ * An active session is settled exactly as it would be if either side had hung
+ * up, discount and all, so ending one from here never leaves a session that
+ * ran but was never paid for. A request still waiting for the lawyer is
+ * cancelled instead, which costs nobody anything, and both sides are pushed
+ * the same "call ended" that a real hang-up sends so no screen is left
+ * ringing at a session that no longer exists.
+ *
+ * @param {string} id
+ * @param {string} by  the admin's email
+ */
+export async function adminEndSession(id, by = '') {
+  const session = await loadUnsettled(id);
+
+  if (session.status === 'pending') {
+    session.status = 'cancelled';
+  } else {
+    session.status = 'ended';
+    session.endedAt = new Date();
+    await settleCharges(session);
+  }
+  session.endedByAdmin = by;
+  closeCall(session, 'session-ended');
+  await session.save();
+
+  notifyCallEnded(session).catch((err) => console.error('push: admin ended session', err));
   return serializeSession(session.toObject());
 }
 
