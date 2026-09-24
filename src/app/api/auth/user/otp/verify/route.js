@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
+import { SIGNUP_BONUS } from '@/constants/callRates';
 import LoginOtp from '@/models/LoginOtp';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import {
@@ -90,7 +91,15 @@ export async function POST(request) {
 
     if (!user) {
       try {
-        user = await User.create({ phone, name: '' });
+        // The welcome credit rides on the insert itself: the unique index lets
+        // exactly one of two racing requests create the account, so exactly one
+        // of them grants it — it can never be granted twice for one number.
+        user = await User.create({
+          phone,
+          name: '',
+          walletBalance: SIGNUP_BONUS,
+          walletTransactions: [{ type: 'credit', amount: SIGNUP_BONUS, note: 'Welcome bonus' }],
+        });
         created = true;
       } catch (err) {
         // Two requests for the same number can reach this line together; the

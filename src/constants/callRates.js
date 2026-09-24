@@ -96,16 +96,31 @@ export function affordableMinutes(balance, rate) {
   return Math.floor((Number(balance) || 0) / r);
 }
 
+/** Credited to a brand-new client's wallet the moment their account is created. */
+export const SIGNUP_BONUS = 50;
+
+/**
+ * The opening seconds of every session that are never billed. Connecting a
+ * call or opening a chat takes a few seconds nobody should pay for.
+ */
+export const FREE_SECONDS = 10;
+
 /**
  * What a session that ran `ms` milliseconds costs.
  *
- * Billed per whole minute, rounded up, with a one-minute minimum — the same
- * way every telecom in the country bills a call, and the reason a lawyer who
- * picks up for twenty seconds is not paid nothing.
+ * Billed for the time actually used, second by second: at ₹6/min, 20 seconds
+ * is ₹2 (before the free opening — see FREE_SECONDS — which comes off first).
+ * The amount is exact to the paisa, so nothing is rounded up to a whole minute.
+ *
+ * `minutes` is the talked time in minutes to two places, for labels.
  */
 export function chargeForDuration(ms, rate) {
   const r = normalizeRate(rate);
+  const ran = Math.max(0, Number(ms) || 0);
   if (!r) return { minutes: 0, amount: 0 };
-  const minutes = Math.max(1, Math.ceil((Number(ms) || 0) / 60000));
-  return { minutes, amount: minutes * r };
+  const billableMs = Math.max(0, ran - FREE_SECONDS * 1000);
+  return {
+    minutes: Math.round((ran / 60000) * 100) / 100,
+    amount: Math.round((billableMs / 60000) * r * 100) / 100,
+  };
 }
