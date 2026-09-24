@@ -51,6 +51,22 @@ function isResumable() {
   return false;
 }
 
+/**
+ * Save a session, checking only what this write actually changed.
+ *
+ * Consultations are long-lived documents that other writes update field by
+ * field with `updateOne`, which runs no validators. One of those (an empty
+ * recording path, back when the schema still demanded one) was enough to make
+ * every later full-document `save()` throw — and since the saves that throw
+ * are the ones that END a session, a call could run for hours with no way to
+ * stop it from either app or from the admin panel. Validating only the paths
+ * this write touched keeps that kind of stale record from ever again standing
+ * between someone and hanging up.
+ */
+function saveSession(session) {
+  return session.save({ validateModifiedOnly: true });
+}
+
 /** Audio or video — a request that rings the phone, not just a chat window. */
 function isCall(session) {
   return session.type === 'audio' || session.type === 'video';
@@ -400,7 +416,7 @@ async function settleIfExpired(session) {
     dirty = closeCall(session, 'unanswered') || dirty;
   }
 
-  if (dirty) await session.save();
+  if (dirty) await saveSession(session);
   // After the save, so a lawyer whose other device reads the fresh status
   // first never races the push that is supposed to close its call screen.
   if (expiredCallRequest) {
@@ -516,7 +532,7 @@ export async function hideConsultationFor(id, participantId, viewer) {
 
   if (viewer === 'advocate') session.hiddenForAdvocate = true;
   else session.hiddenForUser = true;
-  await session.save();
+  await saveSession(session);
   return true;
 }
 
@@ -661,7 +677,7 @@ export async function acceptConsultation(id, advocateId) {
   session.status = 'active';
   session.startedAt = startedAt;
   session.endsAt = new Date(startedAt.getTime() + (session.maxMinutes || 0) * 60 * 1000);
-  await session.save();
+  await saveSession(session);
   // Closes the full-screen call screen on the lawyer's other devices — the one
   // that accepted already knows and moved on without waiting for a push.
   notifyCallEnded(session).catch((err) => console.error('push: accepted', err));
@@ -677,7 +693,7 @@ export async function rejectConsultation(id, advocateId) {
     session.status = 'rejected';
     // Declining also stops whatever was ringing on the session.
     closeCall(session, 'rejected', 'advocate');
-    await session.save();
+    await saveSession(session);
     notifyCallEnded(session).catch((err) => console.error('push: rejected', err));
   }
   return serializeSession(session.toObject());
@@ -691,7 +707,7 @@ export async function cancelConsultation(id, userId) {
   if (session.status === 'pending') {
     session.status = 'cancelled';
     closeCall(session, 'session-ended');
-    await session.save();
+    await saveSession(session);
     notifyCallEnded(session).catch((err) => console.error('push: cancelled', err));
   }
   return serializeSession(session.toObject());
@@ -726,18 +742,18 @@ export async function endConsultation(id, participantId) {
     // Never accepted: no clock ever started, so there is nothing to settle.
     session.status = 'cancelled';
     closeCall(session, 'session-ended');
-    await session.save();
+    await saveSession(session);
     ended = true;
   } else if (session.status === 'active') {
     session.status = 'ended';
     session.endedAt = new Date();
     closeCall(session, 'hangup');
     await settleCharges(session);
-    await session.save();
+    await saveSession(session);
     ended = true;
   } else if (closeCall(session, 'session-ended')) {
     // Already finished, but with a call still marked open on it.
-    await session.save();
+    await saveSession(session);
     ended = true;
   }
 
@@ -854,7 +870,7 @@ export async function adminSetSessionDiscount(id, input, by = '') {
   if (!discount) throw sessionError('Enter how much to take off.', 400);
 
   session.discount = { ...discount, by, at: new Date(), off: null, fromAdvocate: null };
-  await session.save();
+  await saveSession(session);
   return serializeSession(session.toObject());
 }
 
@@ -862,7 +878,7 @@ export async function adminSetSessionDiscount(id, input, by = '') {
 export async function adminClearSessionDiscount(id) {
   const session = await loadUnsettled(id);
   session.discount = null;
-  await session.save();
+  await saveSession(session);
   return serializeSession(session.toObject());
 }
 
@@ -897,7 +913,7 @@ export async function adminEndSession(id, by = '') {
     session.endedByAdmin = by;
   }
   closeCall(session, 'session-ended');
-  await session.save();
+  await saveSession(session);
 
   notifyCallEnded(session).catch((err) => console.error('push: admin ended session', err));
   return serializeSession(session.toObject());
@@ -918,7 +934,7 @@ export async function addMessage(id, participantId, from, text) {
   if (session.status !== 'active') { const e = new Error('Session not active'); e.code = 'BAD_STATE'; throw e; }
 
   session.messages.push({ from, text: text.trim(), at: new Date() });
-  await session.save();
+  await saveSession(session);
   return withPairHistory(serializeSession(session.toObject()));
 }
 
@@ -977,7 +993,7 @@ export async function startCall(id, userId) {
     connectedAt: null,
     endedAt: null,
   };
-  await session.save();
+  await saveSession(session);
   // Unchanged by the incoming_call/call_cancelled push work above: this is a
   // separate ring, for the WebRTC handshake inside an already-accepted
   // session, not the consultation request itself. Left as an ordinary
@@ -1009,7 +1025,7 @@ export async function answerCall(id, advocateId, accept) {
   } else {
     closeCall(session, 'rejected', 'advocate');
   }
-  await session.save();
+  await saveSession(session);
   return callSummary(session.call);
 }
 
@@ -1058,7 +1074,7 @@ export async function markCallConnected(id, participantId, role) {
 export async function hangUpCall(id, participantId, role, reason = 'hangup') {
   const session = await loadForCall(id, participantId, role);
   closeCall(session, reason, role);
-  await session.save();
+  await saveSession(session);
   return callSummary(session.call);
 }
 
@@ -1092,7 +1108,7 @@ export async function pushCallSignal(id, participantId, role, { callId, offer, a
     if (queue.length < 200) queue.push(candidate);
   }
 
-  await session.save();
+  await saveSession(session);
   return callSummary(session.call);
 }
 

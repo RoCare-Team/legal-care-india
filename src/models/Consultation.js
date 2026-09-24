@@ -64,7 +64,19 @@ const CallSchema = new Schema(
 const RecordingSchema = new Schema(
   {
     callId: { type: String, default: '' },
-    path: { type: String, required: true },
+    // Where the audio sits on disk — and empty for every recording made since
+    // they moved into the database (see lib/callRecordings and the
+    // CallRecordingPart model), which is all of them now.
+    //
+    // This must not be `required`. Mongoose counts an empty string as missing,
+    // and the uploads write it empty through `updateOne`, which runs no
+    // validators — so the write succeeded and then every later `save()` of the
+    // consultation threw "Path `path` is required". That is one line in a
+    // sub-schema and it broke everything that finishes a session: ending it
+    // from either app, the lazy settle on a poll, and the admin panel's End
+    // button all failed with a 500, which is why a call with a recording on it
+    // could run for hours and refuse to stop.
+    path: { type: String, default: '' },
     mimeType: { type: String, default: 'audio/webm' },
     size: { type: Number, default: 0 },
     // Who uploaded it. A web recording is both voices whoever sent it; a phone
