@@ -103,7 +103,7 @@ export function membershipSummary(adv) {
  */
 export async function adminSetPlan(id, input, adminEmail = '') {
   const planId = String(input?.planId || '');
-  if (!PAID_PLANS.some((p) => p.id === planId)) throw httpError('Choose Professional or Premium.');
+  if (!PAID_PLANS.some((p) => p.id === planId)) throw httpError('Choose Silver or Gold.');
 
   const adv = await loadAdvocate(id);
   const now = new Date();

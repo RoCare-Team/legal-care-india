@@ -55,7 +55,7 @@ export const MEMBERSHIP_PLANS = [
   },
   {
     id: 'professional',
-    name: 'Professional',
+    name: 'Silver',
     tagline: 'For a practice that spans more than a couple of matters.',
     monthly: 199,
     rank: 1,
@@ -69,12 +69,12 @@ export const MEMBERSHIP_PLANS = [
       '10 client query credits every month',
       '5 practice areas, 10 matters and 5 cities',
       'Ranked above free listings',
-      'Professional badge on your profile',
+      'Silver badge on your profile',
     ],
   },
   {
     id: 'premium',
-    name: 'Premium',
+    name: 'Gold',
     tagline: 'Every matter you handle, at the top of the page.',
     monthly: 499,
     rank: 2,
@@ -84,11 +84,11 @@ export const MEMBERSHIP_PLANS = [
     queryCredits: 25,
     placement: 'Top of every search, above all other lawyers',
     features: [
-      'Everything in Professional',
+      'Everything in Silver',
       '25 client query credits every month',
       'Unlimited practice areas, matters and cities',
       'Top placement in search results',
-      'Premium badge on your profile',
+      'Gold badge on your profile',
     ],
   },
 ];
@@ -217,7 +217,7 @@ export function checkPlanLimits(plan, { areas = [], matters = [], cities = [] } 
 /**
  * The cheapest plan that would actually hold this selection.
  *
- * Naming it is the difference between "upgrade" and "upgrade to Professional,
+ * Naming it is the difference between "upgrade" and "upgrade to Silver,
  * which covers what you have chosen" — and it avoids sending someone to a plan
  * that still would not fit them.
  *

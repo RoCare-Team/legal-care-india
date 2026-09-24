@@ -1,25 +1,40 @@
-import { writeFile, appendFile, mkdir, readFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import path from 'path';
 import { connectDB } from '@/lib/db';
 import Consultation from '@/models/Consultation';
+import CallRecordingPart from '@/models/CallRecordingPart';
 
 /**
  * Call recordings: one mixed audio file per call attempt, uploaded by
  * whichever side's browser/app finishes recording first once the call ends.
  *
- * Stored on disk rather than in Mongo (unlike the small verification
- * documents in verificationDocuments.js) — a recording can run to several
- * megabytes, and following the same local-disk convention as
- * /api/admin/upload keeps this consistent with how the rest of the app
- * handles files it doesn't want to put in the database. Kept OUTSIDE
- * `public/`, unlike that route's uploads — a recording is private to the two
- * participants and admin, never served unauthenticated.
+ * Stored in the database, in slices (see models/CallRecordingPart). They used
+ * to be written to a `recordings/` folder, which is why none of them survived:
+ * the site runs on a serverless host whose filesystem is read-only, so every
+ * upload failed and the admin panel showed "No recording" for every call.
+ *
+ * Recordings made before that change are still read from disk when the file is
+ * there, so a local copy from development still plays.
+ *
+ * Either way they are private to the two participants and an admin — never
+ * served from `public/`, and never without a session behind them.
  */
 
-const MAX_BYTES = 40 * 1024 * 1024; // 40MB — generous for one upload
+// One request's worth. The host refuses bodies much past 4.5 MB, so both
+// clients send a long recording in parts rather than as one file.
+const MAX_BYTES = 4 * 1024 * 1024;
 // A whole streamed recording: opus runs ~1MB a minute, and a session can last
 // as long as the client's wallet does.
 const MAX_TOTAL_BYTES = 150 * 1024 * 1024;
+
+/**
+ * How much audio goes in one database document. A document cannot exceed
+ * 16 MB, so a long recording is split; 6 MB leaves generous room for the rest
+ * of the document and for BSON's own overhead.
+ */
+const SLICE_BYTES = 6 * 1024 * 1024;
+
+/** Where recordings made before database storage were written. */
 const ROOT = path.join(process.cwd(), 'recordings');
 
 function httpError(message, status = 400, extra = {}) {
@@ -37,8 +52,9 @@ function assertParticipant(session, participantId, role) {
   if (!ok) throw httpError('Not a participant.', 403);
 }
 
-/** Safe on-disk filename for one call's recording. Web records webm/opus, the
- * mobile app records AAC in an mp4 container — the extension follows the type. */
+/** Where a pre-database recording was written on disk. Web recorded webm/opus,
+ * the mobile app records AAC in an mp4 container — the extension follows the
+ * type. Only used to read those older files back. */
 function fileFor(consultationId, callId, mimeType = 'audio/webm') {
   const safeCall = String(callId || 'call').replace(/[^a-zA-Z0-9-]/g, '');
   const ext = /mp4|m4a|aac/i.test(mimeType) ? 'm4a' : 'webm';
@@ -60,15 +76,12 @@ export async function saveCallRecording({ consultationId, participantId, role, c
   if (!session) throw httpError('Not found.', 404);
   assertParticipant(session, participantId, role);
 
-  const filePath = fileFor(consultationId, callId, mimeType);
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, buffer);
+  await writeSlices(consultationId, callId, buffer, 0);
 
-  const relative = path.relative(ROOT, filePath);
   const existing = (session.recordings || []).some((r) => r.callId === callId);
   const record = {
     callId: String(callId || ''),
-    path: relative,
+    path: '',
     mimeType: mimeType || 'audio/webm',
     size: buffer.length,
     by: role === 'advocate' ? 'advocate' : 'user',
@@ -120,14 +133,13 @@ export async function appendCallRecording({
   const priorSize = restart ? 0 : existing?.size || 0;
   if (priorSize + buffer.length > MAX_TOTAL_BYTES) throw httpError('Recording is too large.');
 
-  const filePath = fileFor(consultationId, callId, mimeType);
-  await mkdir(path.dirname(filePath), { recursive: true });
-  if (restart) await writeFile(filePath, buffer);
-  else await appendFile(filePath, buffer);
+  if (restart) await deleteSlices(consultationId, callId);
+  const from = restart ? 0 : await sliceCount(consultationId, callId);
+  await writeSlices(consultationId, callId, buffer, from);
 
   const record = {
     callId: String(callId),
-    path: path.relative(ROOT, filePath),
+    path: '',
     mimeType: mimeType || 'audio/webm',
     size: priorSize + buffer.length,
     by: role === 'advocate' ? 'advocate' : 'user',
@@ -161,12 +173,58 @@ export async function readCallRecording(consultationId, callId, accessor) {
   const record = (session.recordings || []).find((r) => r.callId === callId);
   if (!record) throw httpError('No recording for that call.', 404);
 
-  const filePath = path.join(ROOT, record.path);
+  const slices = await CallRecordingPart.find({ consultationId, callId })
+    .sort({ index: 1 })
+    .select('data')
+    .lean();
+
   let buffer;
-  try {
-    buffer = await readFile(filePath);
-  } catch {
+  if (slices.length) {
+    buffer = Buffer.concat(slices.map((s) => Buffer.from(s.data.buffer ?? s.data)));
+  } else if (record.path) {
+    // Recorded before database storage — still on the disk it was written to.
+    try {
+      buffer = await readFile(path.join(ROOT, record.path));
+    } catch {
+      throw httpError('Recording file is missing.', 404);
+    }
+  } else {
     throw httpError('Recording file is missing.', 404);
   }
-  return { buffer, mimeType: record.mimeType || 'audio/webm', size: record.size || buffer.length };
+
+  return { buffer, mimeType: record.mimeType || 'audio/webm', size: buffer.length };
+}
+
+/* ── slices ──────────────────────────────────────────────────────────────── */
+
+/** How many slices this call already has. */
+async function sliceCount(consultationId, callId) {
+  return CallRecordingPart.countDocuments({ consultationId, callId });
+}
+
+/** Throws away a call's audio, for a recording that starts again. */
+async function deleteSlices(consultationId, callId) {
+  await CallRecordingPart.deleteMany({ consultationId, callId });
+}
+
+/**
+ * Writes `buffer` as one or more slices, starting at `from`. Re-sending the
+ * same position overwrites it, so an upload the browser repeats after a failed
+ * response cannot leave the audio doubled.
+ */
+async function writeSlices(consultationId, callId, buffer, from) {
+  const writes = [];
+  let index = from;
+  for (let at = 0; at < buffer.length; at += SLICE_BYTES) {
+    const data = buffer.subarray(at, Math.min(at + SLICE_BYTES, buffer.length));
+    writes.push({
+      updateOne: {
+        filter: { consultationId, callId, index },
+        update: { $set: { data, size: data.length } },
+        upsert: true,
+      },
+    });
+    index += 1;
+  }
+  if (writes.length) await CallRecordingPart.bulkWrite(writes, { ordered: true });
 }

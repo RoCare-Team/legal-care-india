@@ -44,7 +44,7 @@ export default function OpenQueriesCard({ count = 0, queries = [], locked = fals
           </span>
           <p className="flex-1 text-sm text-ink/70">
             {count > 0 ? <strong className="text-ink">{count} {count === 1 ? 'client is' : 'clients are'} waiting for a lawyer. </strong> : null}
-            Client queries come with Professional (10 credits a month) and Premium (25 a month).
+            Client queries come with Silver (10 credits a month) and Gold (25 a month).
           </p>
           <Link
             href="/dashboard/queries"

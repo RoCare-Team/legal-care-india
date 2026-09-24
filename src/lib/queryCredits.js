@@ -6,7 +6,7 @@ import { activePlan } from '@/constants/membershipPlans';
  * Client query credits — what a paid plan spends to take a query.
  *
  * Each plan carries a monthly allowance (`queryCredits` in membershipPlans):
- * Professional 10, Premium 25, Starter none. One credit takes one query.
+ * Silver 10, Gold 25, Starter none. One credit takes one query.
  * Unused credits do not carry into the next month.
  *
  * The month is counted back from the plan's expiry, not from the calendar. A
@@ -107,7 +107,7 @@ export async function spendQueryCredit(advocateId) {
   const cycle = creditCycle(advocate);
   if (!cycle.allowance) {
     throw httpError(
-      'Client queries come with the Professional and Premium plans. Upgrade to take this query.',
+      'Client queries come with the Silver and Gold plans. Upgrade to take this query.',
       402,
       'no_plan'
     );

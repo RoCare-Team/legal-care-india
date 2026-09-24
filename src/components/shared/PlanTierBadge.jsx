@@ -2,11 +2,11 @@ import { Sparkles, Crown } from 'lucide-react';
 import { activePlan } from '@/constants/membershipPlans';
 
 /**
- * PlanTierBadge — the "Professional badge" / "Premium badge" every paid
+ * PlanTierBadge — the "Silver badge" / "Gold badge" every paid
  * plan's feature list already promises (see constants/membershipPlans), shown
  * wherever a lawyer is shown publicly: their profile and the directory cards.
  *
- * Silver for Professional, gold for Premium — the same ladder the plans
+ * Silver for the ₹199 plan, gold for the ₹499 one — the same ladder the plans
  * themselves are sold on, so a client sees the same ranking here that the
  * pricing table describes. Starter shows nothing: a badge for the plan
  * everyone starts on would not be a badge, and a lapsed paid plan is read as

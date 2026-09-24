@@ -187,7 +187,7 @@ function UploadButton({ label, icon: Icon = Upload, onFile, solid = false }) {
 
 /**
  * "Create with AI" — a profile-photo avatar generated on the spot, for
- * Professional and Premium lawyers only. Starter sees the same button, locked,
+ * Silver and Gold lawyers only. Starter sees the same button, locked,
  * and tapping it opens the plans rather than doing nothing unexplained.
  *
  * Capped at MAX_AI_AVATARS tries per lawyer (the server holds the real limit;
@@ -242,7 +242,7 @@ function AiAvatarButton({ data, set }) {
         disabled={busy || (!locked && exhausted)}
         title={
           locked
-            ? 'AI avatars are for Professional and Premium plans'
+            ? 'AI avatars are for Silver and Gold plans'
             : exhausted
               ? 'You have used both of your AI avatar tries'
               : undefined

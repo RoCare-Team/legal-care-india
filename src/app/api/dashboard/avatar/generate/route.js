@@ -17,7 +17,7 @@ const MODEL = process.env.OPENAI_AVATAR_MODEL || 'gpt-image-1';
  * same as an uploaded one. Nothing is written to the profile here.
  *
  * Two things gate this, both server-side because the form is a page anyone
- * can edit: the lawyer's plan (Professional and Premium only — Starter gets
+ * can edit: the lawyer's plan (Silver and Gold only — Starter gets
  * an upgrade prompt), and MAX_AI_AVATARS tries per lawyer, ever, because each
  * one is a real OpenAI image call that costs money. The try is spent only
  * once an image actually comes back, claimed atomically so two presses at
@@ -52,7 +52,7 @@ export async function POST() {
     if (plan.id === 'free') {
       return NextResponse.json(
         {
-          error: 'AI avatars need a Professional plan or higher.',
+          error: 'AI avatars need a Silver plan or higher.',
           upgradeTo: 'professional',
           plan: plan.id,
         },

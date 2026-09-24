@@ -217,7 +217,7 @@ function CreditsBar({ credits }) {
             href="/dashboard/plan"
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-primary/20 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/[0.06]"
           >
-            <Crown className="h-4 w-4" aria-hidden="true" /> Get 25 a month with Premium
+            <Crown className="h-4 w-4" aria-hidden="true" /> Get 25 a month with Gold
           </Link>
         )}
       </div>
