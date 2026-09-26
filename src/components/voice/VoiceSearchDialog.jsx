@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Link from 'next/link';
 import {
   Mic, Square, X, Loader2, AlertCircle, Sparkles, MapPin, ShieldCheck, RotateCcw, Search,
 } from 'lucide-react';
@@ -702,12 +703,15 @@ function Results({ data, empty, cityAnswer, onCityAnswer, onAskAgain, onSubmitCi
               <Mic className="h-4 w-4" aria-hidden="true" />
               Record again
             </button>
-            <a
+            {/* Through next/link, not a bare anchor: the directory is a route
+                of this app, and a full page load here would throw away the
+                recording and the results the visitor is looking at. */}
+            <Link
               href="/lawyers"
               className="rounded-full border border-ink/15 px-5 py-2.5 text-sm font-semibold text-ink/70 hover:border-ink/30"
             >
               Browse lawyers
-            </a>
+            </Link>
           </div>
         </div>
       ) : (
