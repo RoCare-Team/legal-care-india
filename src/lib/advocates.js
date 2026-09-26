@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { unstable_cache } from 'next/cache';
 import { ADVOCATES } from '@/data/advocates';
 import { connectDB } from '@/lib/db';
+import { advocateRate } from '@/constants/callRates';
 import Advocate from '@/models/Advocate';
 import { slugify } from '@/utils/slugify';
 import { advocateProfilePath, parseAdvocateParam } from '@/utils/advocateUrl';
@@ -289,11 +290,29 @@ const PRIVATE_FIELDS = [
   '__v',
 ];
 
-/** A profile with the account-only fields removed. Never mutates its input. */
+/**
+ * A profile with the account-only fields removed, and its rates worked out.
+ *
+ * The three rates are resolved here rather than left raw because this is the
+ * seam every public reader passes through and the lawyer's own dashboard does
+ * not. A lawyer who priced their time as slots ("₹500 for thirty minutes")
+ * therefore shows ₹17/min on their card, on their profile and in the app,
+ * while the editing form they own still shows the empty field they actually
+ * left empty — and nothing is written to their record behind their back.
+ *
+ * It is also the figure the booking route bills at: `advocateRate` is what
+ * both use, so what a client is quoted and what they are charged cannot drift.
+ *
+ * Never mutates its input.
+ */
 export function toPublicAdvocate(profile) {
   if (!profile) return profile;
   const out = { ...profile };
   for (const key of PRIVATE_FIELDS) delete out[key];
+
+  out.chatRate = advocateRate(profile, 'chat');
+  out.audioRate = advocateRate(profile, 'audio');
+  out.videoRate = advocateRate(profile, 'video');
   return out;
 }
 

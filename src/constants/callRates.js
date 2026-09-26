@@ -22,6 +22,14 @@ export const RATE_FIELDS = [
   { key: 'videoRate', type: 'video', label: 'Video Call' },
 ];
 
+/**
+ * The blocks of time lawyers were asked to price during the slot era, newest
+ * naming first. Read straight from the stored map rather than through
+ * `slotPrice`, because that helper falls back to the platform's own default
+ * price — which would invent a per-minute rate for a lawyer who never set one.
+ */
+const SLOT_MINUTES = [10, 30, 60];
+
 /** Legacy plan field backing each rate, for documents saved before the change. */
 const LEGACY_PLANS = {
   chatRate: 'consultationPlans',
@@ -56,8 +64,52 @@ export function rateFromPlans(plans = []) {
 }
 
 /**
- * A lawyer's per-minute rate for one channel — their own if they've set one,
- * otherwise converted from whatever plans they had before.
+ * A per-minute rate worked out from the slot prices a lawyer set.
+ *
+ * Between the fixed plans and today's per-minute rates, lawyers were asked to
+ * price three blocks of time — ten minutes, thirty, an hour — either for all
+ * channels at once ("30") or per channel ("chat:30"). Several hundred did, and
+ * then per-minute pricing arrived and their cards went blank: they had said
+ * exactly what their time is worth, and the directory showed no price at all
+ * beside their Call, Chat and Video buttons.
+ *
+ * So their own figure is converted rather than ignored. The cheapest block
+ * wins, as with the older plans: a lawyer charging ₹200 for ten minutes and
+ * ₹500 for thirty was already discounting the longer session, and billing the
+ * higher rate per minute would quietly raise their price.
+ *
+ * Their own channel's prices are preferred over the ones they set before
+ * channels existed, and nothing is invented: a lawyer who never priced
+ * anything still returns 0 and their card still shows no figure.
+ *
+ * @param {object} advocate
+ * @param {'chat'|'audio'|'video'} type
+ * @returns {number} ₹ per minute, or 0
+ */
+export function rateFromSlotPrices(advocate, type = 'chat') {
+  const prices = advocate?.slotPrices;
+  if (!prices) return 0;
+
+  // Stored as a Map on the document and as a plain object once serialised.
+  const read = (key) => (prices instanceof Map ? prices.get(String(key)) : prices[String(key)]);
+
+  const perMinute = [];
+  for (const minutes of SLOT_MINUTES) {
+    const price = Number(read(`${type}:${minutes}`)) || Number(read(minutes)) || 0;
+    if (price > 0) perMinute.push(price / minutes);
+  }
+  if (!perMinute.length) return 0;
+
+  return normalizeRate(Math.max(MIN_RATE, Math.ceil(Math.min(...perMinute))));
+}
+
+/**
+ * A lawyer's per-minute rate for one channel.
+ *
+ * Their own figure first, then whichever older way of pricing they used — the
+ * fixed plans, or the slot prices that replaced them. Each step is a price the
+ * lawyer actually chose, so the first one found is the answer, and only a
+ * lawyer who has never priced anything comes back as 0.
  *
  * @param {object} advocate
  * @param {'chat'|'audio'|'video'} type
@@ -66,9 +118,11 @@ export function rateFromPlans(plans = []) {
 export function advocateRate(advocate, type = 'chat') {
   const field = RATE_FIELDS.find((f) => f.type === type);
   if (!field || !advocate) return 0;
+
   const own = normalizeRate(advocate[field.key]);
   if (own) return own;
-  return rateFromPlans(advocate[LEGACY_PLANS[field.key]]);
+
+  return rateFromPlans(advocate[LEGACY_PLANS[field.key]]) || rateFromSlotPrices(advocate, type);
 }
 
 /** All three rates at once, keyed by channel. */
