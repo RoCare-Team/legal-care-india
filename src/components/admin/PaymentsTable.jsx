@@ -54,14 +54,31 @@ const LIVE_STATUS_STYLES = {
   created: 'bg-ink/8 text-ink/55',
 };
 
+/** Wallet top-up or membership — the two ways money arrives. */
+const KINDS = [
+  { value: '', label: 'All payments' },
+  { value: 'wallet', label: 'Wallet top-ups' },
+  { value: 'plan', label: 'Memberships' },
+];
+
+const KIND_META = {
+  wallet: { label: 'Top-up', tone: 'bg-emerald-500/10 text-emerald-700' },
+  plan: { label: 'Membership', tone: 'bg-amber-500/10 text-amber-700' },
+};
+
 /**
- * PaymentsTable — every wallet top-up that came through Razorpay.
+ * PaymentsTable — every payment that came through Razorpay.
  *
- * Two views of the same money. The table is our own ledger: what actually
- * reached a wallet, tied to the user it belongs to. The "Live from Razorpay"
- * panel is the gateway's own record, fetched on demand, and it also shows the
- * failed and pending attempts our database never hears about — which is what
- * you need when someone reports money taken but no balance.
+ * Both sides of the business in one ledger: clients topping up a wallet to
+ * talk to a lawyer, and lawyers paying for Silver or Gold. They are the same
+ * money through the same gateway, and keeping memberships on a lawyer's own
+ * profile page meant "what came in this month" could not be answered here at
+ * all. The tabs narrow it when only one side is in question.
+ *
+ * The table is our own ledger — what actually reached an account. The "Live
+ * from Razorpay" panel is the gateway's own record, fetched on demand, and it
+ * also shows the failed and pending attempts our database never hears about,
+ * which is what you need when someone reports money taken but no balance.
  *
  * @param {object} props
  * @param {Array}  props.payments  page of rows from adminGetPayments
@@ -79,15 +96,25 @@ export default function PaymentsTable({ payments, meta }) {
 
   // Search is server-side — the ledger can grow past what is sensible to ship
   // to the browser — so it travels through the URL, like the page number.
-  const runSearch = (value) => {
-    setSearch(value);
+  const go = (next) => {
     startTransition(() => {
       const qs = new URLSearchParams();
-      if (value.trim()) qs.set('q', value.trim());
+      if (next.q) qs.set('q', next.q);
+      if (next.kind) qs.set('kind', next.kind);
       const str = qs.toString();
       router.replace(str ? `${pathname}?${str}` : pathname, { scroll: false });
     });
   };
+
+  const runSearch = (value) => {
+    setSearch(value);
+    // The page number is deliberately dropped on every change: page 4 of an
+    // unfiltered ledger is not page 4 of a filtered one, and landing on an
+    // empty page reads as "no payments".
+    go({ q: value.trim(), kind: meta.kind || '' });
+  };
+
+  const runKind = (value) => go({ q: search.trim(), kind: value });
 
   const loadLive = async () => {
     setLiveLoading(true);
@@ -109,10 +136,30 @@ export default function PaymentsTable({ payments, meta }) {
 
   const columns = [
     {
+      key: 'kind',
+      label: 'Type',
+      render: (r) => {
+        const meta = KIND_META[r.kind] || KIND_META.wallet;
+        return (
+          <span className="inline-flex flex-col gap-1">
+            <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
+              {meta.label}
+            </span>
+            {/* A membership granted by hand has no gateway payment behind it,
+                and showing it beside real ones without saying so would
+                overstate what the gateway actually collected. */}
+            {r.source === 'admin' && (
+              <span className="text-[10.5px] text-ink/40">set by admin</span>
+            )}
+          </span>
+        );
+      },
+    },
+    {
       key: 'user',
-      label: 'User',
+      label: 'Account',
       render: (r) => (
-        <Link href={`/admin/users/${r.userId}`} className="group flex items-center gap-3">
+        <Link href={r.accountHref} className="group flex items-center gap-3">
           <AdminAvatar name={r.name || r.phone || '?'} />
           <span className="min-w-0">
             <span className="block truncate font-medium text-ink group-hover:text-primary">
@@ -127,7 +174,10 @@ export default function PaymentsTable({ payments, meta }) {
       key: 'amount',
       label: 'Amount',
       render: (r) => (
-        <span className="font-semibold text-emerald-600">+{money(r.amount)}</span>
+        <span className="inline-flex flex-col">
+          <span className="font-semibold text-emerald-600">+{money(r.amount)}</span>
+          {r.note && <span className="max-w-[12rem] truncate text-[11px] text-ink/45">{r.note}</span>}
+        </span>
       ),
     },
     { key: 'paymentId', label: 'Payment ID', render: (r) => <CopyId value={r.paymentId} /> },
@@ -142,8 +192,8 @@ export default function PaymentsTable({ payments, meta }) {
       label: '',
       render: (r) => (
         <Link
-          href={`/admin/users/${r.userId}`}
-          aria-label="Open user"
+          href={r.accountHref}
+          aria-label="Open account"
           className="grid h-8 w-8 place-items-center rounded-lg text-ink/35 transition-colors hover:bg-primary/10 hover:text-primary"
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
@@ -155,6 +205,26 @@ export default function PaymentsTable({ payments, meta }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Which kind of payment. A plain set of links rather than a select:
+            there are three, and the one in force should be readable without
+            opening anything. */}
+        <div className="inline-flex rounded-xl border border-ink/10 bg-surface p-1">
+          {KINDS.map((k) => {
+            const active = (meta.kind || '') === k.value;
+            return (
+              <button
+                key={k.value || 'all'}
+                type="button"
+                onClick={() => runKind(k.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  active ? 'bg-primary text-white' : 'text-ink/60 hover:text-ink'
+                }`}
+              >
+                {k.label}
+              </button>
+            );
+          })}
+        </div>
         <SearchBox
           value={search}
           onChange={runSearch}
@@ -169,7 +239,11 @@ export default function PaymentsTable({ payments, meta }) {
         empty={
           meta.search
             ? 'No payment matches that search.'
-            : 'No Razorpay payments yet. Top-ups will appear here as they happen.'
+            : meta.kind === 'plan'
+              ? 'No memberships bought yet. Silver and Gold purchases appear here.'
+              : meta.kind === 'wallet'
+                ? 'No wallet top-ups yet. They appear here as clients add money.'
+                : 'No payments yet. Top-ups and memberships appear here as they happen.'
         }
       />
 
@@ -179,7 +253,12 @@ export default function PaymentsTable({ payments, meta }) {
         total={meta.total}
         perPage={meta.perPage}
         basePath="/admin/payments"
-        extra={meta.search ? { q: meta.search } : undefined}
+        // Paging must stay inside whatever is being looked at, or page 2 of
+        // "Memberships" quietly becomes page 2 of everything.
+        extra={{
+          ...(meta.search ? { q: meta.search } : {}),
+          ...(meta.kind ? { kind: meta.kind } : {}),
+        }}
         label="Payments pagination"
       />
 

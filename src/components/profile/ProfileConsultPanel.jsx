@@ -1,6 +1,6 @@
 import { MessagesSquare, PhoneCall, Video, Building2, ShieldCheck } from 'lucide-react';
 import { advocateRates } from '@/constants/callRates';
-import ProfileContactActions from './ProfileContactActions';
+import CardContactActions from '@/components/cards/CardContactActions';
 
 /**
  * ProfileConsultPanel — the four ways to consult, their prices, and the way in.
@@ -14,7 +14,9 @@ import ProfileContactActions from './ProfileContactActions';
  * that is pressed, and a border and a lift say so before any label does.
  *
  * The four tiles are read, not pressed: they are the price list. Pressing
- * happens underneath, in the actions the site already had.
+ * happens underneath, in the same Call / Chat / Video buttons the listing cards
+ * use — each opens that channel's paid consultation. There is deliberately no
+ * phone, WhatsApp, email or appointment route to the lawyer here.
  *
  * A channel with no rate is not shown. Every lawyer sets their own, falling
  * back to the platform's, so in practice the three live ones are always there;
@@ -25,14 +27,10 @@ import ProfileContactActions from './ProfileContactActions';
  * @param {object} props.advocate  full profile
  */
 export default function ProfileConsultPanel({ advocate }) {
-  const { contact = {}, name } = advocate;
+  const { name } = advocate;
   const advocateId = advocate._id || advocate.id || '';
   const { chat: chatRate, audio: audioRate, video: videoRate } = advocateRates(advocate);
   const officeFee = Number(advocate.consultationFee) || 0;
-
-  const waText = encodeURIComponent(
-    `Hi ${name}, I found your profile on Justiceland and would like a consultation.`
-  );
 
   // Amount and unit kept apart so the unit can be set smaller than the figure.
   const rupees = (n) => `₹${Number(n).toLocaleString('en-IN')}`;
@@ -89,15 +87,16 @@ export default function ProfileConsultPanel({ advocate }) {
       )}
 
       <div className={tiles.length > 0 ? 'mt-4' : ''}>
-        <ProfileContactActions
-          slotPrices={advocate.slotPrices}
-          contact={contact}
-          name={name}
-          waText={waText}
-          advocateId={advocateId}
-          chatRate={chatRate}
-          audioRate={audioRate}
-        />
+        <div className="grid grid-cols-3 gap-2">
+          <CardContactActions
+            name={name}
+            advocateId={advocateId}
+            slotPrices={advocate.slotPrices}
+            chatRate={chatRate}
+            videoRate={videoRate}
+            audioRate={audioRate}
+          />
+        </div>
       </div>
 
       <p className="mt-4 flex items-center justify-center gap-1.5 border-t border-ink/[0.06] pt-3 text-[11.5px] text-ink/50">

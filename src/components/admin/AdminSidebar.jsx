@@ -13,8 +13,9 @@ import { cn } from '@/utils/cn';
  *
  * @param {object} props
  * @param {string} props.adminEmail
+ * @param {Record<string, number>} [props.badges]  count to show beside a link, by href
  */
-export default function AdminSidebar({ adminEmail }) {
+export default function AdminSidebar({ adminEmail, badges = {} }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -59,6 +60,11 @@ export default function AdminSidebar({ adminEmail }) {
                     aria-hidden="true"
                   />
                   {item.label}
+                  {badges[item.href] > 0 && (
+                    <span className="ml-auto rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-[#241B02]">
+                      {badges[item.href]}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

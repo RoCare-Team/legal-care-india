@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FormField, Input } from '@/components/ui';
 import { cn } from '@/utils/cn';
+import { DAYS, parseDays, formatDays, parseHours, formatHours } from '@/utils/officeTiming';
 
 /**
  * OfficeTimingRow — a day picker and a pair of time pickers for one row of
@@ -20,80 +21,7 @@ import { cn } from '@/utils/cn';
  * time pickers start blank, and the row's own preview line still shows
  * whatever text is actually saved, so a lawyer can see nothing was lost.
  */
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const SHORT = { Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun' };
-
-/** "Monday – Friday" / "Mon, Wed" / "Everyday" -> the set of days it means. */
-function parseDays(raw) {
-  const s = String(raw || '').trim();
-  if (!s) return new Set();
-  if (/^every\s*day$/i.test(s) || /^daily$/i.test(s)) return new Set(DAYS);
-
-  const findDay = (word) => {
-    const w = word.trim().toLowerCase().slice(0, 3);
-    return DAYS.find((d) => d.toLowerCase().startsWith(w));
-  };
-
-  const range = s.match(/^([A-Za-z]+)\s*(?:–|—|-|to)\s*([A-Za-z]+)$/i);
-  if (range) {
-    const from = DAYS.findIndex((d) => d === findDay(range[1]));
-    const to = DAYS.findIndex((d) => d === findDay(range[2]));
-    if (from >= 0 && to >= 0) {
-      const set = new Set();
-      for (let i = from; ; i = (i + 1) % 7) {
-        set.add(DAYS[i]);
-        if (i === to) break;
-      }
-      return set;
-    }
-  }
-
-  const set = new Set();
-  for (const part of s.split(/,|&|\band\b/i)) {
-    const day = findDay(part);
-    if (day) set.add(day);
-  }
-  return set;
-}
-
-/** The set of days -> the string that is saved. */
-function formatDays(set) {
-  const days = DAYS.filter((d) => set.has(d));
-  if (days.length === 0) return '';
-  if (days.length === 7) return 'Every day';
-
-  const idx = days.map((d) => DAYS.indexOf(d)).sort((a, b) => a - b);
-  const contiguous = idx.every((v, i) => i === 0 || v === idx[i - 1] + 1);
-  return contiguous && idx.length > 1
-    ? `${DAYS[idx[0]]} – ${DAYS[idx[idx.length - 1]]}`
-    : days.join(', ');
-}
-
-/** "10:00 AM – 7:00 PM" -> { start: '10:00', end: '19:00' } for <input type="time">. */
-function parseHours(raw) {
-  const m = String(raw || '').match(
-    /(\d{1,2}):(\d{2})\s*([AaPp][Mm])\s*(?:–|—|-|to)\s*(\d{1,2}):(\d{2})\s*([AaPp][Mm])/
-  );
-  if (!m) return { start: '', end: '' };
-  const to24 = (h, min, ap) => {
-    let hour = Number(h) % 12;
-    if (/pm/i.test(ap)) hour += 12;
-    return `${String(hour).padStart(2, '0')}:${min}`;
-  };
-  return { start: to24(m[1], m[2], m[3]), end: to24(m[4], m[5], m[6]) };
-}
-
-/** { start: '10:00', end: '19:00' } -> "10:00 AM – 7:00 PM". */
-function formatHours(start, end) {
-  if (!start || !end) return '';
-  const to12 = (hhmm) => {
-    const [h, m] = hhmm.split(':').map(Number);
-    const period = h >= 12 ? 'PM' : 'AM';
-    const hour = h % 12 || 12;
-    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
-  };
-  return `${to12(start)} – ${to12(end)}`;
-}
 
 export default function OfficeTimingRow({
   item,

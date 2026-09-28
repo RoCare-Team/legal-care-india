@@ -38,6 +38,7 @@ export const FOOTER_NAV = [
     links: [
       { label: 'Find Lawyers', href: '/lawyers' },
       { label: 'Ask a Lawyer — free', href: '/ask' },
+      { label: 'Document Review', href: '/document-review' },
       { label: 'Legal Services', href: '/legal-services' },
       { label: 'Services', href: '/services' },
       { label: 'Browse Cities', href: '/cities' },

@@ -4,6 +4,7 @@ import AdminMobileNav from '@/components/admin/AdminMobileNav';
 import AdminLogin from '@/components/admin/AdminLogin';
 import AdminLogoutButton from '@/components/admin/AdminLogoutButton';
 import { getAdminSession } from '@/lib/admin';
+import { countReviewsWaiting } from '@/lib/documentReviews';
 
 export const metadata = {
   title: 'Admin | Justiceland',
@@ -29,9 +30,12 @@ export default async function AdminLayout({ children }) {
     );
   }
 
+  // Work waiting on the admin, shown as a count beside its menu item.
+  const badges = { '/admin/document-reviews': await countReviewsWaiting() };
+
   return (
     <div className="flex min-h-screen bg-muted">
-      <AdminSidebar adminEmail={admin.email} />
+      <AdminSidebar adminEmail={admin.email} badges={badges} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile header */}
@@ -46,7 +50,7 @@ export default async function AdminLayout({ children }) {
           </div>
           <AdminLogoutButton />
         </header>
-        <AdminMobileNav />
+        <AdminMobileNav badges={badges} />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">{children}</main>
       </div>

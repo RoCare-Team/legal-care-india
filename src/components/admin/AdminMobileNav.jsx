@@ -6,7 +6,7 @@ import { ADMIN_NAV } from '@/constants/adminNav';
 import { cn } from '@/utils/cn';
 
 /** AdminMobileNav — horizontal, scrollable section nav shown on mobile only. */
-export default function AdminMobileNav() {
+export default function AdminMobileNav({ badges = {} }) {
   const pathname = usePathname();
 
   return (
@@ -26,6 +26,9 @@ export default function AdminMobileNav() {
               >
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {item.label}
+                {badges[item.href] > 0 && (
+                  <span className="rounded-full bg-accent px-1.5 text-[10.5px] font-bold text-[#241B02]">{badges[item.href]}</span>
+                )}
               </Link>
             </li>
           );

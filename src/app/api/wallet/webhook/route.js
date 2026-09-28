@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { creditWalletForPayment } from '@/lib/users';
 import { grantMembership } from '@/lib/membership';
 import { markServiceOrderPaid } from '@/lib/legalServices';
+import { markVisitPaid } from '@/lib/officeVisits';
+import { markReviewPaid } from '@/lib/documentReviews';
 import { verifyWebhookSignature, hasWebhookSecret, toRupees } from '@/lib/razorpay';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +11,7 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/wallet/webhook — Razorpay server-to-server callback.
  *
- * The safety net, for all three things this site charges for. The matching
+ * The safety net, for everything this site charges for. The matching
  * /verify routes only run if the payer's browser survives long enough to come
  * back from checkout; a closed tab or a dead connection would otherwise mean
  * money taken and no balance added, a lawyer charged for a plan they never
@@ -109,6 +111,46 @@ export async function POST(request) {
       console.error('razorpay webhook: service order error', err);
       // 500 so Razorpay retries — a transient DB blip must not cost a client
       // the order they have already paid for.
+      return NextResponse.json({ error: 'Could not process.' }, { status: 500 });
+    }
+  }
+
+  if (purpose === 'office_visit') {
+    try {
+      const result = await markVisitPaid({
+        visitId: payment.notes?.visitId,
+        paymentId,
+        razorpayOrderId: payment.order_id || '',
+        amountPaise: payment.amount,
+      });
+      // Refusals answered 2xx for the same reason as above.
+      if (!result.ok) {
+        console.warn('razorpay webhook: office visit refused', { paymentId, error: result.error });
+        return NextResponse.json({ ok: true, ignored: result.error });
+      }
+      return NextResponse.json({ ok: true, applied: result.applied });
+    } catch (err) {
+      console.error('razorpay webhook: office visit error', err);
+      return NextResponse.json({ error: 'Could not process.' }, { status: 500 });
+    }
+  }
+
+  if (purpose === 'document_review') {
+    try {
+      // Only marks it paid; an AI read runs when the client opens the review.
+      const result = await markReviewPaid({
+        reviewId: payment.notes?.reviewId,
+        paymentId,
+        razorpayOrderId: payment.order_id || '',
+        amountPaise: payment.amount,
+      });
+      if (!result.ok) {
+        console.warn('razorpay webhook: document review refused', { paymentId, error: result.error });
+        return NextResponse.json({ ok: true, ignored: result.error });
+      }
+      return NextResponse.json({ ok: true, applied: result.applied });
+    } catch (err) {
+      console.error('razorpay webhook: document review error', err);
       return NextResponse.json({ error: 'Could not process.' }, { status: 500 });
     }
   }

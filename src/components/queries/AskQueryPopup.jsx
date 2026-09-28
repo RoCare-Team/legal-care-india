@@ -73,7 +73,7 @@ function writeStore(patch) {
  * The "have a legal problem?" popup, mounted once for the whole public site.
  *
  * Opened three ways:
- *   - the floating "Ask a lawyer" button beside WhatsApp and Call;
+ *   - the floating "Ask a lawyer" button, pinned bottom-left (scroll-to-top sits above it);
  *   - `openAskQuery()` from anywhere (practice-area bands, empty listings);
  *   - by itself, once, after a visitor has been browsing for a while — but not
  *     for a lawyer, not while another dialog is up, and not again for days
@@ -175,7 +175,7 @@ export default function AskQueryPopup() {
         <button
           type="button"
           onClick={() => show({ source: 'button' })}
-          className="fixed bottom-[9.25rem] right-5 z-40 inline-flex items-center gap-2 rounded-full bg-accent py-2.5 pl-3 pr-4 text-sm font-bold text-[#241B02] shadow-gold transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 sm:right-6"
+          className="fixed bottom-6 left-5 z-40 inline-flex items-center gap-2 rounded-full bg-accent py-2.5 pl-3 pr-4 text-sm font-bold text-[#241B02] shadow-gold transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 sm:left-6"
         >
           <MessageSquareText className="h-5 w-5" aria-hidden="true" />
           <span>

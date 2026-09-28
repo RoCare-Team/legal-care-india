@@ -806,7 +806,7 @@ export async function adminGetCounts() {
  * @param {{page?:number, perPage?:number, search?:string}} opts
  *   `search` matches the user's name, email or phone, or a payment/order id.
  */
-export async function adminGetPayments({ page = 1, perPage = 25, search = '' } = {}) {
+export async function adminGetPayments({ page = 1, perPage = 25, search = '', kind = '' } = {}) {
   await connectDB();
 
   const term = String(search || '').trim();
@@ -814,8 +814,10 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '' } =
   const rx = safe ? new RegExp(safe, 'i') : null;
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const want = ['wallet', 'plan'].includes(kind) ? kind : '';
 
-  const pipeline = [
+  // Wallet top-ups: a client putting money in to talk to a lawyer.
+  const walletStages = [
     // Cheap pre-filter on the whole document before the expensive unwind.
     { $match: { 'walletTransactions.razorpayPaymentId': { $exists: true, $ne: '' } } },
     { $unwind: '$walletTransactions' },
@@ -823,32 +825,79 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '' } =
     {
       $project: {
         _id: 0,
-        userId: '$_id',
+        kind: 'wallet',
+        accountId: '$_id',
         name: '$name',
         email: '$email',
         phone: '$phone',
         txnId: '$walletTransactions._id',
         amount: '$walletTransactions.amount',
-        note: '$walletTransactions.note',
+        note: { $ifNull: ['$walletTransactions.note', 'Wallet top-up'] },
         paymentId: '$walletTransactions.razorpayPaymentId',
         orderId: '$walletTransactions.razorpayOrderId',
+        source: 'razorpay',
         createdAt: '$walletTransactions.createdAt',
       },
     },
+  ];
+
+  // Memberships: a lawyer paying for Silver or Gold. Same money, same gateway,
+  // and until now the only place it appeared was inside one lawyer's profile —
+  // so "what came in this month" could not be answered from this screen at all.
+  const planStages = [
+    { $match: { 'planPayments.0': { $exists: true } } },
+    { $unwind: '$planPayments' },
+    // Cancellations are history, not income.
+    { $match: { 'planPayments.action': { $ne: 'cancel' }, 'planPayments.total': { $gt: 0 } } },
+    {
+      $project: {
+        _id: 0,
+        kind: 'plan',
+        accountId: '$_id',
+        name: '$name',
+        email: '$email',
+        phone: '$phone',
+        txnId: '$planPayments._id',
+        amount: '$planPayments.total',
+        note: {
+          $concat: [
+            { $ifNull: ['$planPayments.planId', 'plan'] },
+            ' · ',
+            { $toString: { $ifNull: ['$planPayments.months', 12] } },
+            ' months',
+          ],
+        },
+        paymentId: { $ifNull: ['$planPayments.razorpayPaymentId', ''] },
+        orderId: { $ifNull: ['$planPayments.razorpayOrderId', ''] },
+        source: { $ifNull: ['$planPayments.source', 'razorpay'] },
+        createdAt: { $ifNull: ['$planPayments.startedAt', '$createdAt'] },
+      },
+    },
+  ];
+
+  const match = [
+    ...(want ? [{ $match: { kind: want } }] : []),
     ...(rx
       ? [{
-          $match: {
-            $or: [
-              { name: rx }, { email: rx }, { phone: rx },
-              { paymentId: rx }, { orderId: rx },
-            ],
-          },
-        }]
+        $match: {
+          $or: [
+            { name: rx }, { email: rx }, { phone: rx },
+            { paymentId: rx }, { orderId: rx }, { note: rx },
+          ],
+        },
+      }]
       : []),
+  ];
+
+  const pipeline = [
+    ...walletStages,
+    // One ledger out of two collections, so the page, the count and the totals
+    // are all one pass over the same set rather than two lists stitched
+    // together in JavaScript and paginated wrongly.
+    { $unionWith: { coll: 'advocates', pipeline: planStages } },
+    ...match,
     { $sort: { createdAt: -1 } },
     {
-      // One pass for the page, the count and the money — three round trips
-      // otherwise, over the same unwound set.
       $facet: {
         rows: [{ $skip: Math.max(0, (page - 1) * perPage) }, { $limit: perPage }],
         count: [{ $count: 'n' }],
@@ -857,6 +906,9 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '' } =
           { $match: { createdAt: { $gte: thirtyDaysAgo } } },
           { $group: { _id: null, sum: { $sum: '$amount' }, n: { $sum: 1 } } },
         ],
+        // What each side of the business brought in, over everything the
+        // current filter covers.
+        byKind: [{ $group: { _id: '$kind', sum: { $sum: '$amount' }, n: { $sum: 1 } } }],
       },
     },
   ];
@@ -865,7 +917,11 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '' } =
     const [out] = await User.aggregate(pipeline);
     const rows = (out?.rows || []).map((r) => ({
       id: String(r.txnId),
-      userId: String(r.userId),
+      kind: r.kind === 'plan' ? 'plan' : 'wallet',
+      // Which panel page this row belongs to — a top-up is a client's, a
+      // membership is a lawyer's.
+      accountId: String(r.accountId),
+      accountHref: r.kind === 'plan' ? `/admin/advocates/${r.accountId}` : `/admin/users/${r.accountId}`,
       name: r.name || '',
       email: r.email || '',
       phone: r.phone || '',
@@ -873,27 +929,42 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '' } =
       note: r.note || '',
       paymentId: r.paymentId || '',
       orderId: r.orderId || '',
+      // 'razorpay' or 'admin' — a plan granted by hand has no payment id, and
+      // showing it as a gateway payment that lost its id would be a lie.
+      source: r.source === 'admin' ? 'admin' : 'razorpay',
       createdAt: iso(r.createdAt),
     }));
 
     const total = out?.count?.[0]?.n || 0;
+    const byKind = Object.fromEntries(
+      (out?.byKind || []).map((k) => [k._id, { sum: k.sum || 0, count: k.n || 0 }])
+    );
+
     return {
       rows,
       total,
       totalPages: Math.max(1, Math.ceil(total / perPage)),
       page,
       perPage,
+      kind: want,
       stats: {
         collected: out?.total?.[0]?.sum || 0,
         last30Days: out?.recent?.[0]?.sum || 0,
         last30Count: out?.recent?.[0]?.n || 0,
+        wallet: byKind.wallet?.sum || 0,
+        walletCount: byKind.wallet?.count || 0,
+        plans: byKind.plan?.sum || 0,
+        planCount: byKind.plan?.count || 0,
       },
     };
   } catch (err) {
     console.error('adminGetPayments failed', err);
     return {
-      rows: [], total: 0, totalPages: 1, page, perPage,
-      stats: { collected: 0, last30Days: 0, last30Count: 0 },
+      rows: [], total: 0, totalPages: 1, page, perPage, kind: want,
+      stats: {
+        collected: 0, last30Days: 0, last30Count: 0,
+        wallet: 0, walletCount: 0, plans: 0, planCount: 0,
+      },
     };
   }
 }

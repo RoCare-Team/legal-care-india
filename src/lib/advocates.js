@@ -6,6 +6,7 @@ import { advocateRate } from '@/constants/callRates';
 import Advocate from '@/models/Advocate';
 import { slugify } from '@/utils/slugify';
 import { advocateProfilePath, parseAdvocateParam } from '@/utils/advocateUrl';
+import { inPersonOffer } from '@/utils/officeTiming';
 
 /**
  * Public lawyer reads are cached and tagged so pages can render statically
@@ -217,6 +218,9 @@ export function buildAdvocateProfile(a) {
       mapQuery: `${area}, ${a.city}, ${a.state}`,
     },
     timing: a.timing || OFFICE_TIMING,
+    // Read from the lawyer's own record, before the display fallbacks above:
+    // a visit can only be booked against a real office and real hours.
+    inPerson: inPersonOffer(a).available,
     // Unlike the office timing above, never invented: this is "usually online
     // for a live consultation", and a client who tries at a made-up hour and
     // finds no one is worse off than one told nothing at all.

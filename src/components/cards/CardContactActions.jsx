@@ -11,18 +11,18 @@ import VideoConsultModal from '@/components/profile/VideoConsultModal';
 import AudioConsultModal from '@/components/profile/AudioConsultModal';
 
 /**
- * CardContactActions — the Call / Chat / Email buttons on an AdvocateCard.
- * Signed-out visitors are prompted to create an account before contacting.
+ * CardContactActions — the Call / Chat / Video buttons on an AdvocateCard and
+ * on the profile. Each opens that channel's paid consultation; there is no
+ * direct phone / WhatsApp / email route to a lawyer anywhere on the site.
+ * Signed-out visitors are prompted to create an account first.
  * Renders three buttons (as grid children) plus the gate, call and booking modals.
  *
  * @param {object} props
- * @param {{ phone?: string, whatsapp?: string, email?: string }} props.contact
  * @param {string} props.name
- * @param {string} [props.advocateId]  lawyer MongoDB _id. Without it Call falls
- *   back to a plain `tel:` link, so older call sites keep working unchanged.
- * @param {number} [props.chatRate]  the lawyer's ₹/min for live chat. When set, a
- *   signed-in client's "Chat" opens the paid consultation booking (same as the
- *   profile's "Book Chat Consultation"); otherwise it falls back to WhatsApp.
+ * @param {string} [props.advocateId]  lawyer MongoDB _id; without it the
+ *   buttons only gate signed-out visitors.
+ * @param {number} [props.chatRate]  the lawyer's ₹/min for live chat.
+ * @param {number} [props.videoRate]  the lawyer's ₹/min for video calls.
  * @param {number} [props.audioRate]  the lawyer's ₹/min for audio calls.
  * @param {boolean} [props.iconOnly=false]  drop the labels and render each
  *   action as a square. The three words cost a row of their own on a narrow
@@ -38,7 +38,7 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   weights at a glance.
  */
 export default function CardContactActions({
-  contact = {}, name, advocateId, chatRate = 0, videoRate = 0, audioRate = 0,
+  name, advocateId, chatRate = 0, videoRate = 0, audioRate = 0,
   slotPrices, variant = 'default', iconOnly = false,
 }) {
   const { role, user, loading } = useAuth();
@@ -52,46 +52,32 @@ export default function CardContactActions({
    * "Call" is a paid audio consultation, priced from the lawyer's own audio
    * plans — so it opens the booking modal rather than dialling. The modal
    * itself says so when the lawyer hasn't added any plan, instead of the button
-   * doing nothing. Lawyers keep the plain `tel:` link the button carries.
+   * doing nothing. There is no dialler fallback: nobody reaches a lawyer
+   * directly, only through a paid consultation.
    */
-  const onCall = (e) => {
-    if (loading) {
-      e.preventDefault();
-      return;
-    }
+  const onCall = () => {
+    if (loading) return;
     if (!authed) {
-      e.preventDefault();
       setGateOpen(true);
       return;
     }
-    if (role !== 'user' || !advocateId) return;
-    e.preventDefault();
-    setAudioOpen(true);
+    if (role === 'user' && advocateId) setAudioOpen(true);
   };
 
   /**
    * "Chat" opens the paid live-chat booking for a signed-in client — the same
-   * flow as the profile's "Book Chat Consultation". Advocates, signed-out
-   * visitors, and lawyers with no plans set fall through to the WhatsApp link.
+   * flow for everyone. No WhatsApp fallback — see onCall.
    */
-  const onChat = (e) => {
-    if (loading) {
-      e.preventDefault();
-      return;
-    }
+  const onChat = () => {
+    if (loading) return;
     if (!authed) {
-      e.preventDefault();
       setGateOpen(true);
       return;
     }
     // Not gated on a per-minute rate any more: consultations are booked as
     // slots, and every lawyer has a price for those — their own or the
     // platform's — so there is no lawyer for whom chat is unavailable.
-    if (role === 'user' && advocateId) {
-      e.preventDefault();
-      setBookOpen(true);
-    }
-    // else: an advocate or a signed-out visitor follows the WhatsApp link.
+    if (role === 'user' && advocateId) setBookOpen(true);
   };
 
   /**
@@ -188,8 +174,8 @@ export default function CardContactActions({
 
   return (
     <>
-      <a
-        href={`tel:${contact?.phone || ''}`}
+      <button
+        type="button"
         onClick={onCall}
         aria-label={`Call ${name}`}
         title="Audio call"
@@ -197,12 +183,10 @@ export default function CardContactActions({
       >
         <Phone className={iconFor('call')} />
         {label('Call', audioRate)}
-      </a>
+      </button>
 
-      <a
-        href={`https://wa.me/${contact?.whatsapp || ''}`}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        type="button"
         onClick={onChat}
         aria-label={`Chat with ${name}`}
         title="Live chat"
@@ -210,7 +194,7 @@ export default function CardContactActions({
       >
         <MessageSquare className={iconFor('chat')} />
         {label('Chat', chatRate)}
-      </a>
+      </button>
       <button
         type="button"
         onClick={onVideo}

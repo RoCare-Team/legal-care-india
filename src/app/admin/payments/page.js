@@ -1,4 +1,4 @@
-import { IndianRupee, TrendingUp, Receipt } from 'lucide-react';
+import { IndianRupee, TrendingUp, Wallet, Crown } from 'lucide-react';
 import { adminGetPayments } from '@/lib/admin';
 import { getPaymentConfigForAdmin } from '@/lib/paymentSettings';
 import { AdminPageHeader } from '@/components/admin/DataTable';
@@ -6,7 +6,7 @@ import PaymentKeysCard from '@/components/admin/PaymentKeysCard';
 import PaymentsTable from '@/components/admin/PaymentsTable';
 
 /**
- * /admin/payments — the money side of the wallet.
+ * /admin/payments — every rupee that came in through Razorpay.
  *
  * Never cached: this is what gets opened when someone says a payment is
  * missing, and a figure five minutes stale is worse than no figure at all.
@@ -38,9 +38,10 @@ export default async function AdminPaymentsPage({ searchParams }) {
   const params = await searchParams;
   const page = Math.max(1, Number(params?.page) || 1);
   const search = String(params?.q || '');
+  const kind = String(params?.kind || '');
 
   const [data, config] = await Promise.all([
-    adminGetPayments({ page, perPage: PER_PAGE, search }),
+    adminGetPayments({ page, perPage: PER_PAGE, search, kind }),
     getPaymentConfigForAdmin(),
   ]);
 
@@ -48,16 +49,19 @@ export default async function AdminPaymentsPage({ searchParams }) {
     <div>
       <AdminPageHeader
         title="Payments"
-        subtitle="Razorpay wallet top-ups, and the keys the site charges with."
+        subtitle="Wallet top-ups and lawyer memberships, and the keys the site charges with."
         count={data.total}
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      {/* The total first, then where it came from. Splitting it is the point:
+          clients topping up and lawyers paying for a plan are two different
+          businesses, and one figure for both hides which is growing. */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={IndianRupee}
           label="Collected"
           value={money(data.stats.collected)}
-          hint="All top-ups, all time"
+          hint={kind ? 'In this view, all time' : 'Everything, all time'}
           tone="bg-emerald-500/10 text-emerald-600"
         />
         <StatCard
@@ -68,11 +72,18 @@ export default async function AdminPaymentsPage({ searchParams }) {
           tone="bg-primary/10 text-primary"
         />
         <StatCard
-          icon={Receipt}
-          label="Payments"
-          value={String(data.total)}
-          hint="Successful top-ups on record"
-          tone="bg-violet-500/10 text-violet-600"
+          icon={Wallet}
+          label="Wallet top-ups"
+          value={money(data.stats.wallet)}
+          hint={`${data.stats.walletCount} from clients`}
+          tone="bg-sky-500/10 text-sky-600"
+        />
+        <StatCard
+          icon={Crown}
+          label="Memberships"
+          value={money(data.stats.plans)}
+          hint={`${data.stats.planCount} from lawyers`}
+          tone="bg-amber-500/10 text-amber-600"
         />
       </div>
 
@@ -88,6 +99,7 @@ export default async function AdminPaymentsPage({ searchParams }) {
           total: data.total,
           perPage: data.perPage,
           search,
+          kind: data.kind,
         }}
       />
     </div>

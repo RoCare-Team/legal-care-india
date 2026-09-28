@@ -5,6 +5,7 @@ import { getSession, getSessionUserId } from '@/lib/auth';
 import ExitImpersonation from '@/components/admin/ExitImpersonation';
 import { getUserById } from '@/lib/users';
 import { getUserConsultations } from '@/lib/consultations';
+import { getReviewsForUser } from '@/lib/documentReviews';
 
 export const metadata = createMetadata({
   title: 'My Account',
@@ -20,7 +21,7 @@ export default async function AccountPage() {
   const user = await getUserById(id);
   if (!user) redirect('/user/login');
 
-  const allConsultations = await getUserConsultations(id);
+  const [allConsultations, reviews] = await Promise.all([getUserConsultations(id), getReviewsForUser(id)]);
   // Rows the user cleared from their own list (the lawyer still sees theirs).
   const consultations = allConsultations.filter((c) => !c.hidden);
 
@@ -35,7 +36,7 @@ export default async function AccountPage() {
           </div>
         </div>
       )}
-      <AccountView user={user} consultations={consultations} />
+      <AccountView user={user} consultations={consultations} reviews={reviews} />
     </>
   );
 }

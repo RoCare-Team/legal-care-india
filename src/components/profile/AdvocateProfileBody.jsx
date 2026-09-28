@@ -1,4 +1,5 @@
 import { Container } from '@/components/ui';
+import { advocateRates } from '@/constants/callRates';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import ProfileContactCard from '@/components/profile/ProfileContactCard';
@@ -88,17 +89,15 @@ export default function AdvocateProfileBody({ advocate, related = [], notice }) 
 
       <RelatedAdvocates advocates={related} />
       {/* The bar is a client component, so whatever it is handed is written
-          into the page for React to hydrate from. It needs six fields; given
+          into the page for React to hydrate from. It needs four fields; given
           the whole profile it carried the About text, every review and the
           gallery along with them. */}
       <ProfileMobileBar
         advocate={{
           _id: advocate._id,
           name: advocate.name,
-          contact: advocate.contact,
           slotPrices: advocate.slotPrices,
-          audioRate: advocate.audioRate,
-          audioPlans: advocate.audioRate ? undefined : advocate.audioPlans,
+          rates: advocateRates(advocate),
         }}
       />
     </>

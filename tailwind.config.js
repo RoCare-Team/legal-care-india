@@ -74,6 +74,11 @@ module.exports = {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        /* A scanner line travelling down a document and back. */
+        scan: {
+          '0%, 100%': { top: '0%' },
+          '50%': { top: 'calc(100% - 3px)' },
+        },
         /* Sweep across a skeleton block, left to right. */
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
@@ -88,6 +93,7 @@ module.exports = {
       animation: {
         'fade-up': 'fade-up 0.5s ease-out both',
         shimmer: 'shimmer 1.6s infinite',
+        scan: 'scan 2.4s ease-in-out infinite',
         'progress-sweep': 'progress-sweep 1.2s ease-in-out infinite',
       },
     },

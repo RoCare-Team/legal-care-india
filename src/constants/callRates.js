@@ -150,8 +150,17 @@ export function affordableMinutes(balance, rate) {
   return Math.floor((Number(balance) || 0) / r);
 }
 
-/** Credited to a brand-new client's wallet the moment their account is created. */
-export const SIGNUP_BONUS = 50;
+/**
+ * Credited to a brand-new client's wallet the moment their account is created.
+ *
+ * ₹199 rather than the ₹50 it started at, and the figure is a length of
+ * conversation, not a round number: at the rates lawyers actually charge it
+ * buys roughly ten minutes with one of them, which is enough to describe a
+ * problem and be told what it is. ₹50 bought two or three minutes — long
+ * enough to say hello and run out, which left people with a worse impression
+ * of the platform than giving them nothing would have.
+ */
+export const SIGNUP_BONUS = 199;
 
 /**
  * The opening seconds of every session that are never billed. Connecting a

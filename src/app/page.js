@@ -4,6 +4,7 @@ import AnonymousBand from '@/components/home/AnonymousBand';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
+import HelpOptions from '@/components/home/HelpOptions';
 import HowItWorks from '@/components/home/HowItWorks';
 import PopularCities from '@/components/home/PopularCities';
 import Testimonials from '@/components/home/Testimonials';
@@ -29,6 +30,7 @@ export default function HomePage() {
       <Hero />
       <Stats />
       <FeaturedAdvocates />
+      <HelpOptions />
       <AnonymousBand />
       <PopularCities />
       {/* No LawyerBanner here. It makes the anonymity pitch a second time —

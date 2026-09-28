@@ -2,6 +2,8 @@ import Image from 'next/image';
 import { Zap, BadgeCheck, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
+import ConsultationPreview from './ConsultationPreview';
+import { getPlatformStats } from '@/lib/stats';
 
 /**
  * The four promises under the search bar — the objections a visitor arrives
@@ -26,7 +28,11 @@ const TRUST = [
  * @param {object} [props.city]   { name, state, slug }
  * @param {string} [props.intro]  opening paragraph written for that city
  */
-export default function Hero({ city, intro }) {
+export default async function Hero({ city, intro }) {
+  // The same lawyer count the stats band under the hero shows, so the two agree.
+  const stats = await getPlatformStats(city);
+  const totalLawyers = stats.find((s) => s.id === 'advocates')?.value || 0;
+
   // The band carries the promise and the one control, and stops there. The
   // practice-area chips and the trust strip that used to be crowded in under
   // the search box are now sections of their own below it
@@ -51,7 +57,7 @@ export default function Hero({ city, intro }) {
           fills the band as before. */}
       {/* The right half only, from sm. On a phone there is no right half to
           give it, so it sits across the top and the copy runs underneath. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[55vw] sm:inset-y-0 sm:left-[42%] sm:right-0 sm:h-auto lg:left-[46%]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[55vw] sm:inset-y-0 sm:left-[42%] sm:right-0 sm:h-auto lg:left-[46%] xl:hidden">
         <Image
           src="/banner-n.png"
           alt=""
@@ -75,7 +81,7 @@ export default function Hero({ city, intro }) {
 
 
 
-      <Container className="relative z-10">
+      <Container className="relative z-10 xl:flex xl:items-center xl:justify-between xl:gap-10">
         <div className="flex max-w-3xl flex-col items-start text-left sm:max-w-[52%] lg:max-w-[50%]">
           {/* The heading and lead sit on the picture; the search box must clear
               it, rather than straddling its lower edge.
@@ -193,6 +199,14 @@ export default function Hero({ city, intro }) {
               ))}
             </ul>
           </div>
+        </div>
+
+        {/* From xl the photograph gives way to the product itself: a client
+            and a lawyer in a live consultation, one on each side, so the first
+            screen says "online consultation" without a word of copy. Below xl
+            there is no room beside the copy, and the banner above stays. */}
+        <div className="hidden shrink-0 animate-fade-up justify-end xl:flex" style={{ animationDelay: '0.2s' }}>
+          <ConsultationPreview totalLawyers={totalLawyers} />
         </div>
       </Container>
     </section>

@@ -5,8 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import {
   Mail, Phone, MapPin, LogOut, Search, CalendarCheck, MessageCircle,
   UserRound, LayoutDashboard, Clock, RotateCcw,
-  Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2, EyeOff,
+  Wallet, Plus, ArrowDownLeft, ArrowUpRight, Loader2, Trash2, EyeOff, FileSearch, Sparkles, Scale, ChevronRight,
 } from 'lucide-react';
+import Link from 'next/link';
+import { EXPERT_STATUS, RISK_META } from '@/constants/documentReview';
 import { Avatar, Button } from '@/components/ui';
 import ViewConversationButton from '@/components/consultation/ViewConversationButton';
 import { logout } from '@/utils/logout';
@@ -18,6 +20,7 @@ import { formatRate } from '@/constants/callRates';
 const NAV = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard },
   { key: 'consultations', label: 'Consultations', icon: CalendarCheck },
+  { key: 'reviews', label: 'Document reviews', icon: FileSearch },
   { key: 'wallet', label: 'Wallet', icon: Wallet },
   { key: 'profile', label: 'Profile', icon: UserRound },
 ];
@@ -60,7 +63,7 @@ function amountLabel(c) {
  * @param {{ name: string, email: string, phone?: string, city?: string, photo?: string }} props.user
  * @param {Array} [props.consultations]  the user's consultations, newest first
  */
-export default function AccountView({ user, consultations = [] }) {
+export default function AccountView({ user, consultations = [], reviews = [] }) {
   // Held locally so clearing a row updates the list and the stats at once.
   const [consultationList, setConsultationList] = useState(consultations);
   const searchParams = useSearchParams();
@@ -155,6 +158,7 @@ export default function AccountView({ user, consultations = [] }) {
           {view === 'consultations' && (
             <ConsultationsView consultations={consultationList} onRemove={removeConsultation} />
           )}
+          {view === 'reviews' && <ReviewsView reviews={reviews} />}
           {view === 'wallet' && <WalletView user={user} />}
           {view === 'profile' && <ProfileView user={user} />}
         </main>
@@ -743,6 +747,62 @@ function EmptyConsultations() {
       <Button href="/lawyers" size="sm" className="mt-1" leftIcon={<Search className="h-4 w-4" />}>
         Find Lawyers
       </Button>
+    </div>
+  );
+}
+
+/* ── Document reviews ─────────────────────────────────────────────────── */
+
+function ReviewsView({ reviews = [] }) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl font-semibold text-ink">Document reviews</h2>
+          <p className="mt-1 text-sm text-ink/55">AI and lawyer reviews of your documents.</p>
+        </div>
+        <Button href="/document-review" size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+          New review
+        </Button>
+      </div>
+
+      {reviews.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-ink/15 px-6 py-12 text-center">
+          <FileSearch className="mx-auto h-9 w-9 text-primary/50" aria-hidden="true" />
+          <p className="mt-3 font-semibold text-ink">No reviews yet</p>
+          <p className="mt-1 text-sm text-ink/55">Upload an agreement or notice to have it checked before you sign.</p>
+        </div>
+      ) : (
+        <ul className="mt-6 space-y-3">
+          {reviews.map((r) => {
+            const ai = r.kind === 'ai';
+            const tag = ai
+              ? RISK_META[r.ai?.riskLevel] || { label: r.status === 'done' ? 'Ready' : 'Processing', tone: 'bg-ink/8 text-ink/55' }
+              : EXPERT_STATUS[r.status] || EXPERT_STATUS.paid;
+            const Icon = ai ? Sparkles : Scale;
+            return (
+              <li key={r.id}>
+                <Link
+                  href={`/document-review/${r.id}`}
+                  className="flex items-center gap-3 rounded-2xl border border-ink/8 bg-surface p-4 transition-colors hover:border-primary/30"
+                >
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${ai ? 'bg-primary/10 text-primary' : 'bg-accent/15 text-[#9A7B1C]'}`}>
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-ink">{r.ai?.documentType || r.fileName}</span>
+                    <span className="block text-xs text-ink/50">
+                      {ai ? 'AI review' : 'Lawyer review'} · {formatDate(r.createdAt)} · {formatMoney(r.amount)}
+                    </span>
+                  </span>
+                  <span className={`hidden rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline ${tag.tone}`}>{tag.label}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-ink/35" aria-hidden="true" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

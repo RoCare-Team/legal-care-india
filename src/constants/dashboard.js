@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, UserRound, Image as ImageIcon, Building2, Scale, Phone,
   Clock, FileBadge, Award, GraduationCap, Briefcase, Languages, ShieldCheck, Wifi,
-  Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee, Landmark, Inbox,
+  Share2, Settings, MessagesSquare, BadgeIndianRupee, MessageCircleMore, Wallet, IndianRupee, Landmark, Inbox, FileSearch,
 } from 'lucide-react';
 
 /**
@@ -16,6 +16,7 @@ export const DASHBOARD_NAV = [
       { label: 'Consultations', href: '/dashboard/consultations', icon: MessagesSquare, badge: 'pending' },
       { label: 'Messages', href: '/dashboard/messages', icon: MessageCircleMore },
       { label: 'Client Queries', href: '/dashboard/queries', icon: Inbox },
+      { label: 'Document Reviews', href: '/dashboard/document-reviews', icon: FileSearch },
       { label: 'Earnings', href: '/dashboard/earnings', icon: Wallet },
       { label: 'Payouts', href: '/dashboard/payouts', icon: Landmark },
     ],
@@ -57,6 +58,7 @@ export const PROFILE_SECTIONS = [
 /** Page titles for the app bar, longest prefix first. */
 export const DASHBOARD_TITLES = [
   { prefix: '/dashboard/consultations', title: 'Consultations', sub: 'Requests, sessions and what each one earned' },
+  { prefix: '/dashboard/document-reviews', title: 'Document Reviews', sub: 'Documents clients have asked you to review' },
   { prefix: '/dashboard/messages', title: 'Messages', sub: 'Every client you have spoken to' },
   { prefix: '/dashboard/queries', title: 'Client Queries', sub: 'Questions posted from the website' },
   { prefix: '/dashboard/earnings', title: 'Earnings', sub: 'What you earned after JusticeLand commission' },

@@ -1,95 +1,32 @@
 'use client';
 
-import { useState } from 'react';
-import { Phone, MessageCircle, Mail } from 'lucide-react';
-import { advocateRate } from '@/constants/callRates';
-import { useAuth } from '@/hooks/useAuth';
-import AuthGateModal from './AuthGateModal';
-import AudioConsultModal from './AudioConsultModal';
+import CardContactActions from '@/components/cards/CardContactActions';
 
 /**
- * ProfileMobileBar — fixed bottom action bar (mobile only) giving one-tap
- * access to Call / WhatsApp / Email on the public profile. Signed-out visitors
- * are prompted to create an account first.
+ * ProfileMobileBar — fixed bottom action bar (mobile only) on the public
+ * profile: the same Call / Chat / Video buttons as the listing cards, each
+ * opening that channel's paid consultation. No direct phone, WhatsApp or email.
  *
  * @param {object} props
- * @param {object} props.advocate
+ * @param {object} props.advocate  { _id, name, slotPrices, rates: { chat, audio, video } }
  */
 export default function ProfileMobileBar({ advocate }) {
-  const { contact = {}, name, _id: advocateId } = advocate;
-  const waText = encodeURIComponent(`Hi ${name}, I found your profile on Justiceland.`);
-  const { role, user, loading } = useAuth();
-  const [gateOpen, setGateOpen] = useState(false);
-  const [audioOpen, setAudioOpen] = useState(false);
-  const authed = role !== null;
-  // What "Call" costs — the lawyer's own per-minute audio rate.
-  const audioRate = advocateRate(advocate, 'audio');
-
-  const gate = (e) => {
-    if (loading) {
-      e.preventDefault();
-      return;
-    }
-    if (!authed) {
-      e.preventDefault();
-      setGateOpen(true);
-    }
-  };
-
-  /**
-   * A paid audio consultation for signed-in clients — the plan picker opens
-   * instead of the dialler. Plain `tel:` for everyone else.
-   */
-  const onCall = (e) => {
-    gate(e);
-    if (e.defaultPrevented || role !== 'user' || !advocateId) return;
-    e.preventDefault();
-    setAudioOpen(true);
-  };
+  const { name, _id: advocateId, rates = {} } = advocate;
+  const { chat: chatRate, audio: audioRate, video: videoRate } = rates;
 
   return (
-    <>
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 bg-surface/95 p-3 backdrop-blur-md lg:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
-          <a
-            href={`tel:${(contact.phone || '').replace(/\s/g, '')}`}
-            onClick={onCall}
-            className="flex flex-col items-center gap-1 rounded-xl bg-primary py-2 text-xs font-semibold text-white"
-          >
-            <Phone className="h-4 w-4" aria-hidden="true" />
-            Call
-          </a>
-          <a
-            href={`https://wa.me/${contact.whatsapp}?text=${waText}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={gate}
-            className="flex flex-col items-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-semibold text-white"
-          >
-            <MessageCircle className="h-4 w-4" aria-hidden="true" />
-            WhatsApp
-          </a>
-          <a
-            href={`mailto:${contact.email}`}
-            onClick={gate}
-            className="flex flex-col items-center gap-1 rounded-xl border border-ink/15 py-2 text-xs font-semibold text-ink/80"
-          >
-            <Mail className="h-4 w-4" aria-hidden="true" />
-            Email
-          </a>
-        </div>
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 bg-surface/95 p-3 backdrop-blur-md lg:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
+        <CardContactActions
+          variant="mobile"
+          name={name}
+          advocateId={advocateId}
+          slotPrices={advocate.slotPrices}
+          chatRate={chatRate}
+          videoRate={videoRate}
+          audioRate={audioRate}
+        />
       </div>
-
-      <AuthGateModal open={gateOpen} onClose={() => setGateOpen(false)} advocateName={name} />
-      <AudioConsultModal
-        slotPrices={advocate.slotPrices}
-        open={audioOpen}
-        onClose={() => setAudioOpen(false)}
-        advocateId={advocateId}
-        advocateName={name}
-        walletBalance={user?.walletBalance || 0}
-        rate={audioRate}
-      />
-    </>
+    </div>
   );
 }
