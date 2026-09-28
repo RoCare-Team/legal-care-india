@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { getAdminSession } from '@/lib/admin';
+import { getSessionAdvocateId } from '@/lib/auth';
+import { lawyerImageResponse } from '@/lib/imageUpload';
 import { slugify } from '@/utils/slugify';
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -16,12 +18,20 @@ const EXT_BY_TYPE = {
 
 /**
  * POST /api/admin/upload  (multipart form-data, field: "file")
- * Admin-only. Saves an uploaded image under /public/uploads and returns its
- * public URL. Used by the admin "Add city" form.
+ *
+ * Admin: saves an uploaded image under /public/uploads and returns its public
+ * URL. Used by the admin "Add city" form.
+ *
+ * Lawyer: app builds released before /api/dashboard/upload existed send the
+ * profile photo here, and were refused with 401. A signed-in lawyer is now
+ * answered exactly as /api/dashboard/upload answers them — a resized JPEG
+ * data URL, nothing written to disk — so those installed apps work without
+ * an update.
  */
 export async function POST(request) {
   const admin = await getAdminSession();
-  if (!admin) return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
+  const advocateId = admin ? null : await getSessionAdvocateId();
+  if (!admin && !advocateId) return NextResponse.json({ error: 'Not authorised.' }, { status: 401 });
 
   let form;
   try {
@@ -29,6 +39,8 @@ export async function POST(request) {
   } catch {
     return NextResponse.json({ error: 'Invalid upload.' }, { status: 400 });
   }
+
+  if (!admin) return lawyerImageResponse(form);
 
   const file = form.get('file');
   if (!file || typeof file === 'string') {
