@@ -332,11 +332,20 @@ export function toPublicAdvocate(profile) {
  * The URL a lawyer's photograph is served from.
  *
  * The list hands out this path instead of the image itself — see below for why.
- * Same-origin, so it needs no entry in next.config's remotePatterns, and it is
- * stable per lawyer so a browser caches it once and never asks again.
+ * Same-origin, so it needs no entry in next.config's remotePatterns.
+ *
+ * The photo route is cached for a year as immutable, so the URL has to change
+ * when the photograph does: `v` is the profile's last-saved time. Without it a
+ * lawyer who changed their photo kept seeing — and showing every client — the
+ * old one, from their browser, the app and the CDN alike, while the database
+ * held the new one.
+ *
+ * @param {string} id
+ * @param {string|Date} [version]  the profile's `updatedAt`
  */
-export function advocatePhotoUrl(id) {
-  return `/api/advocates/${String(id)}/photo`;
+export function advocatePhotoUrl(id, version) {
+  const v = version ? new Date(version).getTime() : 0;
+  return `/api/advocates/${String(id)}/photo${v ? `?v=${v}` : ''}`;
 }
 
 /**
@@ -390,11 +399,13 @@ const _getAllAdvocates = unstable_cache(
 
     return rows.map((r) => {
       const profile = toPublicAdvocate(buildAdvocateProfile(serialize(r)));
-      profile.photo = r.hasPhoto ? advocatePhotoUrl(r._id) : '';
+      profile.photo = r.hasPhoto ? advocatePhotoUrl(r._id, r.updatedAt) : '';
       return profile;
     });
   },
-  ['all-advocates-public-v2'],
+  // v3: photo URLs now carry a version (see advocatePhotoUrl); a new key so
+  // entries cached before that are not served after a deploy.
+  ['all-advocates-public-v3'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 

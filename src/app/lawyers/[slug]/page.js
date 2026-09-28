@@ -51,12 +51,15 @@ export async function generateMetadata({ params }) {
 function withImageUrls(advocate) {
   const inline = (value) => typeof value === 'string' && value.startsWith('data:');
   const id = String(advocate._id);
+  // Both image routes are cached hard, so their URLs carry the last-saved time
+  // and change whenever the images can have (see advocatePhotoUrl).
+  const v = advocate.updatedAt ? new Date(advocate.updatedAt).getTime() : 0;
   return {
     ...advocate,
-    photo: inline(advocate.photo) ? advocatePhotoUrl(id) : advocate.photo,
+    photo: inline(advocate.photo) ? advocatePhotoUrl(id, advocate.updatedAt) : advocate.photo,
     coverImage: inline(advocate.coverImage) ? '' : advocate.coverImage,
     gallery: (advocate.gallery || []).map((item, i) =>
-      item && inline(item.url) ? { ...item, url: `/api/advocates/${id}/gallery/${i}` } : item
+      item && inline(item.url) ? { ...item, url: `/api/advocates/${id}/gallery/${i}${v ? `?v=${v}` : ''}` } : item
     ),
   };
 }
