@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/admin';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
+import { notifyClient } from '@/lib/notifications';
 
 /**
  * POST /api/admin/users/wallet — move money in a client's wallet, by hand.
@@ -69,6 +70,12 @@ export async function POST(request) {
         { new: true, select: 'walletBalance name' }
       );
       if (!updated) return NextResponse.json({ error: 'User not found.' }, { status: 404 });
+      notifyClient(id, {
+        type: 'wallet',
+        title: `₹${amount.toLocaleString('en-IN')} added to your wallet`,
+        body: reason || `Your balance is now ₹${updated.walletBalance.toLocaleString('en-IN')}.`,
+        data: { amount, direction: 'credit' },
+      });
       return NextResponse.json({ ok: true, walletBalance: updated.walletBalance });
     }
 
@@ -95,6 +102,12 @@ export async function POST(request) {
       );
     }
 
+    notifyClient(id, {
+      type: 'wallet',
+      title: `₹${amount.toLocaleString('en-IN')} deducted from your wallet`,
+      body: reason || `Your balance is now ₹${updated.walletBalance.toLocaleString('en-IN')}.`,
+      data: { amount, direction: 'debit' },
+    });
     return NextResponse.json({ ok: true, walletBalance: updated.walletBalance });
   } catch (err) {
     console.error('admin wallet adjust error', err);

@@ -1,7 +1,4 @@
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
-import { connectDB } from '@/lib/db';
-import Advocate from '@/models/Advocate';
+import { tokensFor, sendToTokens } from '@/lib/notifications';
 
 /**
  * Push notifications to a lawyer's phone for a new consultation request, and
@@ -24,67 +21,14 @@ import Advocate from '@/models/Advocate';
 const RING_MS = 60 * 1000;
 
 /**
- * The admin SDK app, created once and reused. Credentials come from
- * FIREBASE_SERVICE_ACCOUNT — the whole service-account JSON, as one string —
- * rather than a file, so this works the same in a serverless deploy as it
- * does locally. Missing or malformed, this returns null rather than throwing:
- * a platform that has not set Firebase up yet should run with pushes simply
- * not sent, not with every booking failing because of them.
- */
-function messaging() {
-  if (getApps().length) return getMessaging(getApps()[0]);
-
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) return null;
-
-  let serviceAccount;
-  try {
-    serviceAccount = JSON.parse(raw);
-  } catch (err) {
-    console.error('push: FIREBASE_SERVICE_ACCOUNT is not valid JSON', err.message);
-    return null;
-  }
-
-  try {
-    const app = initializeApp({ credential: cert(serviceAccount) });
-    return getMessaging(app);
-  } catch (err) {
-    console.error('push: could not initialise Firebase Admin', err);
-    return null;
-  }
-}
-
-const DEAD_TOKEN_CODES = new Set([
-  'messaging/registration-token-not-registered',
-  'messaging/invalid-registration-token',
-]);
-
-/**
- * Sends one message to every device a lawyer has registered, and drops
- * whichever tokens Firebase reports as dead (uninstalled, signed out of,
- * expired) so the list does not grow forever with addresses nothing is at.
+ * Sends one message to every device a lawyer has registered — through the
+ * devices API or the older fcm-token route — dropping the tokens Firebase
+ * reports as dead. See lib/notifications for the shared plumbing.
  */
 async function sendToAdvocate(advocateId, message) {
-  const fcm = messaging();
-  if (!fcm) return;
-
   try {
-    await connectDB();
-    const advocate = await Advocate.findById(advocateId).select('fcmTokens').lean();
-    const tokens = (advocate?.fcmTokens || []).filter(Boolean);
-    if (tokens.length === 0) return;
-
-    const res = await fcm.sendEachForMulticast({ ...message, tokens });
-
-    const dead = [];
-    res.responses.forEach((r, i) => {
-      if (r.success) return;
-      if (DEAD_TOKEN_CODES.has(r.error?.code)) dead.push(tokens[i]);
-      else console.error('push:', r.error?.code, r.error?.message);
-    });
-    if (dead.length) {
-      await Advocate.updateOne({ _id: advocateId }, { $pullAll: { fcmTokens: dead } });
-    }
+    const tokens = await tokensFor({ ownerIds: [String(advocateId)], role: 'lawyer' });
+    await sendToTokens(tokens, message);
   } catch (err) {
     // Never let a push failure ripple into the booking or call it rides on.
     console.error('push: sendToAdvocate failed', err);
@@ -147,7 +91,7 @@ export async function notifyNewRequest(consultation, clientName) {
 
   await sendToAdvocate(consultation.advocateId, {
     notification: { title: 'New chat request', body: `${name} wants to chat.` },
-    data: { type: 'new_request', consultationId: id, callType: 'chat' },
+    data: { type: 'consultation_request', route: '/lawyer', consultationId: id, callType: 'chat' },
     android: { priority: 'high', notification: { channelId: 'consultation_requests' } },
     apns: { payload: { aps: { sound: 'default' } } },
   });

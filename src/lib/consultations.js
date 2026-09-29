@@ -8,6 +8,7 @@ import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
 import { discountOff, settlementSplit, describeDiscount, normalizeDiscount } from '@/constants/discounts';
 import { applyLegacyCommission } from '@/lib/payouts';
 import { notifyNewRequest, notifyCallEnded, sendPushToAdvocate } from '@/lib/push';
+import { notifyClient, notifyLawyer } from '@/lib/notifications';
 
 /**
  * Consultation data-access + the wallet transfer that settles a session.
@@ -421,6 +422,7 @@ async function settleIfExpired(session) {
   // first never races the push that is supposed to close its call screen.
   if (expiredCallRequest) {
     notifyCallEnded(session).catch((err) => console.error('push: expired call request', err));
+    tellClient(session, 'missed');
   }
   return session;
 }
@@ -681,6 +683,7 @@ export async function acceptConsultation(id, advocateId) {
   // Closes the full-screen call screen on the lawyer's other devices — the one
   // that accepted already knows and moved on without waiting for a push.
   notifyCallEnded(session).catch((err) => console.error('push: accepted', err));
+  tellClient(session, 'accepted');
   return withPairHistory(serializeSession(session.toObject()));
 }
 
@@ -695,6 +698,7 @@ export async function rejectConsultation(id, advocateId) {
     closeCall(session, 'rejected', 'advocate');
     await saveSession(session);
     notifyCallEnded(session).catch((err) => console.error('push: rejected', err));
+    tellClient(session, 'rejected');
   }
   return serializeSession(session.toObject());
 }
@@ -738,6 +742,7 @@ export async function endConsultation(id, participantId) {
   if (!session) return null;
 
   let ended = false;
+  const wasActive = session.status === 'active';
   if (session.status === 'pending') {
     // Never accepted: no clock ever started, so there is nothing to settle.
     session.status = 'cancelled';
@@ -763,6 +768,8 @@ export async function endConsultation(id, participantId) {
   if (ended) {
     notifyCallEnded(session).catch((err) => console.error('push: session ended', err));
   }
+  // The lawyer closed a running session: the client may not be looking.
+  if (wasActive && String(session.advocateId) === String(participantId)) tellClient(session, 'ended');
   return serializeSession(session.toObject());
 }
 
@@ -919,6 +926,53 @@ export async function adminEndSession(id, by = '') {
   return serializeSession(session.toObject());
 }
 
+/* ── App pushes for consultation events ──────────────────────────────────── */
+
+const UPDATE_TEXT = {
+  accepted: (a) => ['Your consultation was accepted', `${a} is ready. Tap to start.`],
+  rejected: (a) => [`${a} is not available right now`, 'Nothing was charged. Tap to find another lawyer.'],
+  missed: (a) => [`${a} did not answer`, 'Nothing was charged. Tap to try again or pick another lawyer.'],
+  ended: (a) => ['Your consultation has ended', `Your session with ${a} is over. Tap to see the chat.`],
+};
+
+/**
+ * A consultation_update push to the client. Fire-and-forget: notifyClient
+ * never throws, and nothing here waits for it.
+ */
+function tellClient(session, status) {
+  const who = session.advocateName || 'Your lawyer';
+  const [title, body] = UPDATE_TEXT[status](who);
+  const id = String(session._id);
+  notifyClient(session.userId, {
+    type: 'consultation_update',
+    title,
+    body,
+    data: { consultationId: id, status },
+    // Declined or missed: the chat never happened, so the tap goes to the list.
+    ...(status === 'rejected' || status === 'missed' ? { route: '/lawyers' } : {}),
+    tag: `c_${id}`,
+  });
+}
+
+/**
+ * A chat_message push to whoever did not write it. Never the text itself —
+ * a notification is shown on a lock screen, and a case is private.
+ */
+function tellOtherParty(session, from) {
+  const id = String(session._id);
+  const payload = {
+    type: 'chat_message',
+    data: { consultationId: id },
+    body: 'Tap to read and reply.',
+    tag: `chat_${id}`,
+  };
+  if (from === 'user') {
+    notifyLawyer(session.advocateId, { ...payload, title: `New message from ${session.userName || 'your client'}` });
+  } else {
+    notifyClient(session.userId, { ...payload, title: `New message from ${session.advocateName || 'your lawyer'}` });
+  }
+}
+
 /** Post a chat message from a participant into an active, unexpired session. */
 export async function addMessage(id, participantId, from, text) {
   await connectDB();
@@ -935,6 +989,7 @@ export async function addMessage(id, participantId, from, text) {
 
   session.messages.push({ from, text: text.trim(), at: new Date() });
   await saveSession(session);
+  tellOtherParty(session, from);
   return withPairHistory(serializeSession(session.toObject()));
 }
 

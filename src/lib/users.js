@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { connectDB } from '@/lib/db';
 import User from '@/models/User';
+import { notifyClient } from '@/lib/notifications';
 
 /**
  * User data-access layer (client accounts, distinct from lawyers).
@@ -142,5 +143,15 @@ export async function creditWalletForPayment({
 
   const user = await User.findById(_id).select('-passwordHash').lean();
   if (!user) return { user: null, credited: false };
-  return { user: serialize(user), credited: res.modifiedCount > 0 };
+  const credited = res.modifiedCount > 0;
+  // Once per payment — the verify call and the webhook can both land here.
+  if (credited) {
+    notifyClient(_id, {
+      type: 'wallet',
+      title: `₹${value.toLocaleString('en-IN')} added to your wallet`,
+      body: `Your balance is now ₹${Number(user.walletBalance || 0).toLocaleString('en-IN')}.`,
+      data: { amount: value, direction: 'credit' },
+    });
+  }
+  return { user: serialize(user), credited };
 }
