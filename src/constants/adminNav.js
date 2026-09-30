@@ -1,4 +1,4 @@
-import { LayoutDashboard, Scale, Users, Star, Building2, MessagesSquare, PhoneCall, Newspaper, Mail, IndianRupee, Landmark, Mic, FileSearch } from 'lucide-react';
+import { LayoutDashboard, Scale, Users, Star, Building2, MessagesSquare, PhoneCall, Newspaper, Mail, IndianRupee, Landmark, Mic, FileSearch, Smartphone } from 'lucide-react';
 
 /** Navigation for the admin panel, shared by the sidebar and mobile nav. */
 export const ADMIN_NAV = [
@@ -9,6 +9,7 @@ export const ADMIN_NAV = [
   { label: 'Document Reviews', href: '/admin/document-reviews', icon: FileSearch },
   { label: 'Payments', href: '/admin/payments', icon: IndianRupee },
   { label: 'Payouts', href: '/admin/payouts', icon: Landmark },
+  { label: 'App Version', href: '/admin/app-version', icon: Smartphone },
   { label: 'Contact', href: '/admin/contacts', icon: Mail },
   { label: 'Call Recordings', href: '/admin/recordings', icon: Mic },
   { label: 'Phone Calls', href: '/admin/calls', icon: PhoneCall },
