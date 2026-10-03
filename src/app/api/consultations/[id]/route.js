@@ -86,7 +86,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Unknown action.' }, { status: 400 });
   } catch (err) {
     if (err.code === 'INSUFFICIENT') {
-      return NextResponse.json({ error: 'insufficient', message: 'User has insufficient wallet balance.' }, { status: 402 });
+      return NextResponse.json({ error: 'insufficient', message: 'The client no longer has enough in their wallet for the first 3 minutes.' }, { status: 402 });
     }
     if (err.code === 'NOT_FOUND') return NextResponse.json({ error: 'Not found.' }, { status: 404 });
     if (err.code === 'BAD_STATE') return NextResponse.json({ error: 'This request was already handled.' }, { status: 409 });

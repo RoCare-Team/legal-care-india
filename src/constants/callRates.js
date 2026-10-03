@@ -151,6 +151,20 @@ export function affordableMinutes(balance, rate) {
 }
 
 /**
+ * The least a session may start with: the wallet has to cover this many
+ * minutes at the lawyer's rate before a chat, audio or video consultation
+ * can be requested. One minute let people start, say hello and be cut off;
+ * three is enough to say what the problem is.
+ */
+export const MIN_START_MINUTES = 3;
+
+/** The balance a session at `rate` needs before it can start, in rupees. */
+export function minimumStartBalance(rate) {
+  const r = Number(rate) || 0;
+  return r > 0 ? r * MIN_START_MINUTES : 0;
+}
+
+/**
  * Credited to a brand-new client's wallet the moment their account is created.
  *
  * ₹199 rather than the ₹50 it started at, and the figure is a length of

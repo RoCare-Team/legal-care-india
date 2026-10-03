@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { SITE } from '@/constants/site';
 import { getAllCities } from '@/lib/cities';
 import { getLawyerCountsByCity } from '@/lib/stats';
+import { lawyerCityOf } from '@/data/cities';
 
 /**
  * GET /api/cities — every city the directory has a page for.
@@ -37,7 +38,7 @@ export async function GET() {
         name: c.name,
         state: c.state,
         image: c.image || '',
-        count: counts[c.name] || 0,
+        count: counts[lawyerCityOf(c)] || 0,
         pagesApi: new URL(`/api/state-pages?city=${encodeURIComponent(c.name)}`, SITE.url).toString(),
       })),
     });

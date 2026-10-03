@@ -5,6 +5,7 @@ import AdvocateGrid from './AdvocateGrid';
 import { getAllAdvocates } from '@/lib/advocates';
 import { toCardAdvocate } from '@/lib/advocateCard';
 import { servesCity } from '@/utils/advocateCity';
+import { lawyerCityOf } from '@/data/cities';
 import { CATEGORIES } from '@/data/categories';
 import { getPlatformStats } from '@/lib/stats';
 
@@ -38,7 +39,7 @@ export default async function FeaturedAdvocates({ city }) {
   const lawyerCount = stats.find((st) => st.id === 'advocates')?.value || 0;
   // Includes lawyers who merely work here, not only those based here — see
   // servesCity. Matching on the base city alone hid most of a city's lawyers.
-  const scoped = city ? all.filter((a) => servesCity(a, city.name)) : all;
+  const scoped = city ? all.filter((a) => servesCity(a, lawyerCityOf(city))) : all;
   const advocates = scoped.slice(0, 12);
 
   return (
@@ -54,7 +55,7 @@ export default async function FeaturedAdvocates({ city }) {
           // lawyers reachable right now it becomes "Top online lawyers in
           // Bengaluru", and without them it stays this.
           eyebrow={
-            city ? `Verified lawyers in ${city.name}` : 'Verified lawyers on Justiceland'
+            city ? `Verified lawyers in ${lawyerCityOf(city)}` : 'Verified lawyers on Justiceland'
           }
           note="newest first"
           actionHref="/lawyers"
@@ -77,7 +78,7 @@ export default async function FeaturedAdvocates({ city }) {
                 <Search className="h-3.5 w-3.5" aria-hidden="true" /> Explore the directory
               </p>
               <h3 className="mt-2 font-display text-2xl font-bold sm:text-[1.7rem]">
-                {Math.max(lawyerCount, scoped.length).toLocaleString('en-IN')}+ verified lawyers{city ? ` in ${city.name}` : ' across India'}
+                {Math.max(lawyerCount, scoped.length).toLocaleString('en-IN')}+ verified lawyers{city ? ` in ${lawyerCityOf(city)}` : ' across India'}
               </h3>
               <p className="mt-1.5 text-[14px] text-white/65">
                 Filter by practice area, city, language, fee — or see who is online to talk right now.

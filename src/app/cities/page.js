@@ -9,6 +9,7 @@ import { SeoSection, LinkCardGrid } from '@/components/shared/SeoSection';
 import { breadcrumbSchema, faqSchema, webPageSchema } from '@/lib/schema';
 import { getAllCities } from '@/lib/cities';
 import { getLawyerCountsByCity } from '@/lib/stats';
+import { lawyerCityOf } from '@/data/cities';
 
 export const metadata = createMetadata({
   title: 'Find Lawyers by City in India',
@@ -107,7 +108,7 @@ export default async function CitiesPage() {
             <div className="mt-7 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
               {CITIES.map((city, i) => (
                 <SectionReveal key={city.slug} delay={i * 0.04}>
-                  <CityCard city={city} count={counts[city.name] || 0} />
+                  <CityCard city={city} count={counts[lawyerCityOf(city)] || 0} />
                 </SectionReveal>
               ))}
             </div>

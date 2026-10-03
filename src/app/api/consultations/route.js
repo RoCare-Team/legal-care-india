@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
-import { advocateRate, affordableMinutes, formatRate } from '@/constants/callRates';
+import { advocateRate, affordableMinutes, formatRate, MIN_START_MINUTES, minimumStartBalance } from '@/constants/callRates';
 import {
   createConsultation, resumeConsultation, getAdvocateInbox,
   markAdvocateOnline, isAdvocateOnline,
@@ -150,15 +150,20 @@ export async function POST(request) {
     );
   }
 
-  // Nothing is charged now — but the wallet has to cover at least the first
-  // minute, and what it covers becomes the session's ceiling. Better to say so
-  // here than to cut a client off thirty seconds in.
+  // Nothing is charged now — but the wallet has to cover the first
+  // MIN_START_MINUTES (3) minutes, and what it covers becomes the session's
+  // ceiling. Better to say so here than to cut a client off a minute in.
   const maxMinutes = affordableMinutes(user?.walletBalance, rate);
-  if (maxMinutes < 1) {
+  if (maxMinutes < MIN_START_MINUTES) {
+    const need = minimumStartBalance(rate);
+    const have = Number(user?.walletBalance) || 0;
     return NextResponse.json(
       {
         error: 'insufficient',
-        message: `This lawyer charges ${formatRate(rate)}. Add at least ₹${rate} to your wallet and try again.`,
+        message: `You need at least ₹${need} in your wallet to start — ${MIN_START_MINUTES} minutes at ${formatRate(rate)}. You have ₹${have.toLocaleString('en-IN')}; add ₹${Math.ceil(need - have)} more.`,
+        required: need,
+        balance: have,
+        minMinutes: MIN_START_MINUTES,
       },
       { status: 402 }
     );

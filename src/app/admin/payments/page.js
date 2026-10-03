@@ -1,4 +1,4 @@
-import { IndianRupee, TrendingUp, Wallet, Crown } from 'lucide-react';
+import { IndianRupee, TrendingUp, Wallet, Crown, Briefcase } from 'lucide-react';
 import { adminGetPayments } from '@/lib/admin';
 import { getPaymentConfigForAdmin } from '@/lib/paymentSettings';
 import { AdminPageHeader } from '@/components/admin/DataTable';
@@ -49,14 +49,14 @@ export default async function AdminPaymentsPage({ searchParams }) {
     <div>
       <AdminPageHeader
         title="Payments"
-        subtitle="Wallet top-ups and lawyer memberships, and the keys the site charges with."
+        subtitle="Everything collected through Razorpay — top-ups, memberships, services — and the keys the site charges with."
         count={data.total}
       />
 
       {/* The total first, then where it came from. Splitting it is the point:
           clients topping up and lawyers paying for a plan are two different
           businesses, and one figure for both hides which is growing. */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           icon={IndianRupee}
           label="Collected"
@@ -84,6 +84,13 @@ export default async function AdminPaymentsPage({ searchParams }) {
           value={money(data.stats.plans)}
           hint={`${data.stats.planCount} from lawyers`}
           tone="bg-amber-500/10 text-amber-600"
+        />
+        <StatCard
+          icon={Briefcase}
+          label="Services"
+          value={money(data.stats.services)}
+          hint={`${data.stats.serviceCount} orders, visits & reviews`}
+          tone="bg-violet-500/10 text-violet-600"
         />
       </div>
 

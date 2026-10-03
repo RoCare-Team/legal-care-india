@@ -21,6 +21,7 @@ import { getMatterDescription } from '@/data/matterContent';
 import { getServiceContent } from '@/data/serviceContent';
 import { WhenToConsult } from '@/components/views/sections/ContentSections';
 import { pluralize } from '@/utils/formatters';
+import { lawyerCityOf } from '@/data/cities';
 import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[service]-in-[city]` — one legal service, scoped to one city. */
@@ -78,7 +79,7 @@ export default async function CityServiceView({ city, service }) {
   // Lawyers practising this service AND based in this city.
   const allAdvocates = await getAllAdvocates();
   const advocates = sortAdvocates(
-    allAdvocates.filter((a) => a.specializations?.includes(service.name) && a.city === city.name),
+    allAdvocates.filter((a) => a.specializations?.includes(service.name) && a.city === lawyerCityOf(city)),
     'relevance',
     { service: service.name }
   );

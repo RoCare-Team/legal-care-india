@@ -793,7 +793,7 @@ export async function adminGetCounts() {
   }
 }
 
-/* ── Payments (Razorpay wallet top-ups) ─────────────────────────────────── */
+/* ── Payments (everything collected through Razorpay) ───────────────────── */
 
 /**
  * Every wallet top-up that came through Razorpay, newest first, with the user
@@ -814,7 +814,7 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
   const rx = safe ? new RegExp(safe, 'i') : null;
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const want = ['wallet', 'plan'].includes(kind) ? kind : '';
+  const want = ['wallet', 'plan', 'service', 'test'].includes(kind) ? kind : '';
 
   // Wallet top-ups: a client putting money in to talk to a lawyer.
   const walletStages = [
@@ -875,6 +875,80 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
     },
   ];
 
+  // Who paid, for the collections that only keep a userId.
+  const withUser = [
+    { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'u' } },
+    { $set: { u: { $first: '$u' } } },
+  ];
+
+  // Paid straight through Razorpay for a legal service, an office visit or a
+  // document review. These never touch the wallet ledger — the money goes to
+  // the order itself — so until they were listed here a client could pay and
+  // the admin had no screen on which that payment existed.
+  const servicePaid = (amountField, tag, label) => [
+    { $match: { razorpayPaymentId: { $nin: ['', null] } } },
+    ...withUser,
+    {
+      $project: {
+        _id: 0,
+        kind: 'service',
+        tag,
+        accountId: '$userId',
+        name: { $ifNull: ['$u.name', '$userName'] },
+        email: { $ifNull: ['$u.email', '$userEmail'] },
+        phone: { $ifNull: ['$u.phone', '$userPhone'] },
+        txnId: '$_id',
+        amount: amountField,
+        note: label,
+        paymentId: '$razorpayPaymentId',
+        orderId: '$razorpayOrderId',
+        source: 'razorpay',
+        createdAt: { $ifNull: ['$paidAt', '$createdAt'] },
+      },
+    },
+  ];
+
+  const serviceStages = servicePaid(
+    '$amounts.razorpayAmount',
+    'Legal service',
+    { $ifNull: ['$serviceTitle', 'Legal service'] }
+  );
+  const visitStages = servicePaid(
+    '$amount',
+    'Office visit',
+    { $concat: ['Visit · ', { $ifNull: ['$advocateName', ''] }] }
+  );
+  const reviewStages = servicePaid(
+    '$amount',
+    'Doc review',
+    { $ifNull: ['$fileName', 'Document review'] }
+  );
+
+  // The ₹1 checks run from this page. Real money, so it is listed and counted,
+  // but under its own label so it is never mistaken for a client's.
+  const testStages = [
+    {
+      $project: {
+        _id: 0,
+        kind: 'test',
+        tag: 'Test',
+        accountId: { $literal: null },
+        name: 'Admin test payment',
+        email: '$adminEmail',
+        phone: { $literal: '' },
+        txnId: '$_id',
+        amount: '$amount',
+        note: {
+          $cond: [{ $ifNull: ['$webhookSeenAt', false] }, 'webhook received', 'webhook not received'],
+        },
+        paymentId: '$razorpayPaymentId',
+        orderId: '$razorpayOrderId',
+        source: 'razorpay',
+        createdAt: '$createdAt',
+      },
+    },
+  ];
+
   const match = [
     ...(want ? [{ $match: { kind: want } }] : []),
     ...(rx
@@ -895,6 +969,10 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
     // are all one pass over the same set rather than two lists stitched
     // together in JavaScript and paginated wrongly.
     { $unionWith: { coll: 'advocates', pipeline: planStages } },
+    { $unionWith: { coll: 'serviceorders', pipeline: serviceStages } },
+    { $unionWith: { coll: 'officevisits', pipeline: visitStages } },
+    { $unionWith: { coll: 'documentreviews', pipeline: reviewStages } },
+    { $unionWith: { coll: 'admintestpayments', pipeline: testStages } },
     ...match,
     { $sort: { createdAt: -1 } },
     {
@@ -917,11 +995,17 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
     const [out] = await User.aggregate(pipeline);
     const rows = (out?.rows || []).map((r) => ({
       id: String(r.txnId),
-      kind: r.kind === 'plan' ? 'plan' : 'wallet',
-      // Which panel page this row belongs to — a top-up is a client's, a
-      // membership is a lawyer's.
-      accountId: String(r.accountId),
-      accountHref: r.kind === 'plan' ? `/admin/advocates/${r.accountId}` : `/admin/users/${r.accountId}`,
+      kind: ['plan', 'service', 'test'].includes(r.kind) ? r.kind : 'wallet',
+      tag: r.tag || '',
+      // Which panel page this row belongs to — a membership is a lawyer's,
+      // a test is nobody's, everything else is a client's.
+      accountId: r.accountId ? String(r.accountId) : '',
+      accountHref:
+        r.kind === 'plan'
+          ? `/admin/advocates/${r.accountId}`
+          : r.kind === 'test' || !r.accountId
+            ? '/admin/payments'
+            : `/admin/users/${r.accountId}`,
       name: r.name || '',
       email: r.email || '',
       phone: r.phone || '',
@@ -955,6 +1039,10 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
         walletCount: byKind.wallet?.count || 0,
         plans: byKind.plan?.sum || 0,
         planCount: byKind.plan?.count || 0,
+        services: byKind.service?.sum || 0,
+        serviceCount: byKind.service?.count || 0,
+        tests: byKind.test?.sum || 0,
+        testCount: byKind.test?.count || 0,
       },
     };
   } catch (err) {
@@ -964,6 +1052,7 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
       stats: {
         collected: 0, last30Days: 0, last30Count: 0,
         wallet: 0, walletCount: 0, plans: 0, planCount: 0,
+        services: 0, serviceCount: 0, tests: 0, testCount: 0,
       },
     };
   }

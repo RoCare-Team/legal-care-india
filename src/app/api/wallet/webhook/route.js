@@ -4,6 +4,7 @@ import { grantMembership } from '@/lib/membership';
 import { markServiceOrderPaid } from '@/lib/legalServices';
 import { markVisitPaid } from '@/lib/officeVisits';
 import { markReviewPaid } from '@/lib/documentReviews';
+import { recordTestPayment } from '@/lib/adminTestPayments';
 import { verifyWebhookSignature, hasWebhookSecret, toRupees } from '@/lib/razorpay';
 
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,24 @@ export async function POST(request) {
 
   if (!payment || !paymentId) {
     return NextResponse.json({ ok: true, ignored: 'no payment on event' });
+  }
+
+  if (purpose === 'admin_test') {
+    // The ₹1 check from /admin/payments. Recording that it arrived here is
+    // the proof the webhook URL and secret in the Razorpay dashboard are right.
+    try {
+      await recordTestPayment({
+        paymentId,
+        orderId: payment.order_id || '',
+        amount: toRupees(payment.amount),
+        adminEmail: payment.notes?.adminEmail || '',
+        via: 'webhook',
+      });
+      return NextResponse.json({ ok: true, test: true });
+    } catch (err) {
+      console.error('razorpay webhook: admin test error', err);
+      return NextResponse.json({ error: 'Could not process.' }, { status: 500 });
+    }
   }
 
   if (purpose === 'membership') {

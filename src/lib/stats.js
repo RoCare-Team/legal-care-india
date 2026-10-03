@@ -4,6 +4,7 @@ import Advocate from '@/models/Advocate';
 import User from '@/models/User';
 import Consultation from '@/models/Consultation';
 import { getAllCities } from '@/lib/cities';
+import { lawyerCityOf } from '@/data/cities';
 import { ADVOCATES_TAG } from '@/lib/advocates';
 import { CATEGORIES } from '@/data/categories';
 import { PLATFORM_STATS } from '@/data/stats';
@@ -161,12 +162,13 @@ export async function getPlatformStats(city) {
   ]);
 
   if (city?.name) {
-    const cityLawyers = await getCityLawyerCount(city.name);
+    // A locality counts its parent city's lawyers — see lawyerCityOf.
+    const cityLawyers = await getCityLawyerCount(lawyerCityOf(city));
     return PLATFORM_STATS.map((stat) => {
       if (stat.id === 'advocates') {
         // The city's real figure, unpadded — a floor of 1,000 would be a lie
         // about one city in a way it is not about the country as a whole.
-        return { ...stat, value: cityLawyers, suffix: cityLawyers > 0 ? '+' : '', label: `Lawyers in ${city.name}` };
+        return { ...stat, value: cityLawyers, suffix: cityLawyers > 0 ? '+' : '', label: `Lawyers in ${lawyerCityOf(city)}` };
       }
       if (stat.id === 'cities') {
         return { ...stat, value: cities.length, suffix: '+', label: 'Cities Covered' };

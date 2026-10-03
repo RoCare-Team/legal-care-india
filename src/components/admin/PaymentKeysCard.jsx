@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  KeyRound, Loader2, Check, AlertTriangle, Eye, EyeOff, ShieldCheck, Webhook,
+  KeyRound, Loader2, Check, AlertTriangle, Eye, EyeOff, ShieldCheck, Webhook, IndianRupee,
 } from 'lucide-react';
 import { formatDate } from '@/utils/formatters';
+import { loadRazorpayCheckout } from '@/utils/razorpayCheckout';
+
+// How long to wait for Razorpay's webhook after a test before calling it
+// missing. It normally lands within a few seconds of capture.
+const WEBHOOK_WAIT_MS = 30_000;
+const WEBHOOK_POLL_MS = 3_000;
 
 /**
  * PaymentKeysCard — rotate the Razorpay credentials from the panel.
@@ -27,6 +33,95 @@ export default function PaymentKeysCard({ config }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // The webhook URL is this site's own origin — read in the browser so it is
+  // right on whichever domain the panel is opened from.
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(window.location.origin), []);
+  const webhookUrl = `${origin || 'https://justiceland.online'}/api/wallet/webhook`;
+
+  // ₹1 end-to-end test: idle → paying → ok | failed, with a separate line for
+  // whether the webhook has shown up.
+  const [test, setTest] = useState({ state: 'idle', message: '', webhook: '' });
+  const pollRef = useRef(null);
+  useEffect(() => () => clearTimeout(pollRef.current), []);
+
+  const waitForWebhook = (paymentId, startedAt = Date.now()) => {
+    pollRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/payments/test/${encodeURIComponent(paymentId)}`);
+        const data = await res.json();
+        if (data.webhookSeen) {
+          setTest((t) => ({ ...t, webhook: 'seen' }));
+          router.refresh();
+          return;
+        }
+      } catch {
+        /* a dropped poll is retried below */
+      }
+      if (Date.now() - startedAt < WEBHOOK_WAIT_MS) waitForWebhook(paymentId, startedAt);
+      else setTest((t) => ({ ...t, webhook: 'missing' }));
+    }, WEBHOOK_POLL_MS);
+  };
+
+  const runTest = async () => {
+    clearTimeout(pollRef.current);
+    setTest({ state: 'paying', message: '', webhook: '' });
+    const fail = (message) => setTest({ state: 'failed', message, webhook: '' });
+
+    try {
+      const res = await fetch('/api/admin/payments/test', { method: 'POST' });
+      const order = await res.json();
+      if (!res.ok) return fail(order.error || 'Could not open a test order.');
+
+      if (!(await loadRazorpayCheckout())) {
+        return fail('Could not load the Razorpay checkout script. Check the connection.');
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.orderId,
+        name: 'Justiceland',
+        description: 'Admin test payment (₹1)',
+        prefill: order.prefill,
+        theme: { color: '#1E3A5F' },
+        handler: async (response) => {
+          try {
+            const confirm = await fetch('/api/admin/payments/test/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response),
+            });
+            const result = await confirm.json();
+            if (!confirm.ok) return fail(result.error || 'The payment could not be verified.');
+
+            setTest({
+              state: 'ok',
+              message: `₹${result.amount} captured${result.method ? ` via ${result.method.toUpperCase()}` : ''} — ${result.paymentId}`,
+              webhook: result.webhookSeen ? 'seen' : 'waiting',
+            });
+            router.refresh();
+            if (!result.webhookSeen) waitForWebhook(result.paymentId);
+          } catch {
+            fail('Paid, but the server could not be reached to verify it.');
+          }
+        },
+        modal: {
+          // Closing the sheet without paying just resets the button.
+          ondismiss: () =>
+            setTest((t) => (t.state === 'paying' ? { state: 'idle', message: '', webhook: '' } : t)),
+        },
+      });
+      rzp.on('payment.failed', (resp) => {
+        fail(`Razorpay declined it: ${resp?.error?.description || 'payment failed'}`);
+      });
+      rzp.open();
+    } catch {
+      fail('Something went wrong starting the test payment.');
+    }
+  };
 
   const live = config.mode === 'live';
   const fromEnv = config.source === 'env';
@@ -204,13 +299,76 @@ export default function PaymentKeysCard({ config }) {
 
       <p className="mt-4 flex items-start gap-2 border-t border-ink/8 pt-4 text-xs text-ink/45">
         <Webhook className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>
+        <span className="min-w-0 break-all">
           Webhook URL for the Razorpay dashboard:{' '}
-          <code className="rounded bg-ink/5 px-1.5 py-0.5 font-mono text-ink/70">
-            https://your-domain.com/api/wallet/webhook
-          </code>
+          <code className="rounded bg-ink/5 px-1.5 py-0.5 font-mono text-ink/70">{webhookUrl}</code>
+          {!config.hasWebhookSecret && !fromEnv && (
+            <span className="ml-1 text-amber-700">
+              — no webhook secret saved, so payments from closed tabs are never recovered.
+            </span>
+          )}
         </span>
       </p>
+
+      {/* ── End-to-end check ──────────────────────────────────────────── */}
+      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink/8 pt-4">
+        <button
+          type="button"
+          onClick={runTest}
+          disabled={unset || test.state === 'paying'}
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-ink/12 px-4 text-sm font-semibold text-ink/75 transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-60"
+        >
+          {test.state === 'paying' ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <IndianRupee className="h-4 w-4" />
+          )}
+          Test ₹1 payment
+        </button>
+        <span className="text-xs text-ink/45">
+          {live
+            ? 'Charges ₹1 for real with the saved keys, then checks it reached this panel.'
+            : 'Runs a ₹1 test-mode payment with the saved keys, then checks it reached this panel.'}
+        </span>
+      </div>
+
+      {test.state === 'failed' && (
+        <p className="mt-3 flex items-start gap-2 text-sm text-red-600">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          {test.message}
+        </p>
+      )}
+      {test.state === 'ok' && (
+        <div className="mt-3 space-y-1.5 text-sm">
+          <p className="flex items-start gap-2 text-emerald-600">
+            <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="break-all">Payment verified and recorded: {test.message}</span>
+          </p>
+          {test.webhook === 'seen' && (
+            <p className="flex items-start gap-2 text-emerald-600">
+              <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              Webhook received — the Razorpay dashboard is wired up correctly.
+            </p>
+          )}
+          {test.webhook === 'waiting' && (
+            <p className="flex items-center gap-2 text-ink/55">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+              Waiting for the Razorpay webhook…
+            </p>
+          )}
+          {test.webhook === 'missing' && (
+            <p className="flex items-start gap-2 text-amber-700">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>
+                No webhook after 30s. In Razorpay Dashboard → Webhooks, check the URL is{' '}
+                <code className="font-mono">{webhookUrl}</code>, the event{' '}
+                <code className="font-mono">payment.captured</code> is ticked, and the secret
+                matches the one saved here.
+              </span>
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

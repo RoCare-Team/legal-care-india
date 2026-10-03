@@ -18,6 +18,7 @@ import {
 } from '@/lib/serviceRoutes';
 import { getSubServiceLinks } from '@/data/categories';
 import { pluralize } from '@/utils/formatters';
+import { lawyerCityOf } from '@/data/cities';
 import AskQueryBand from '@/components/queries/AskQueryBand';
 
 /** `/[matter]-lawyer-in-[city]` — one specific matter, scoped to one city. */
@@ -50,7 +51,7 @@ export default async function CityMatterView({ city, service, subService, subSlu
   // Lawyers who practise this specific matter AND are based in this city.
   const allAdvocates = await getAllAdvocates();
   const advocates = sortAdvocates(
-    allAdvocates.filter((a) => a.subSpecializations?.includes(subService) && a.city === city.name),
+    allAdvocates.filter((a) => a.subSpecializations?.includes(subService) && a.city === lawyerCityOf(city)),
     'relevance',
     { service: service.name, subService }
   );

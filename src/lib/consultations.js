@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db';
 import Consultation from '@/models/Consultation';
 import User from '@/models/User';
 import Advocate from '@/models/Advocate';
-import { chargeForDuration } from '@/constants/callRates';
+import { chargeForDuration, MIN_START_MINUTES } from '@/constants/callRates';
 import { COMMISSION_RATE, splitEarning } from '@/constants/payouts';
 import { discountOff, settlementSplit, describeDiscount, normalizeDiscount } from '@/constants/discounts';
 import { applyLegacyCommission } from '@/lib/payouts';
@@ -671,7 +671,8 @@ export async function acceptConsultation(id, advocateId) {
   if (rate > 0) {
     const wallet = await User.findById(session.userId).select('walletBalance').lean();
     const affordable = Math.floor((Number(wallet?.walletBalance) || 0) / rate);
-    if (affordable < 1) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
+    // Same floor as booking: the balance may have been spent elsewhere since.
+    if (affordable < MIN_START_MINUTES) { const e = new Error('Insufficient balance'); e.code = 'INSUFFICIENT'; throw e; }
     session.maxMinutes = affordable;
   }
 

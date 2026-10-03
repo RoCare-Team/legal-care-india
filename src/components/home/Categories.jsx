@@ -2,6 +2,7 @@ import { Section, Heading } from '@/components/ui';
 import CategoryCard from '@/components/cards/CategoryCard';
 import SectionReveal from '@/components/shared/SectionReveal';
 import { CATEGORIES } from '@/data/categories';
+import { lawyerCityOf } from '@/data/cities';
 import { cityServicePath } from '@/lib/serviceRoutes';
 import { getLawyerCountsBySpecialization } from '@/lib/stats';
 
@@ -21,7 +22,7 @@ import { getLawyerCountsBySpecialization } from '@/lib/stats';
  * @param {object} [props.city]  the city this page is scoped to, if any
  */
 export default async function Categories({ city }) {
-  const counts = await getLawyerCountsBySpecialization(city?.name);
+  const counts = await getLawyerCountsBySpecialization(city ? lawyerCityOf(city) : undefined);
 
   return (
     <Section id="legal-services" spacing="sm">

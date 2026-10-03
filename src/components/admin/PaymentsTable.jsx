@@ -54,16 +54,20 @@ const LIVE_STATUS_STYLES = {
   created: 'bg-ink/8 text-ink/55',
 };
 
-/** Wallet top-up or membership — the two ways money arrives. */
+/** The ways money arrives, plus the admin's own ₹1 gateway checks. */
 const KINDS = [
   { value: '', label: 'All payments' },
   { value: 'wallet', label: 'Wallet top-ups' },
   { value: 'plan', label: 'Memberships' },
+  { value: 'service', label: 'Services' },
+  { value: 'test', label: 'Tests' },
 ];
 
 const KIND_META = {
   wallet: { label: 'Top-up', tone: 'bg-emerald-500/10 text-emerald-700' },
   plan: { label: 'Membership', tone: 'bg-amber-500/10 text-amber-700' },
+  service: { label: 'Service', tone: 'bg-violet-500/10 text-violet-700' },
+  test: { label: 'Test', tone: 'bg-sky-500/10 text-sky-700' },
 };
 
 /**
@@ -143,7 +147,7 @@ export default function PaymentsTable({ payments, meta }) {
         return (
           <span className="inline-flex flex-col gap-1">
             <span className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${meta.tone}`}>
-              {meta.label}
+              {r.tag || meta.label}
             </span>
             {/* A membership granted by hand has no gateway payment behind it,
                 and showing it beside real ones without saying so would
@@ -243,7 +247,11 @@ export default function PaymentsTable({ payments, meta }) {
               ? 'No memberships bought yet. Silver and Gold purchases appear here.'
               : meta.kind === 'wallet'
                 ? 'No wallet top-ups yet. They appear here as clients add money.'
-                : 'No payments yet. Top-ups and memberships appear here as they happen.'
+                : meta.kind === 'service'
+                  ? 'No paid services yet. Legal services, office visits and document reviews appear here.'
+                  : meta.kind === 'test'
+                    ? 'No test payments yet. Use "Test ₹1 payment" above.'
+                    : 'No payments yet. Everything paid through Razorpay appears here as it happens.'
         }
       />
 

@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import CityCard from '@/components/cards/CityCard';
+import { lawyerCityOf } from '@/data/cities';
 
 /**
  * CityTileRail — the city tiles as a single row that scrolls sideways.
@@ -98,7 +99,7 @@ export default function CityTileRail({ cities = [], counts = {} }) {
       >
         {cities.map((city) => (
           <div key={city.slug} data-tile className="snap-start">
-            <CityCard city={city} count={counts[city.name] || 0} />
+            <CityCard city={city} count={counts[lawyerCityOf(city)] || 0} />
           </div>
         ))}
       </div>

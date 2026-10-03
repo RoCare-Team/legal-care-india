@@ -10,6 +10,7 @@ import MinimizedCallBar from '@/components/consultation/MinimizedCallBar';
 import { useSessionPoll } from '@/hooks/useSessionPoll';
 import { affordableMinutes, formatRate } from '@/constants/callRates';
 import { refreshAuth } from '@/utils/authEvents';
+import MinimumBalanceNote, { belowMinimum } from './MinimumBalanceNote';
 
 /**
  * BookConsultationModal — the user side of the live-chat flow:
@@ -308,9 +309,13 @@ export default function BookConsultationModal({
               <span className="text-sm font-semibold text-ink">₹{Number(walletBalance).toLocaleString('en-IN')}</span>
             </div>
 
+            {/* The first three minutes have to be covered before a session can
+                start — said here, before the button, not after a refusal. */}
+            <MinimumBalanceNote walletBalance={walletBalance} rate={rate} onAddMoney={onClose} />
+
             <button
               type="button"
-              disabled={creating || !rate}
+              disabled={creating || !rate || belowMinimum(walletBalance, rate)}
               onClick={book}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:opacity-60"
             >
