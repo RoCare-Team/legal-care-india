@@ -258,17 +258,24 @@ export default function AdvocateGrid({
       params.set('lng', String(location.lng));
     }
 
-    const controller = new AbortController();
-    fetch(`/api/advocates/nearby?${params}`, { signal: controller.signal })
+    // A stale answer (the visitor changed city, or the band unmounted) is
+    // ignored rather than aborted. Aborting surfaced as an uncaught
+    // "AbortError: signal is aborted without reason" in the Next dev overlay
+    // even with the catch below, and the request is small enough to let finish.
+    let stale = false;
+    fetch(`/api/advocates/nearby?${params}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
+        if (stale) return;
         if (Array.isArray(data?.advocates) && data.advocates.length) setNearby(data);
       })
       .catch(() => {
-        /* offline or aborted — the band keeps the list the page shipped */
+        /* offline — the band keeps the list the page shipped */
       });
 
-    return () => controller.abort();
+    return () => {
+      stale = true;
+    };
   }, [locationAware, location]);
 
   // From here on the band works off `list`, which is the visitor's city when

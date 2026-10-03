@@ -3,7 +3,7 @@
 import { Mic, MicOff, Video, VideoOff, SwitchCamera, PhoneOff, MessageSquare } from 'lucide-react';
 
 /** One round control button on the call bar, with its label underneath from `sm` up. */
-function ControlButton({ label, short, onClick, active = true, danger = false, children }) {
+function ControlButton({ label, short, onClick, active = true, danger = false, badge = 0, children }) {
   return (
     <button
       type="button"
@@ -13,7 +13,7 @@ function ControlButton({ label, short, onClick, active = true, danger = false, c
       className="group flex flex-col items-center gap-1.5"
     >
       <span
-        className={`grid place-items-center rounded-full transition-all group-active:scale-95 ${
+        className={`relative grid place-items-center rounded-full transition-all group-active:scale-95 ${
           danger
             ? 'h-14 w-14 bg-red-600 text-white shadow-lg shadow-red-900/40 hover:bg-red-700 sm:h-16 sm:w-16'
             : `h-12 w-12 sm:h-14 sm:w-14 ${
@@ -22,6 +22,11 @@ function ControlButton({ label, short, onClick, active = true, danger = false, c
         }`}
       >
         {children}
+        {badge > 0 && (
+          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
       </span>
       <span className="hidden text-[11px] font-medium text-white/70 sm:block">{short}</span>
     </button>
@@ -34,9 +39,13 @@ function ControlButton({ label, short, onClick, active = true, danger = false, c
  * A muted mic / stopped camera flips its button to a solid light fill, the
  * convention every calling app uses for "this is off". `video = false` drops
  * the camera and flip-camera buttons for an audio-only call.
+ *
+ * `onToggleChat` opens the chat beside the call (documents mid-call); when it
+ * is given it takes the Chat slot, and `onMinimize` stays in the header.
  */
 export default function CallControls({
   micOn, camOn, onToggleMic, onToggleCam, onFlipCamera, onEnd, onMinimize, video = true,
+  onToggleChat, chatOpen = false, unread = 0,
 }) {
   return (
     <div className="flex items-end justify-center gap-3 rounded-full bg-black/35 px-4 py-3 backdrop-blur-xl sm:gap-5 sm:rounded-3xl sm:px-6">
@@ -70,7 +79,17 @@ export default function CallControls({
         </ControlButton>
       )}
 
-      {onMinimize && (
+      {onToggleChat ? (
+        <ControlButton
+          label={chatOpen ? 'Hide chat' : 'Open chat — send a document'}
+          short="Chat"
+          onClick={onToggleChat}
+          active={!chatOpen}
+          badge={chatOpen ? 0 : unread}
+        >
+          <MessageSquare className="h-5 w-5" />
+        </ControlButton>
+      ) : onMinimize && (
         <ControlButton label="Back to chat" short="Chat" onClick={onMinimize}>
           <MessageSquare className="h-5 w-5" />
         </ControlButton>

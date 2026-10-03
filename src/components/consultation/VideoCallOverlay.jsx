@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Video, VideoOff, PhoneOff, Loader2, Clock, Minimize2, Lock } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Video, VideoOff, PhoneOff, Loader2, Clock, Minimize2, Lock, X, MessageSquare } from 'lucide-react';
 import CallControls from './CallControls';
 import IncomingCallCard from './IncomingCallCard';
+import ChatThread from './chat/ChatThread';
 
 /** MM:SS (H:MM:SS past an hour) from milliseconds. */
 function fmt(ms) {
@@ -71,6 +72,10 @@ function Initial({ name, size = 'h-28 w-28 text-5xl' }) {
  * @param {string} [props.startedAt] when the consultation connected
  * @param {boolean} props.minimized
  * @param {boolean} [props.video]    false for an audio-only call
+ * @param {object} [props.chat]  { sessionId, messages, viewerRole, active, onSend? }
+ *   When given, a Chat button opens the conversation beside the call — to send
+ *   a document or a link without hanging up. Side panel on a wide screen,
+ *   full screen on a phone; the call carries on underneath either way.
  * @param {string} [props.dismissLabel]  wording on the "call ended" button. In a
  *   chat consultation the call is one leg of a session that carries on, so it
  *   really is "Back to chat"; in a video/audio consultation the call IS the
@@ -78,7 +83,10 @@ function Initial({ name, size = 'h-28 w-28 text-5xl' }) {
  */
 export default function VideoCallOverlay({
   call, otherName, endsAt, startedAt, minimized = false, onMinimize, dismissLabel = 'Back to chat', video = true,
+  chat,
 }) {
+  const [chatOpen, setChatOpen] = useState(false);
+  const { unread, markSeen } = useUnread(chat?.messages, chat?.viewerRole, chatOpen);
   const {
     phase, endNote, busy, micOn, camOn, remoteLive, reconnecting,
     localVideoRef, remoteVideoRef,
@@ -86,6 +94,14 @@ export default function VideoCallOverlay({
   } = call;
 
   if (phase === 'idle') return null;
+
+  const showChat = Boolean(chat) && chatOpen && phase !== 'ended';
+  const toggleChat = chat
+    ? () => setChatOpen((open) => {
+      if (!open) markSeen();
+      return !open;
+    })
+    : undefined;
 
   const live = phase === 'connecting' || phase === 'connected';
   const status =
@@ -98,11 +114,12 @@ export default function VideoCallOverlay({
 
   return (
     <div
-      className={`fixed inset-0 z-[70] flex flex-col bg-[#070D18] ${minimized ? 'hidden' : ''}`}
+      className={`fixed inset-0 z-[70] flex bg-[#070D18] ${minimized ? 'hidden' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label={`${video ? 'Video' : 'Audio'} call with ${otherName}`}
     >
+    <div className="relative flex min-w-0 flex-1 flex-col">
       {/* Ambient glow behind everything that is not live video. */}
       <span className="pointer-events-none absolute left-1/2 top-1/3 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/30 blur-[120px]" aria-hidden="true" />
 
@@ -252,6 +269,19 @@ export default function VideoCallOverlay({
         </div>
         <div className="flex items-center gap-2">
           {live && <CallTimer endsAt={endsAt} startedAt={startedAt} />}
+          {/* Also in the header, so the chat is one tap away while ringing too. */}
+          {chat && phase !== 'ended' && (
+            <button
+              type="button"
+              onClick={toggleChat}
+              aria-label={showChat ? 'Hide chat' : 'Open chat'}
+              title={showChat ? 'Hide chat' : 'Chat — send a document without hanging up'}
+              className="relative grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/80 backdrop-blur-md transition-colors hover:bg-white/20 hover:text-white"
+            >
+              <MessageSquare className="h-4 w-4" />
+              {unread > 0 && !showChat && <UnreadBadge n={unread} />}
+            </button>
+          )}
           {live && onMinimize && (
             <button
               type="button"
@@ -277,10 +307,82 @@ export default function VideoCallOverlay({
             onFlipCamera={flipCamera}
             onEnd={end}
             onMinimize={onMinimize}
+            onToggleChat={toggleChat}
+            chatOpen={showChat}
+            unread={unread}
             video={video}
           />
         </div>
       )}
     </div>
+
+      {/* The conversation, beside the call. Full screen on a phone (the call
+          keeps running behind it), a 24rem column from `sm` up. */}
+      {showChat && (
+        <aside className="absolute inset-0 z-30 flex flex-col bg-surface sm:static sm:w-[24rem] sm:shrink-0 sm:border-l sm:border-white/10">
+          <div className="flex shrink-0 items-center gap-3 border-b border-ink/8 px-3 py-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-primary">
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink">Chat with {otherName}</p>
+              <p className="text-[11px] text-ink/45">Documents, photos and notes — the call stays on</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleChat}
+              aria-label="Back to call"
+              title="Back to call"
+              className="grid h-9 w-9 place-items-center rounded-full text-ink/55 transition-colors hover:bg-ink/5 hover:text-ink"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <ChatThread
+            compact
+            sessionId={chat.sessionId}
+            messages={chat.messages || []}
+            viewerRole={chat.viewerRole}
+            active={chat.active}
+            onSend={chat.onSend}
+            empty={(
+              <p className="mt-8 px-6 text-center text-xs text-ink/45">
+                Nothing here yet. Attach a PDF, photo or Word file and {otherName} sees it right away.
+              </p>
+            )}
+            footer={(
+              <p className="shrink-0 border-t border-ink/8 bg-muted/50 px-4 py-3 text-center text-xs text-ink/50">
+                The consultation has ended.
+              </p>
+            )}
+          />
+        </aside>
+      )}
+    </div>
   );
+}
+
+function UnreadBadge({ n }) {
+  return (
+    <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#070D18]">
+      {n > 9 ? '9+' : n}
+    </span>
+  );
+}
+
+/**
+ * Messages from the other side that arrived while the chat was closed. The
+ * history that was already there when the call opened does not count — only
+ * what is new since.
+ */
+function useUnread(messages, viewerRole, open) {
+  const theirs = (messages || []).filter((m) => m.from && m.from !== viewerRole).length;
+  const seen = useRef(theirs);
+  useEffect(() => {
+    if (open) seen.current = theirs;
+  }, [open, theirs]);
+  return {
+    unread: open ? 0 : Math.max(0, theirs - seen.current),
+    markSeen: () => { seen.current = theirs; },
+  };
 }

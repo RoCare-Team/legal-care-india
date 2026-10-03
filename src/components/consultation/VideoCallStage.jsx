@@ -97,9 +97,11 @@ export default function VideoCallStage({ session, viewerRole, otherName, onEnded
         endsAt={session.endsAt}
         startedAt={session.startedAt}
         minimized={false}
-        // No chat behind a video consultation, so nothing to minimize back to —
-        // leaving this unset hides the minimize and "Chat" buttons.
+        // No chat *behind* a video consultation to minimize back to; the chat
+        // opens beside the call instead (the `chat` prop below).
         onMinimize={undefined}
+        // The chat opens beside the call, so a document can be sent mid-call.
+        chat={{ sessionId: session.id, messages: session.messages || [], viewerRole, active }}
         // A video consultation IS the call — there is no chat behind it.
         dismissLabel="Close"
       />

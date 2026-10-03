@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Send, Clock, PhoneOff, Video, X, IndianRupee, Minimize2, MessagesSquare, Lock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Clock, PhoneOff, Video, X, IndianRupee, Minimize2, MessagesSquare, Lock } from 'lucide-react';
 import useVideoCall from '@/hooks/useVideoCall';
 import VideoCallOverlay from './VideoCallOverlay';
+import ChatThread from './chat/ChatThread';
 import { chargeForDuration } from '@/constants/callRates';
 import { previewDiscount } from '@/constants/discounts';
 
@@ -14,13 +15,6 @@ function fmt(ms) {
   const m = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
   const s = String(total % 60).padStart(2, '0');
   return h ? `${h}:${m}:${s}` : `${m}:${s}`;
-}
-
-/** "7:04 pm" — the time of day a message was sent. */
-function messageTime(at) {
-  const d = at ? new Date(at) : null;
-  if (!d || Number.isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }).toLowerCase();
 }
 
 /**
@@ -55,15 +49,10 @@ function messageTime(at) {
 export default function ChatPanel({
   session, viewerRole, onSend, onEnd, otherName, onCallActiveChange, onMinimize, fill = false,
 }) {
-  const [text, setText] = useState('');
   const [remaining, setRemaining] = useState(session.remainingMs ?? 0);
   const [elapsed, setElapsed] = useState(0);
-  // Optimistic messages: rendered instantly on send, dropped once the server
-  // echoes them back — so the chat feels immediate instead of waiting on a poll.
-  const [pending, setPending] = useState([]);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [callMinimized, setCallMinimized] = useState(false);
-  const scrollRef = useRef(null);
 
   const active = session.status === 'active' && remaining > 0;
 
@@ -100,27 +89,6 @@ export default function ChatPanel({
     onCallActiveChange?.(callLive);
   }, [callLive, onCallActiveChange]);
 
-  // Reconcile: remove each optimistic bubble once a matching server message
-  // (same side + text) has arrived, consuming one server match per pending.
-  useEffect(() => {
-    setPending((prev) => {
-      if (!prev.length) return prev;
-      const pool = (session.messages || [])
-        .filter((m) => m.from === viewerRole)
-        .map((m) => m.text);
-      const remainingPending = [];
-      for (const pm of prev) {
-        const idx = pool.indexOf(pm.text);
-        if (idx >= 0) pool.splice(idx, 1); // confirmed by the server → drop it
-        else remainingPending.push(pm);
-      }
-      return remainingPending.length === prev.length ? prev : remainingPending;
-    });
-  }, [session.messages, viewerRole]);
-
-  // What actually renders: confirmed server messages + not-yet-confirmed ones.
-  const allMessages = [...(session.messages || []), ...pending];
-
   // One 1s tick drives both numbers: how long this has run (shown) and how
   // much of the wallet ceiling is left (which decides when the input locks).
   // Once the session ends, freeze them instead of letting them keep moving.
@@ -136,27 +104,6 @@ export default function ChatPanel({
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [session.endsAt, session.startedAt, session.status]);
-
-  // Auto-scroll to the newest message (including optimistic ones).
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [allMessages.length]);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    const value = text.trim();
-    if (!value || !active) return;
-    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    // Show it immediately and clear the input — don't wait for the network.
-    setPending((p) => [...p, { id: tempId, from: viewerRole, text: value }]);
-    setText('');
-    try {
-      await onSend(value);
-    } catch {
-      // Send failed — pull the optimistic bubble back out.
-      setPending((p) => p.filter((m) => m.id !== tempId));
-    }
-  };
 
   const initial = String(otherName || '?').replace(/^Adv\.?\s*/i, '').trim().charAt(0).toUpperCase() || '?';
   const lowBalance = active && remaining <= 60000;
@@ -296,88 +243,37 @@ export default function ChatPanel({
         </div>
       </div>
 
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-1.5 overflow-y-auto bg-[#F4F6FA] bg-[radial-gradient(rgb(30_58_95/0.05)_1px,transparent_1px)] [background-size:18px_18px] px-3 py-4 sm:px-5"
-      >
-        <p className="mx-auto mb-3 flex w-fit items-center gap-1.5 rounded-full bg-surface/90 px-3 py-1 text-[11px] text-ink/50 shadow-sm">
-          <Lock className="h-3 w-3" aria-hidden="true" />
-          Private consultation · billed per minute
-        </p>
-
-        {allMessages.length === 0 ? (
+      {/* Messages + composer — the same thread the in-call chat drawer shows. */}
+      <ChatThread
+        sessionId={session.id}
+        messages={session.messages || []}
+        viewerRole={viewerRole}
+        active={active}
+        onSend={onSend}
+        intro={(
+          <p className="mx-auto mb-3 flex w-fit items-center gap-1.5 rounded-full bg-surface/90 px-3 py-1 text-[11px] text-ink/50 shadow-sm">
+            <Lock className="h-3 w-3" aria-hidden="true" />
+            Private consultation · billed per minute
+          </p>
+        )}
+        empty={(
           <div className="mt-10 flex flex-col items-center gap-2 text-center">
             <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
               <MessagesSquare className="h-5 w-5" aria-hidden="true" />
             </span>
             <p className="text-sm font-medium text-ink/65">You&apos;re connected</p>
-            <p className="text-xs text-ink/45">Say hello to start the conversation.</p>
+            <p className="text-xs text-ink/45">Say hello, or attach a document to share it.</p>
           </div>
-        ) : (
-          allMessages.map((m, i) => {
-            const mine = m.from === viewerRole;
-            const optimistic = typeof m.id === 'string' && m.id.startsWith('tmp-');
-            // Consecutive lines from one side sit closer, like any messenger.
-            const grouped = i > 0 && allMessages[i - 1].from === m.from;
-            // An optimistic message has not been stamped by the server yet;
-            // showing "now" for it would be a guess, so it shows nothing until
-            // the real time arrives a poll later.
-            const sentAt = messageTime(m.at);
-            return (
-              <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} ${grouped ? '' : 'pt-1.5'}`}>
-                <div
-                  className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[70%] ${
-                    mine
-                      ? `bg-primary text-white ${grouped ? '' : 'rounded-br-md'}`
-                      : `bg-surface text-ink ring-1 ring-ink/5 ${grouped ? '' : 'rounded-bl-md'}`
-                  } ${optimistic ? 'opacity-70' : ''}`}
-                >
-                  <span className="whitespace-pre-wrap break-words">{m.text}</span>
-                  {sentAt && (
-                    <time
-                      dateTime={new Date(m.at).toISOString()}
-                      className={`ml-2 float-right mt-1.5 text-[10px] tabular-nums ${
-                        mine ? 'text-white/60' : 'text-ink/40'
-                      }`}
-                    >
-                      {sentAt}
-                    </time>
-                  )}
-                </div>
-              </div>
-            );
-          })
         )}
-      </div>
-
-      {/* Input / ended banner */}
-      {active ? (
-        <form onSubmit={submit} className="flex shrink-0 items-center gap-2 border-t border-ink/8 bg-surface p-2.5 sm:p-3">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Type a message…"
-            aria-label="Message"
-            className="h-11 flex-1 rounded-full border border-ink/10 bg-muted/60 px-4 text-sm text-ink outline-none transition-colors placeholder:text-ink/40 focus:border-primary/40 focus:bg-surface"
-          />
-          <button
-            type="submit"
-            disabled={!text.trim()}
-            aria-label="Send"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-white shadow-brand transition-colors hover:bg-primary-dark disabled:opacity-40 disabled:shadow-none"
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </form>
-      ) : (
-        <div className="shrink-0 border-t border-ink/8 bg-muted/50 px-4 py-3.5 text-center">
-          <p className="text-sm font-semibold text-ink/75">Consultation ended</p>
-          <p className="text-xs text-ink/45">
-            {session.rate > 0 ? `Ran ${fmt(elapsed)} · ₹${runningCost.toLocaleString('en-IN')}` : 'The time for this session is over.'}
-          </p>
-        </div>
-      )}
+        footer={(
+          <div className="shrink-0 border-t border-ink/8 bg-muted/50 px-4 py-3.5 text-center">
+            <p className="text-sm font-semibold text-ink/75">Consultation ended</p>
+            <p className="text-xs text-ink/45">
+              {session.rate > 0 ? `Ran ${fmt(elapsed)} · ₹${runningCost.toLocaleString('en-IN')}` : 'The time for this session is over.'}
+            </p>
+          </div>
+        )}
+      />
 
       {/* Camera / mic problem — usually a denied permission prompt. */}
       {call.error && (
@@ -402,6 +298,7 @@ export default function ChatPanel({
         startedAt={session.startedAt}
         minimized={callMinimized}
         onMinimize={() => setCallMinimized(true)}
+        chat={{ sessionId: session.id, messages: session.messages || [], viewerRole, active, onSend }}
       />
 
       {/* Tucked-away call — tap to come back to it. */}

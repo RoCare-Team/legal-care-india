@@ -9,6 +9,7 @@ import { discountOff, settlementSplit, describeDiscount, normalizeDiscount } fro
 import { applyLegacyCommission } from '@/lib/payouts';
 import { notifyNewRequest, notifyCallEnded, sendPushToAdvocate } from '@/lib/push';
 import { notifyClient, notifyLawyer } from '@/lib/notifications';
+import { signedAttachmentPath } from '@/lib/attachmentLinks';
 
 /**
  * Consultation data-access + the wallet transfer that settles a session.
@@ -109,6 +110,25 @@ function callSummary(call) {
   };
 }
 
+/**
+ * A message's file, shaped for the browser: metadata plus the URL it downloads
+ * from. Null for a plain text message.
+ */
+function messageAttachment(m) {
+  const a = m?.attachment;
+  if (!a?.id) return null;
+  return {
+    id: String(a.id),
+    name: a.name || 'file',
+    mimeType: a.mimeType || '',
+    size: a.size || 0,
+    url: `/api/consultations/attachments/${a.id}`,
+    // For the mobile app, whose sign-in cookie a phone's browser or PDF viewer
+    // does not carry. See lib/attachmentLinks.
+    signedUrl: signedAttachmentPath(String(a.id)),
+  };
+}
+
 /** Plain, client-safe session object with a computed remaining time. */
 export function serializeSession(doc) {
   if (!doc) return null;
@@ -169,6 +189,7 @@ export function serializeSession(doc) {
       from: m.from,
       text: m.text,
       at: m.at,
+      attachment: messageAttachment(m),
     })),
   };
 }
@@ -185,7 +206,7 @@ export async function getPairMessages(userId, advocateId) {
   const all = [];
   for (const r of rows) {
     for (const m of r.messages || []) {
-      all.push({ id: String(m._id), from: m.from, text: m.text, at: m.at });
+      all.push({ id: String(m._id), from: m.from, text: m.text, at: m.at, attachment: messageAttachment(m) });
     }
   }
   all.sort((a, b) => new Date(a.at) - new Date(b.at));
@@ -975,7 +996,7 @@ function tellOtherParty(session, from) {
 }
 
 /** Post a chat message from a participant into an active, unexpired session. */
-export async function addMessage(id, participantId, from, text) {
+export async function addMessage(id, participantId, from, text, attachment = null) {
   await connectDB();
   const session = await Consultation.findById(id);
   if (!session) { const e = new Error('Not found'); e.code = 'NOT_FOUND'; throw e; }
@@ -988,7 +1009,12 @@ export async function addMessage(id, participantId, from, text) {
   }
   if (session.status !== 'active') { const e = new Error('Session not active'); e.code = 'BAD_STATE'; throw e; }
 
-  session.messages.push({ from, text: text.trim(), at: new Date() });
+  session.messages.push({
+    from,
+    text: text.trim(),
+    at: new Date(),
+    ...(attachment ? { attachment } : {}),
+  });
   await saveSession(session);
   tellOtherParty(session, from);
   return withPairHistory(serializeSession(session.toObject()));

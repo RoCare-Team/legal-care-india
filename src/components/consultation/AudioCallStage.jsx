@@ -94,9 +94,11 @@ export default function AudioCallStage({ session, viewerRole, otherName, onEnded
         endsAt={session.endsAt}
         startedAt={session.startedAt}
         minimized={false}
-        // No chat behind an audio consultation, same as video — nothing to
-        // minimize back to.
+        // No chat behind an audio consultation to minimize back to; it opens
+        // beside the call instead, same as video.
         onMinimize={undefined}
+        // The chat opens beside the call, so a document can be sent mid-call.
+        chat={{ sessionId: session.id, messages: session.messages || [], viewerRole, active }}
         dismissLabel="Close"
         video={false}
       />

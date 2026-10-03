@@ -8,6 +8,21 @@ const MessageSchema = new Schema(
     from: { type: String, enum: ['user', 'advocate'], required: true },
     text: { type: String, required: true, trim: true, maxlength: 2000 },
     at: { type: Date, default: Date.now },
+    // A file sent with the message — metadata only; the bytes are in
+    // ChatAttachment. `text` still carries a caption or "📎 <name>", so an
+    // older app that knows nothing of attachments shows something sensible.
+    attachment: {
+      type: new Schema(
+        {
+          id: { type: String, required: true },
+          name: { type: String, default: '' },
+          mimeType: { type: String, default: '' },
+          size: { type: Number, default: 0 },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
   },
   { _id: true }
 );
