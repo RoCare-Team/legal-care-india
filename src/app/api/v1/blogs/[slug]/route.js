@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
-import { verifyApiKey } from '@/lib/apiKeys';
 import { apiGetBlog, apiUpdateBlog, apiDeleteBlog } from '@/lib/blogWrite';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * One article, by slug. Same API key as /api/v1/blogs.
+ * One article, by slug. Open, like /api/v1/blogs — no API key.
  *
  * GET    /api/v1/blogs/<slug>                → { blog }
  * PATCH  /api/v1/blogs/<slug>  { any field } → { blog }   (slug never changes)
  * DELETE /api/v1/blogs/<slug>                → { ok }
  */
-
-const unauthorised = () =>
-  NextResponse.json(
-    { error: 'Missing or invalid API key. Send "Authorization: Bearer <key>" — keys are made in Admin → Blogs → Blog API.' },
-    { status: 401 }
-  );
 
 function errorResponse(err) {
   if (err?.status) return NextResponse.json({ error: err.message }, { status: err.status });
@@ -25,7 +18,6 @@ function errorResponse(err) {
 }
 
 export async function GET(request, { params }) {
-  if (!(await verifyApiKey(request, 'blogs'))) return unauthorised();
   const { slug } = await params;
   try {
     return NextResponse.json({ blog: await apiGetBlog(slug) });
@@ -35,7 +27,6 @@ export async function GET(request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
-  if (!(await verifyApiKey(request, 'blogs'))) return unauthorised();
   const { slug } = await params;
   let body;
   try {
@@ -51,7 +42,6 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  if (!(await verifyApiKey(request, 'blogs'))) return unauthorised();
   const { slug } = await params;
   try {
     return NextResponse.json({ ok: true, ...(await apiDeleteBlog(slug)) });

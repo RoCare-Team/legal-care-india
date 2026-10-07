@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import { verifyApiKey } from '@/lib/apiKeys';
 import { apiListBlogs, apiCreateBlog } from '@/lib/blogWrite';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * The blog write API, for outside tools. Every call needs an API key made in
- * /admin/blogs → Blog API:
- *
- *   Authorization: Bearer jl_blogs_…      (or  X-API-Key: jl_blogs_…)
+ * The blog write API, for outside tools. Open — no API key or login.
  *
  * GET  /api/v1/blogs[?published=true|false]   → { blogs }
  * POST /api/v1/blogs  { title, content, excerpt?, category?, coverImage?,
@@ -18,12 +14,6 @@ export const dynamic = 'force-dynamic';
  * heading. No HTML.
  */
 
-const unauthorised = () =>
-  NextResponse.json(
-    { error: 'Missing or invalid API key. Send "Authorization: Bearer <key>" — keys are made in Admin → Blogs → Blog API.' },
-    { status: 401 }
-  );
-
 function errorResponse(err) {
   if (err?.status) return NextResponse.json({ error: err.message }, { status: err.status });
   console.error('v1 blogs', err);
@@ -31,7 +21,6 @@ function errorResponse(err) {
 }
 
 export async function GET(request) {
-  if (!(await verifyApiKey(request, 'blogs'))) return unauthorised();
   const p = new URL(request.url).searchParams.get('published');
   try {
     const blogs = await apiListBlogs({ published: p === 'true' ? true : p === 'false' ? false : undefined });
@@ -42,7 +31,6 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (!(await verifyApiKey(request, 'blogs'))) return unauthorised();
   let body;
   try {
     body = await request.json();
