@@ -11,7 +11,7 @@ const dateTime = new Intl.DateTimeFormat('en-IN', {
 });
 const when = (v) => (v ? dateTime.format(new Date(v)) : '—');
 
-function CopyValue({ label, value }) {
+export function CopyValue({ label, value }) {
   const [copied, setCopied] = useState(false);
   if (!value) return null;
   return (

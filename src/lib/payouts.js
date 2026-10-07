@@ -493,3 +493,183 @@ export async function adminRejectPayout(payoutId, { reason, adminEmail = '' }) {
     processedBy: adminEmail,
   });
 }
+
+// ── Admin: what each lawyer has earned and is owed ──────────────────────────
+
+/**
+ * Every lawyer who has earned anything, with how it adds up, and the totals
+ * across all of them — what /admin/payouts opens with.
+ *
+ * Read from each lawyer's own ledger (`walletTransactions`), the same lines
+ * their Earnings page shows, so the admin and the lawyer can never see two
+ * different numbers:
+ *
+ *   gross       what clients paid for this lawyer's sessions and reviews
+ *   commission  JusticeLand's share of that (including the one-time
+ *               adjustment on balances from before commission existed)
+ *   earned      the lawyer's share = gross − commission
+ *   paidOut     payouts marked paid
+ *   processing  the payout waiting in "To pay", if any
+ *   balance     still in their wallet — owed, and what can be paid now
+ *
+ * The primary bank account is opened in full, because this is the screen the
+ * transfer is made from.
+ */
+export async function adminLawyerEarnings() {
+  await connectDB();
+
+  // A credit with no `kind` is an earning from before kinds existed.
+  const isEarning = {
+    $and: [
+      { $eq: ['$$t.type', 'credit'] },
+      { $in: [{ $ifNull: ['$$t.kind', 'earning'] }, ['earning']] },
+    ],
+  };
+  const sumOf = (cond, value) => ({
+    $sum: {
+      $map: {
+        input: { $filter: { input: { $ifNull: ['$walletTransactions', []] }, as: 't', cond } },
+        as: 't',
+        in: value,
+      },
+    },
+  });
+
+  const rows = await Advocate.aggregate([
+    { $match: { $or: [{ walletBalance: { $gt: 0 } }, { 'walletTransactions.0': { $exists: true } }] } },
+    {
+      $project: {
+        name: 1,
+        legalCareId: 1,
+        phone: 1,
+        city: 1,
+        walletBalance: 1,
+        openPayoutId: 1,
+        bankAccounts: 1,
+        sessions: { $size: { $filter: { input: { $ifNull: ['$walletTransactions', []] }, as: 't', cond: isEarning } } },
+        earnedCredits: sumOf(isEarning, '$$t.amount'),
+        gross: sumOf(isEarning, { $ifNull: ['$$t.gross', '$$t.amount'] }),
+        commission: sumOf(isEarning, { $ifNull: ['$$t.commission', 0] }),
+        adjustment: sumOf(
+          { $eq: ['$$t.kind', 'commission_adjustment'] },
+          '$$t.amount'
+        ),
+      },
+    },
+    {
+      $lookup: {
+        from: 'payouts',
+        localField: '_id',
+        foreignField: 'advocateId',
+        pipeline: [{ $group: { _id: '$status', amount: { $sum: '$amount' }, count: { $sum: 1 } } }],
+        as: 'payoutGroups',
+      },
+    },
+  ]);
+
+  const lawyers = rows
+    .map((r) => {
+      const groups = Object.fromEntries((r.payoutGroups || []).map((g) => [g._id, g]));
+      const accounts = r.bankAccounts || [];
+      const primary = accounts.find((a) => a.isPrimary) || accounts[0] || null;
+      const commission = round2(r.commission + r.adjustment);
+      return {
+        id: String(r._id),
+        name: r.name || 'Lawyer',
+        legalCareId: r.legalCareId || '',
+        phone: r.phone || '',
+        city: r.city || '',
+        sessions: r.sessions || 0,
+        gross: round2(r.gross),
+        commission,
+        earned: round2(r.earnedCredits - r.adjustment),
+        paidOut: round2(groups.paid?.amount || 0),
+        paidCount: groups.paid?.count || 0,
+        processing: round2(groups.requested?.amount || 0),
+        balance: round2(r.walletBalance),
+        hasOpenPayout: Boolean(r.openPayoutId),
+        bank: primary
+          ? {
+            id: String(primary._id),
+            holderName: primary.holderName,
+            bankName: primary.bankName || '',
+            ifsc: primary.ifsc,
+            accountType: primary.accountType || 'savings',
+            accountLast4: primary.accountLast4 || '',
+            accountNumber: open(primary.accountNumberEnc) || '',
+            pan: open(primary.panEnc) || '',
+          }
+          : null,
+      };
+    })
+    // Who is owed the most comes first — that is who to pay.
+    .sort((a, b) => b.balance - a.balance || b.earned - a.earned);
+
+  const sum = (key) => round2(lawyers.reduce((s, l) => s + l[key], 0));
+  return {
+    minPayout: MIN_PAYOUT,
+    commissionRate: COMMISSION_RATE,
+    totals: {
+      gross: sum('gross'),
+      commission: sum('commission'),
+      earned: sum('earned'),
+      paidOut: sum('paidOut'),
+      processing: sum('processing'),
+      owed: sum('balance'),
+      lawyers: lawyers.length,
+      // Owed enough to be worth a transfer, with somewhere to send it, and
+      // nothing already waiting.
+      readyToPay: lawyers.filter((l) => l.balance >= MIN_PAYOUT && l.bank && !l.hasOpenPayout).length,
+      noBank: lawyers.filter((l) => l.balance >= MIN_PAYOUT && !l.bank).length,
+    },
+    lawyers,
+  };
+}
+
+/**
+ * An admin pays a lawyer without waiting for them to ask.
+ *
+ * Goes through exactly the same path as a lawyer's own request — the wallet is
+ * debited and a payout opened in one conditional write — so the ledger, the
+ * one-open-payout rule and the lawyer's Earnings page all stay true. With a UTR
+ * it is marked paid in the same step; without one it waits in "To pay".
+ *
+ * @param {string} advocateId
+ * @param {{amount?:number, utr?:string, adminEmail?:string}} input
+ *   `amount` defaults to the whole balance.
+ */
+export async function adminCreatePayout(advocateId, { amount, utr = '', adminEmail = '' } = {}) {
+  if (!mongoose.isValidObjectId(advocateId)) throw httpError('Lawyer not found.', 404);
+  await applyLegacyCommission(advocateId);
+  await connectDB();
+
+  const adv = await Advocate.findById(advocateId).select('walletBalance openPayoutId bankAccounts').lean();
+  if (!adv) throw httpError('Lawyer not found.', 404);
+  if (adv.openPayoutId) {
+    throw httpError('This lawyer already has a payout waiting under "To pay". Mark that one paid or reject it first.', 409);
+  }
+  const accounts = adv.bankAccounts || [];
+  const account = accounts.find((a) => a.isPrimary) || accounts[0];
+  if (!account) {
+    throw httpError('This lawyer has not added a bank account yet. Ask them to add one under Earnings → Bank accounts.');
+  }
+
+  const balance = round2(adv.walletBalance);
+  const value = amount === undefined || amount === null || amount === '' ? balance : round2(amount);
+  if (!Number.isFinite(value) || value < MIN_PAYOUT) {
+    throw httpError(`The smallest payout is ${formatMoney(MIN_PAYOUT)}.`);
+  }
+  if (value > balance) throw httpError(`This lawyer's balance is ${formatMoney(balance)}.`);
+
+  const reference = String(utr || '').trim();
+  if (reference && reference.length < 6) throw httpError('Enter the full bank transfer reference (UTR), or leave it empty.');
+
+  const payout = await requestPayout(advocateId, { amount: value, bankAccountId: String(account._id) });
+  await Payout.updateOne({ _id: payout.id }, { $set: { adminNote: `Started by ${adminEmail || 'admin'}` } });
+
+  if (reference) {
+    await adminMarkPaid(payout.id, { utr: reference, note: 'Paid from lawyer balances', adminEmail });
+    return { ...payout, status: 'paid', utr: reference };
+  }
+  return payout;
+}
