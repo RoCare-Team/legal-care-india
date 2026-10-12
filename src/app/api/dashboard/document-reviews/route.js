@@ -1,8 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getSessionAdvocateId } from '@/lib/auth';
-import { deliverReview } from '@/lib/documentReviews';
+import { deliverReview, getReviewsForAdvocate } from '@/lib/documentReviews';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/dashboard/document-reviews → { reviews }
+ * The Advocate Document Opinion requests an admin has assigned to this
+ * lawyer, newest first: 'assigned' ones are waiting for their report,
+ * 'delivered' ones are done. The file itself is at
+ * /api/document-review/<id>/file.
+ */
+export async function GET() {
+  const advocateId = await getSessionAdvocateId();
+  if (!advocateId) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
+  const reviews = await getReviewsForAdvocate(advocateId);
+  return NextResponse.json({ reviews }, { headers: { 'Cache-Control': 'no-store' } });
+}
 
 /**
  * POST /api/dashboard/document-reviews  { id, report }

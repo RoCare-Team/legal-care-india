@@ -3,10 +3,53 @@ import { getSession } from '@/lib/auth';
 import { getUserById } from '@/lib/users';
 import { getRazorpay, toPaise } from '@/lib/razorpay';
 import { getPaymentConfig } from '@/lib/paymentSettings';
-import { createReview, setReviewOrder, payReviewFromWallet } from '@/lib/documentReviews';
+import { createReview, setReviewOrder, payReviewFromWallet, getReviewsForUser } from '@/lib/documentReviews';
 import { isReviewAiConfigured } from '@/lib/ai/documentReview';
+import {
+  AI_REVIEW_FEE, AI_MAX_PAGES, LAWYER_RATE, LAWYER_RATE_LONG, LAWYER_LONG_FROM,
+  EXPERT_REVIEW_HOURS, REVIEW_MAX_BYTES, REVIEW_AREAS,
+} from '@/constants/documentReview';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * GET /api/document-review → { pricing, reviews }
+ *
+ * What the two products cost and accept — so the app never hard-codes a
+ * price — and, for a signed-in client, their own reviews (paid ones, newest
+ * first). Signed out, `reviews` is empty; the pricing is public.
+ *
+ *   kind 'ai'     — "Smart Document Check": an AI report in about a minute
+ *   kind 'expert' — "Advocate Document Opinion": a lawyer's written report
+ */
+export async function GET() {
+  const session = await getSession();
+  const reviews = session?.role === 'user' ? await getReviewsForUser(session.id) : [];
+  return NextResponse.json(
+    {
+      pricing: {
+        ai: {
+          name: 'Smart Document Check',
+          fee: AI_REVIEW_FEE,
+          maxPages: AI_MAX_PAGES,
+          available: isReviewAiConfigured(),
+        },
+        expert: {
+          name: 'Advocate Document Opinion',
+          ratePerPage: LAWYER_RATE,
+          ratePerPageLong: LAWYER_RATE_LONG,
+          longFromPages: LAWYER_LONG_FROM,
+          deliveryHours: EXPERT_REVIEW_HOURS,
+        },
+        maxBytes: REVIEW_MAX_BYTES,
+        accept: ['application/pdf', 'image/jpeg', 'image/png'],
+        areas: REVIEW_AREAS,
+      },
+      reviews,
+    },
+    { headers: { 'Cache-Control': 'no-store' } }
+  );
+}
 
 /**
  * POST /api/document-review   (multipart form-data)
