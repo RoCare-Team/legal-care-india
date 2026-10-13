@@ -7,6 +7,7 @@ import { sniff } from '@/lib/verificationDocuments';
 import { applyLegacyCommission } from '@/lib/payouts';
 import { splitEarning } from '@/constants/payouts';
 import { reviewDocument } from '@/lib/ai/documentReview';
+import { signedReviewFilePath } from '@/lib/attachmentLinks';
 import {
   AI_REVIEW_FEE, AI_MAX_PAGES, REVIEW_MAX_BYTES, REVIEW_AREAS, lawyerReviewPrice,
 } from '@/constants/documentReview';
@@ -51,6 +52,10 @@ export function serializeReview(r) {
     size: r.size || 0,
     pages: r.pages || 1,
     hasFile: !r.fileDeleted,
+    // The uploaded document. `fileUrl` needs the sign-in cookie; the signed
+    // one does not, for the mobile app to open it in the phone's viewer.
+    fileUrl: r.fileDeleted ? '' : `/api/document-review/${r._id}/file`,
+    signedFileUrl: r.fileDeleted ? '' : signedReviewFilePath(String(r._id)),
     area: r.area || 'other',
     areaLabel: REVIEW_AREAS.find((a) => a.value === r.area)?.label || 'Other',
     question: r.question || '',

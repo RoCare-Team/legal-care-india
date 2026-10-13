@@ -5,14 +5,16 @@ import HiddenBlog from '@/models/HiddenBlog';
 import { BLOGS_TAG, readingMinutes } from '@/lib/blogs';
 import { BLOGS as STATIC_BLOGS } from '@/data/blogs';
 import { slugify } from '@/utils/slugify';
+import { htmlToBlogText, htmlToPlainLine } from '@/utils/blogText';
 
 /**
  * Writing articles from outside the admin panel — the /api/v1/blogs API.
  *
  * The same rules as the admin form: a title, real content, plain text with
- * "## " headings and blank lines between paragraphs (no HTML is stored, so
- * nothing posted can inject markup into the page), and a slug that never
- * changes once the article exists.
+ * "## " headings and blank lines between paragraphs, and a slug that never
+ * changes once the article exists. HTML is accepted — most writing tools send
+ * it — and converted to that plain format before it is stored (see
+ * utils/blogText), so no markup ever reaches the page.
  */
 
 function fail(message, status = 400) {
@@ -55,18 +57,18 @@ function readFields(body, { partial = false } = {}) {
   const has = (k) => body && Object.prototype.hasOwnProperty.call(body, k);
 
   if (!partial || has('title')) {
-    const title = String(body?.title || '').trim();
+    const title = htmlToPlainLine(String(body?.title || '')).trim();
     if (title.length < 4 || title.length > 200) throw fail('`title` must be 4–200 characters.');
     out.title = title;
   }
   if (!partial || has('content')) {
-    const content = String(body?.content || '').trim();
+    const content = htmlToBlogText(String(body?.content || '')).trim();
     if (content.length < 20) throw fail('`content` must be at least 20 characters.');
     if (content.length > 100000) throw fail('`content` is over 100,000 characters.');
     out.content = content;
     out.readMinutes = readingMinutes(content);
   }
-  if (!partial || has('excerpt')) out.excerpt = String(body?.excerpt || '').trim().slice(0, 400);
+  if (!partial || has('excerpt')) out.excerpt = htmlToPlainLine(String(body?.excerpt || '')).trim().slice(0, 400);
   if (!partial || has('category')) out.category = String(body?.category || '').trim().slice(0, 60) || 'Legal Guide';
   if (!partial || has('coverImage')) {
     const url = String(body?.coverImage || '').trim();

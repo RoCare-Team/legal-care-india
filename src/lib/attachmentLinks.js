@@ -40,3 +40,21 @@ export function verifyAttachmentLink(id, exp, token) {
   const given = Buffer.from(String(token));
   return expected.length === given.length && crypto.timingSafeEqual(expected, given);
 }
+
+// ── Document review files ────────────────────────────────────────────────────
+// The same signed, expiring link, for the document a client uploaded for a
+// Smart Document Check or an Advocate Document Opinion — so the mobile app can
+// open it in the phone's PDF viewer, which has no sign-in cookie. Signed under
+// a different label, so a chat link can never be replayed against a review.
+
+/** `/api/document-review/<id>/file?e=<exp>&t=<sig>` */
+export function signedReviewFilePath(id) {
+  const now = Math.floor(Date.now() / 1000);
+  const exp = (Math.floor(now / HOUR) + 2) * HOUR;
+  return `/api/document-review/${id}/file?e=${exp}&t=${sign(`review:${id}`, exp)}`;
+}
+
+/** True when `t` is a valid, unexpired signature for this review's file. */
+export function verifyReviewFileLink(id, exp, token) {
+  return verifyAttachmentLink(`review:${id}`, exp, token);
+}

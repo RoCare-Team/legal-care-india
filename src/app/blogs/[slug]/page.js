@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { htmlToBlogText } from '@/utils/blogText';
 import { Clock } from 'lucide-react';
 import { createMetadata } from '@/lib/metadata';
 import { Container, Button } from '@/components/ui';
@@ -50,7 +51,9 @@ export async function generateMetadata({ params }) {
  * syntax, since the text is rendered as text and never as HTML.
  */
 function toBlocks(content = '') {
-  return content
+  // Articles posted as HTML before the API converted it are fixed on the way
+  // out, so they read properly without being posted again.
+  return htmlToBlogText(content)
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter(Boolean)
