@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { MEMBERSHIP_PLANS, annualTotal, activePlan } from '@/constants/membershipPlans';
 import { summarizeCredits } from '@/lib/queryCredits';
-import { applePlanProductId } from '@/lib/appleIap';
+import { applePlanProductId, iosPrice } from '@/lib/appleIap';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,21 +21,27 @@ export const dynamic = 'force-dynamic';
  * for a signed-in lawyer: their plan, its expiry and this month's credits.
  */
 export async function GET() {
-  const plans = MEMBERSHIP_PLANS.map((p) => ({
-    id: p.id,
-    name: p.name,
-    tagline: p.tagline,
-    monthly: p.monthly,
-    queryCredits: p.queryCredits || 0,
-    areas: p.areas,
-    matters: p.matters,
-    cities: p.cities,
-    placement: p.placement,
-    features: p.features,
-    price: annualTotal(p.id),
-    // The App Store product the iOS app sells this plan as ('' for free).
-    appleProductId: applePlanProductId(p.id),
-  }));
+  const plans = MEMBERSHIP_PLANS.map((p) => {
+    const price = annualTotal(p.id);
+    return {
+      id: p.id,
+      name: p.name,
+      tagline: p.tagline,
+      monthly: p.monthly,
+      queryCredits: p.queryCredits || 0,
+      areas: p.areas,
+      matters: p.matters,
+      cities: p.cities,
+      placement: p.placement,
+      features: p.features,
+      price,
+      // What the iOS app charges through Apple: the Android/website total plus
+      // 15% (lib/appleIap IOS_PRICE_MARKUP), whole rupees. 0 for free.
+      ios_price: iosPrice(price.total),
+      // The App Store product the iOS app sells this plan as ('' for free).
+      appleProductId: applePlanProductId(p.id),
+    };
+  });
 
   let current = null;
   const advocateId = await getSessionAdvocateId();

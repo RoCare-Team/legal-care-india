@@ -33,6 +33,18 @@ export const APPLE_PRODUCTS = {
 
 export const DOC_CHECK_PRODUCT_ID = 'com.justiceland.care.doccheck.ai';
 
+/**
+ * The iOS price is the Android/website price plus this share, to cover what
+ * Apple keeps from an In-App Purchase. 0.15 = 15% more.
+ */
+export const IOS_PRICE_MARKUP = 0.15;
+
+/** What a plan costs on iOS, in whole rupees: the total + IOS_PRICE_MARKUP. */
+export function iosPrice(total) {
+  const n = Number(total) || 0;
+  return n > 0 ? Math.round(n * (1 + IOS_PRICE_MARKUP)) : 0;
+}
+
 /** The Apple product for a paid plan, '' for the free one. */
 export function applePlanProductId(planId) {
   return planId && planId !== 'free' ? `com.justiceland.care.plan.${planId}` : '';
