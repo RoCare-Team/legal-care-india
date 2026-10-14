@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { htmlToBlogText } from '@/utils/blogText';
+import { htmlToBlogText, parseInline } from '@/utils/blogText';
 import { Clock } from 'lucide-react';
 import { createMetadata } from '@/lib/metadata';
 import { Container, Button } from '@/components/ui';
@@ -64,6 +64,38 @@ function toBlocks(content = '') {
     );
 }
 
+/** This site's own address, so its links open in the same tab. */
+const OWN_HOST = /^https?:\/\/(www\.)?justiceland\.online(\/|$)/i;
+
+/**
+ * A paragraph's links and bold as elements (see parseInline). External links
+ * open in a new tab and carry no ranking credit; links to this site stay in
+ * the tab and keep it.
+ */
+function Inline({ text }) {
+  return parseInline(text).map((part, i) => {
+    if (part.type === 'bold') {
+      return <strong key={i} className="font-semibold text-ink">{part.text}</strong>;
+    }
+    if (part.type === 'link') {
+      // Only an outside web page opens in a new tab; this site's pages,
+      // mailto: and tel: open where they are.
+      const internal = !/^https?:/i.test(part.href) || OWN_HOST.test(part.href);
+      return (
+        <a
+          key={i}
+          href={part.href}
+          className="font-medium text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+          {...(internal ? {} : { target: '_blank', rel: 'noopener noreferrer nofollow' })}
+        >
+          {part.text}
+        </a>
+      );
+    }
+    return part.text;
+  });
+}
+
 export default async function BlogPostPage({ params }) {
   const { slug } = await params;
   const posts = await getAllBlogs();
@@ -112,7 +144,15 @@ export default async function BlogPostPage({ params }) {
           </div>
         )}
 
-        <div className="mb-6 flex items-center gap-2 text-sm text-ink/45">
+        <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-ink/45">
+          {post.author && (
+            <>
+              <span>
+                By <span className="font-medium text-ink/70">{post.author}</span>
+              </span>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
           <span>{post.date}</span>
           <span aria-hidden="true">·</span>
           <span className="flex items-center gap-1">
@@ -126,11 +166,11 @@ export default async function BlogPostPage({ params }) {
             blocks.map((b, i) =>
               b.type === 'heading' ? (
                 <h2 key={i} className="pt-2 font-display text-lg font-semibold text-ink">
-                  {b.text}
+                  <Inline text={b.text} />
                 </h2>
               ) : (
                 <p key={i} className="whitespace-pre-line">
-                  {b.text}
+                  <Inline text={b.text} />
                 </p>
               )
             )

@@ -5,8 +5,9 @@
  * Writing tools (n8n, ChatGPT, WordPress exports) post their articles as HTML.
  * The article page deliberately renders text, never markup, so without this
  * the tags showed on the page as literal "<p>" and "<h2>". Converting keeps
- * the structure — headings, paragraphs, lists — and drops everything else,
- * so nothing posted can inject markup or script into the page.
+ * the structure — headings, paragraphs, lists — plus links as [text](url) and
+ * bold as **text** (rendered by the page, see renderInline), and drops
+ * everything else, so nothing posted can inject markup or script.
  *
  * Text with no tags is returned untouched, so plain-text articles are
  * unaffected.
@@ -24,7 +25,29 @@ export function htmlToBlogText(input = '') {
   s = s.replace(/<(script|style|noscript|iframe|svg)[\s\S]*?<\/\1>/gi, '');
   s = s.replace(/<!--[\s\S]*?-->/g, '');
 
-  // Headings of any level become the page's one heading style.
+  // Links survive as [text](url) — first, so a link inside a heading or a
+  // list item survives too. Quoted or unquoted href, any attribute order.
+  // Only addresses safeUrl accepts become links; anything else (javascript:,
+  // data:) keeps its words and loses the link.
+  s = s.replace(
+    /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a>/gi,
+    (_, dq, sq, bare, inner) => {
+      const label = decodeEntities(stripTags(inner)).replace(/\s+/g, ' ').trim();
+      const url = safeUrl(decodeEntities(dq ?? sq ?? bare ?? '').trim());
+      if (!label) return url ? `[${url}](${url})` : '';
+      return url ? `[${label.replace(/[[\]]/g, '')}](${url})` : label;
+    }
+  );
+
+  // Bold survives as **text**.
+  s = s.replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, (_, __, inner) => {
+    const t = stripTags(inner).trim();
+    return t ? `**${t}**` : '';
+  });
+
+  // Headings of any level become the page's one heading style. Their links
+  // and bold are already in [text](url) / **text** form, which stripTags
+  // leaves alone.
   s = s.replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, inner) => {
     const heading = stripTags(inner).replace(/\s+/g, ' ').trim();
     return heading ? `\n\n## ${heading}\n\n` : '\n\n';
@@ -59,6 +82,22 @@ export function htmlToPlainLine(input = '') {
   return decodeEntities(stripTags(text)).replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * An address safe to link to, or '' — a web page (https/http, or "www."
+ * which is given https://), a path on this site, an email (mailto:) or a
+ * phone number (tel:). Never javascript:, data: or anything else.
+ */
+export function safeUrl(url = '') {
+  const u = String(url).trim();
+  if (/^https?:\/\/[^\s<>"]+$/i.test(u)) return u;
+  if (/^www\.[^\s<>"]+\.[^\s<>"]+$/i.test(u)) return `https://${u}`;
+  if (/^\/(?!\/)[^\s<>"]*$/.test(u)) return u;
+  if (/^#[\w-]*$/.test(u)) return u;
+  if (/^mailto:[^\s<>"@]+@[^\s<>"]+$/i.test(u)) return u;
+  if (/^tel:\+?[\d\s()-]{5,}$/i.test(u)) return u.replace(/\s+/g, '');
+  return '';
+}
+
 function stripTags(s) {
   return s.replace(/<\/?[a-z][^>]*>/gi, '');
 }
@@ -77,4 +116,47 @@ function decodeEntities(s) {
     }
     return NAMED[code.toLowerCase()] ?? m;
   });
+}
+
+/**
+ * Split a paragraph into plain text, links and bold, for the article page to
+ * render as elements — never as HTML. A link is `[text](url)` or an address
+ * written straight into the text (https://…, www.…); either becomes a link
+ * only to a safe address (see safeUrl), anything else stays as its words.
+ * `**text**` is bold. Works the same for articles written in the admin panel.
+ *
+ * @param {string} text
+ * @returns {Array<{type:'text'|'link'|'bold', text:string, href?:string}>}
+ */
+export function parseInline(text = '') {
+  const out = [];
+  const re = new RegExp(
+    [
+      // [text](url) — the url may hold one level of (parentheses), as
+      // Wikipedia links do.
+      String.raw`\[([^\]\n]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)`,
+      // **bold**
+      String.raw`\*\*([^*\n]+)\*\*`,
+      // A bare address written straight into the text.
+      String.raw`((?:https?:\/\/|www\.)[^\s<>"]*[^\s<>".,;:!?'")\]])`,
+    ].join('|'),
+    'gi'
+  );
+  let last = 0;
+  let m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push({ type: 'text', text: text.slice(last, m.index) });
+    if (m[1] !== undefined) {
+      const href = safeUrl(m[2]);
+      out.push(href ? { type: 'link', text: m[1], href } : { type: 'text', text: m[1] });
+    } else if (m[3] !== undefined) {
+      out.push({ type: 'bold', text: m[3] });
+    } else {
+      const href = safeUrl(m[4]);
+      out.push(href ? { type: 'link', text: m[4], href } : { type: 'text', text: m[4] });
+    }
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push({ type: 'text', text: text.slice(last) });
+  return out;
 }

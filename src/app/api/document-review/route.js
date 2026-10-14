@@ -5,6 +5,7 @@ import { getRazorpay, toPaise } from '@/lib/razorpay';
 import { getPaymentConfig } from '@/lib/paymentSettings';
 import { createReview, setReviewOrder, payReviewFromWallet, getReviewsForUser } from '@/lib/documentReviews';
 import { isReviewAiConfigured } from '@/lib/ai/documentReview';
+import { DOC_CHECK_PRODUCT_ID } from '@/lib/appleIap';
 import {
   AI_REVIEW_FEE, AI_MAX_PAGES, LAWYER_RATE, LAWYER_RATE_LONG, LAWYER_LONG_FROM,
   EXPERT_REVIEW_HOURS, REVIEW_MAX_BYTES, REVIEW_AREAS,
@@ -53,7 +54,13 @@ export async function GET() {
 
 /**
  * POST /api/document-review   (multipart form-data)
- *   kind: 'ai' | 'expert', file: PDF/JPG/PNG ≤ 5 MB, area?, question?
+ *   kind: 'ai' | 'expert', file: PDF/JPG/PNG ≤ 5 MB, area?, question?,
+ *   payWith?: 'apple'
+ *
+ * `payWith=apple` (iOS only, AI check only): the client pays through Apple
+ * In-App Purchase, so the wallet is not spent and no Razorpay order is opened.
+ * The review is created unpaid and the answer names the App Store product;
+ * /api/iap/apple/verify marks it paid once Apple has taken the money.
  *
  * Step 1 of a review: store the document privately and price it from the
  * file (flat for AI, by the page for a lawyer). If the client's wallet covers
@@ -90,6 +97,16 @@ export async function POST(request) {
       area: String(form.get('area') || ''),
       question: String(form.get('question') || ''),
     });
+
+    if (String(form.get('payWith') || '') === 'apple' && kind === 'ai') {
+      return NextResponse.json({
+        paid: false,
+        reviewId: String(review._id),
+        price: review.amount,
+        pages: review.pages,
+        appleProductId: DOC_CHECK_PRODUCT_ID,
+      });
+    }
 
     if (await payReviewFromWallet(review)) {
       return NextResponse.json({ paid: true, paidWith: 'wallet', reviewId: String(review._id), price: review.amount });

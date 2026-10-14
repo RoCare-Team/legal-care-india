@@ -25,6 +25,7 @@ import { annualTotal, getPlan, TERM_MONTHS, activePlan } from '@/constants/membe
  * @param {string} args.paymentId     Razorpay payment id — the idempotency key
  * @param {string} [args.orderId]
  * @param {number} args.amountPaise   what Razorpay says was paid
+ * @param {string} [args.source]      'razorpay' (default) or 'apple'
  * @returns {Promise<{ok: boolean, error?: string, status?: number,
  *   applied?: boolean, planId?: string, planName?: string, expiresAt?: Date,
  *   price?: object}>}
@@ -35,6 +36,7 @@ export async function grantMembership({
   paymentId,
   orderId = '',
   amountPaise,
+  source = 'razorpay',
 }) {
   const plan = getPlan(planId);
   // getPlan falls back to Starter for anything it does not know, so an id that
@@ -94,6 +96,8 @@ export async function grantMembership({
     total: price.total,
     razorpayOrderId: orderId,
     razorpayPaymentId: paymentId,
+    // 'razorpay', or 'apple' for an iOS In-App Purchase (lib/appleIap).
+    source,
     startedAt: new Date(),
     expiresAt,
   });

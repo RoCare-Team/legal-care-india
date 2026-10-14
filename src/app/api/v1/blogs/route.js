@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic';
  * The blog write API, for outside tools. Open — no API key or login.
  *
  * GET  /api/v1/blogs[?published=true|false]   → { blogs }
- * POST /api/v1/blogs  { title, content, excerpt?, category?, coverImage?,
- *                       published? = true, slug? }        → 201 { blog }
+ * POST /api/v1/blogs  { title, content, excerpt?, category?, author?,
+ *                       coverImage?, published? = true, slug? } → 201 { blog }
  *
  * `content` is plain text: a blank line between paragraphs, "## " starts a
  * heading. No HTML.

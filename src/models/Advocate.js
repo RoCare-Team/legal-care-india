@@ -418,7 +418,7 @@ const AdvocateSchema = new Schema(
             expiresAt: { type: Date, required: true },
             // Paid online through Razorpay, or set by hand from the admin
             // panel (an offline payment, a complimentary plan, a correction).
-            source: { type: String, enum: ['razorpay', 'admin'], default: 'razorpay' },
+            source: { type: String, enum: ['razorpay', 'admin', 'apple'], default: 'razorpay' },
             // 'grant' gives or extends a plan; 'cancel' ends one early.
             action: { type: String, enum: ['grant', 'cancel'], default: 'grant' },
             grantedBy: { type: String, default: '' },

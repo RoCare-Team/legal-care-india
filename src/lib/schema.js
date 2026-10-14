@@ -48,7 +48,8 @@ export function articleSchema(post) {
     description: post.excerpt,
     articleSection: post.category,
     ...(datePublished ? { datePublished, dateModified: datePublished } : {}),
-    author: organizationNode,
+    // The named writer when there is one; otherwise the site itself.
+    author: post.author ? { '@type': 'Person', name: post.author } : organizationNode,
     publisher: organizationNode,
     inLanguage: 'en-IN',
     mainEntityOfPage: { '@type': 'WebPage', '@id': abs(`/blogs/${post.slug}`) },

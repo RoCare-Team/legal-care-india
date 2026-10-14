@@ -55,6 +55,7 @@ export default function BlogApiCard() {
     "title": "How to send a cheque bounce notice",
     "excerpt": "The 30-day deadline, what the notice must say, and what happens next.",
     "category": "Legal Guide",
+    "author": "Adv. Ravi Sharma",
     "coverImage": "https://example.com/cover.jpg",
     "published": true,
     "content": "A cheque bounce is a criminal offence under Section 138.\\n\\n## The 30-day deadline\\nYou must send the notice within 30 days of the bank memo."
@@ -99,7 +100,8 @@ export default function BlogApiCard() {
             Required: <code className="font-mono">title</code> (4–200 chars), <code className="font-mono">content</code>{' '}
             (20+ chars, plain text — a blank line between paragraphs, a line starting with{' '}
             <code className="font-mono">## </code> is a heading; no HTML). Optional: <code className="font-mono">excerpt</code>,{' '}
-            <code className="font-mono">category</code>, <code className="font-mono">coverImage</code> (https URL),{' '}
+            <code className="font-mono">category</code>, <code className="font-mono">author</code> (shown as &ldquo;By …&rdquo;),{' '}
+            <code className="font-mono">coverImage</code> (https URL),{' '}
             <code className="font-mono">published</code> (default true; false saves a draft),{' '}
             <code className="font-mono">slug</code> (default: from the title). Returns <code className="font-mono">201</code>{' '}
             with the article and its <code className="font-mono">url</code>; <code className="font-mono">409</code> if the slug exists.

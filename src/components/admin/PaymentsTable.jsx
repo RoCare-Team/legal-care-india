@@ -155,6 +155,9 @@ export default function PaymentsTable({ payments, meta }) {
             {r.source === 'admin' && (
               <span className="text-[10.5px] text-ink/40">set by admin</span>
             )}
+            {r.source === 'apple' && (
+              <span className="text-[10.5px] text-ink/40">via Apple (iOS)</span>
+            )}
           </span>
         );
       },

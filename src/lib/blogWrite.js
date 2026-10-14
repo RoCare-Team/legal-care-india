@@ -39,6 +39,7 @@ export function apiBlog(b) {
     title: b.title,
     excerpt: b.excerpt || '',
     category: b.category || '',
+    author: b.author || '',
     content: b.content || '',
     coverImage: b.coverImage || '',
     readMinutes: b.readMinutes || 1,
@@ -69,6 +70,7 @@ function readFields(body, { partial = false } = {}) {
     out.readMinutes = readingMinutes(content);
   }
   if (!partial || has('excerpt')) out.excerpt = htmlToPlainLine(String(body?.excerpt || '')).trim().slice(0, 400);
+  if (!partial || has('author')) out.author = htmlToPlainLine(String(body?.author || '')).trim().slice(0, 80);
   if (!partial || has('category')) out.category = String(body?.category || '').trim().slice(0, 60) || 'Legal Guide';
   if (!partial || has('coverImage')) {
     const url = String(body?.coverImage || '').trim();

@@ -847,8 +847,15 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
   const planStages = [
     { $match: { 'planPayments.0': { $exists: true } } },
     { $unwind: '$planPayments' },
-    // Cancellations are history, not income.
-    { $match: { 'planPayments.action': { $ne: 'cancel' }, 'planPayments.total': { $gt: 0 } } },
+    // Cancellations are history, not income; nor are App Review / TestFlight
+    // purchases made in Apple's Sandbox (lib/appleIap marks them).
+    {
+      $match: {
+        'planPayments.action': { $ne: 'cancel' },
+        'planPayments.total': { $gt: 0 },
+        'planPayments.razorpayPaymentId': { $not: /^apple-sandbox:/ },
+      },
+    },
     {
       $project: {
         _id: 0,
@@ -886,7 +893,8 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
   // the order itself — so until they were listed here a client could pay and
   // the admin had no screen on which that payment existed.
   const servicePaid = (amountField, tag, label) => [
-    { $match: { razorpayPaymentId: { $nin: ['', null] } } },
+    // Apple Sandbox purchases (App Review, TestFlight) are not revenue.
+    { $match: { razorpayPaymentId: { $nin: ['', null], $not: /^apple-sandbox:/ } } },
     ...withUser,
     {
       $project: {
@@ -902,7 +910,7 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
         note: label,
         paymentId: '$razorpayPaymentId',
         orderId: '$razorpayOrderId',
-        source: 'razorpay',
+        source: { $cond: [{ $eq: ['$paidWith', 'apple'] }, 'apple', 'razorpay'] },
         createdAt: { $ifNull: ['$paidAt', '$createdAt'] },
       },
     },
@@ -1015,7 +1023,7 @@ export async function adminGetPayments({ page = 1, perPage = 25, search = '', ki
       orderId: r.orderId || '',
       // 'razorpay' or 'admin' — a plan granted by hand has no payment id, and
       // showing it as a gateway payment that lost its id would be a lie.
-      source: r.source === 'admin' ? 'admin' : 'razorpay',
+      source: ['admin', 'apple'].includes(r.source) ? r.source : 'razorpay',
       createdAt: iso(r.createdAt),
     }));
 

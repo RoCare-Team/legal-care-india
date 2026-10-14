@@ -42,6 +42,7 @@ function toPost(r) {
     title: r.title,
     excerpt: r.excerpt || '',
     category: r.category || 'Legal Guide',
+    author: r.author || '',
     content: r.content || '',
     coverImage: r.coverImage || '',
     readMinutes: r.readMinutes || 1,

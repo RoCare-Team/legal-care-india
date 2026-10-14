@@ -15,6 +15,9 @@ const BlogSchema = new mongoose.Schema(
     // One-line summary: the card, the meta description and the article intro.
     excerpt: { type: String, default: '', trim: true },
     category: { type: String, default: 'Legal Guide', trim: true },
+    // Who wrote it, shown as "By …" on the article and given to search
+    // engines. Empty means it is credited to Justiceland.
+    author: { type: String, default: '', trim: true },
     // The article itself. Plain text: blank lines separate paragraphs and a
     // leading "## " marks a heading — no HTML is stored, so nothing a writer
     // pastes in can inject markup into the page.

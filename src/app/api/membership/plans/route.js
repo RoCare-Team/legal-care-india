@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db';
 import Advocate from '@/models/Advocate';
 import { MEMBERSHIP_PLANS, annualTotal, activePlan } from '@/constants/membershipPlans';
 import { summarizeCredits } from '@/lib/queryCredits';
+import { applePlanProductId } from '@/lib/appleIap';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,8 @@ export async function GET() {
     placement: p.placement,
     features: p.features,
     price: annualTotal(p.id),
+    // The App Store product the iOS app sells this plan as ('' for free).
+    appleProductId: applePlanProductId(p.id),
   }));
 
   let current = null;
