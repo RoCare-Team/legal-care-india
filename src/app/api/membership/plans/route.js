@@ -37,7 +37,7 @@ export async function GET() {
       price,
       // What the iOS app charges through Apple: the Android/website total plus
       // 15% (lib/appleIap IOS_PRICE_MARKUP), whole rupees. 0 for free.
-      ios_price: iosPrice(price.total),
+      ios_price: iosPrice(price.total, p.id),
       // The App Store product the iOS app sells this plan as ('' for free).
       appleProductId: applePlanProductId(p.id),
     };

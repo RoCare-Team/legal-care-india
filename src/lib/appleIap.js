@@ -39,8 +39,19 @@ export const DOC_CHECK_PRODUCT_ID = 'com.justiceland.care.doccheck.ai';
  */
 export const IOS_PRICE_MARKUP = 0.15;
 
-/** What a plan costs on iOS, in whole rupees: the total + IOS_PRICE_MARKUP. */
-export function iosPrice(total) {
+/**
+ * Fixed iOS prices, in rupees, for plans set to a specific App Store price
+ * point rather than the markup — Apple only sells at its own price points, so
+ * this must match what App Store Connect charges. A plan not listed here
+ * falls back to the total + IOS_PRICE_MARKUP.
+ */
+export const IOS_PLAN_PRICES = {
+  professional: 3249,
+};
+
+/** What a plan costs on iOS, in whole rupees. */
+export function iosPrice(total, planId = '') {
+  if (IOS_PLAN_PRICES[planId]) return IOS_PLAN_PRICES[planId];
   const n = Number(total) || 0;
   return n > 0 ? Math.round(n * (1 + IOS_PRICE_MARKUP)) : 0;
 }
