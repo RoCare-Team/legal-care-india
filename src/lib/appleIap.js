@@ -47,6 +47,7 @@ export const IOS_PRICE_MARKUP = 0.15;
  */
 export const IOS_PLAN_PRICES = {
   professional: 3249,
+  premium: 8100,
 };
 
 /** What a plan costs on iOS, in whole rupees. */
