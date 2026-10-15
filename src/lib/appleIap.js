@@ -27,6 +27,11 @@ const APP_APPLE_ID = 6813851582;
 /** Apple product id → what it buys. */
 export const APPLE_PRODUCTS = {
   'com.justiceland.care.doccheck.ai': { kind: 'document-review' },
+  // The plans are sold as 12-month products. The ids without ".12m" were the
+  // first names; they stay accepted so an older build's unfinished purchase
+  // still verifies.
+  'com.justiceland.care.plan.professional.12m': { kind: 'membership', planId: 'professional' },
+  'com.justiceland.care.plan.premium.12m': { kind: 'membership', planId: 'premium' },
   'com.justiceland.care.plan.professional': { kind: 'membership', planId: 'professional' },
   'com.justiceland.care.plan.premium': { kind: 'membership', planId: 'premium' },
 };
@@ -59,7 +64,7 @@ export function iosPrice(total, planId = '') {
 
 /** The Apple product for a paid plan, '' for the free one. */
 export function applePlanProductId(planId) {
-  return planId && planId !== 'free' ? `com.justiceland.care.plan.${planId}` : '';
+  return planId && planId !== 'free' ? `com.justiceland.care.plan.${planId}.12m` : '';
 }
 
 let verifiers = null;
