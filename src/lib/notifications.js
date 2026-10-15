@@ -156,6 +156,11 @@ export function buildMessage({
       },
     },
     apns: {
+      // Offer, festival and blog pushes (the `marketing` types) go to iPhones
+      // at priority 5 — Apple's "not urgent, deliver when convenient", the
+      // counterpart of Android's 'normal'. Every other type keeps APNs'
+      // default (immediate), as tested on iPhone.
+      ...(spec.marketing ? { headers: { 'apns-priority': '5' } } : {}),
       payload: { aps: { sound: 'default', ...(imageUrl ? { 'mutable-content': 1 } : {}) } },
       ...(imageUrl ? { fcmOptions: { imageUrl } } : {}),
     },
