@@ -300,7 +300,7 @@ async function settleCharges(session) {
 
   const end = session.endedAt ? new Date(session.endedAt) : new Date();
   const ranMs = Math.max(0, end.getTime() - new Date(session.startedAt).getTime());
-  let { minutes, amount } = chargeForDuration(ranMs, rate);
+  let { minutes, amount } =  (ranMs, rate);
 
   // The clock should already have stopped at the ceiling; this is the belt to
   // that braces, in case a session sat active past its `endsAt` unnoticed.
