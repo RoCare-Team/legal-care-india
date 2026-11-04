@@ -36,13 +36,14 @@ const PAID_STATUSES = ['paid', 'inProgress', 'completed', 'refunded'];
 /**
  * A catalogue entry as the app sees it.
  *
- * `mrp` is dropped unless it is genuinely above the price, so a struck-through
- * figure on a card always means a real saving.
+ * Services are shown at their price only — no struck-through MRP and no
+ * "% OFF" badge, on the website or in the app (Bar Council: no offers on
+ * legal services). `mrp` stays in the database but always goes out as 0, and
+ * every card, detail page and app screen hides the discount when it is 0.
  */
 export function serializeService(doc, { full = false } = {}) {
   if (!doc) return null;
   const price = Math.round(Number(doc.price) || 0);
-  const mrp = Math.round(Number(doc.mrp) || 0);
 
   const card = {
     id: String(doc._id),
@@ -52,8 +53,8 @@ export function serializeService(doc, { full = false } = {}) {
     summary: doc.summary || '',
     banner: doc.banner || '',
     price,
-    mrp: mrp > price ? mrp : 0,
-    discountPercent: mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0,
+    mrp: 0,
+    discountPercent: 0,
     rating: Number(doc.rating) || 0,
     reviews: Math.round(Number(doc.reviews) || 0),
     purchased: Math.round(Number(doc.purchased) || 0),
