@@ -179,4 +179,10 @@ export const CATEGORY_ALIASES = {
   visa: 'Immigration Law',
   passport: 'Immigration Law',
   citizenship: 'Immigration Law',
+
+  dpdp: 'Data Privacy & DPDP',
+  'data privacy': 'Data Privacy & DPDP',
+  'data protection': 'Data Privacy & DPDP',
+  'privacy policy': 'Data Privacy & DPDP',
+  'data breach': 'Data Privacy & DPDP',
 };

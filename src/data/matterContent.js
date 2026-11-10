@@ -153,6 +153,17 @@ export const MATTER_DESCRIPTIONS = {
     'Student Visa': 'Study permits, financial documentation and the statement of purpose.',
     'Permanent Residency': 'Points-based and sponsored routes to settling abroad.',
   },
+
+  'Data Privacy & DPDP': {
+    'DPDP Act Compliance': 'Reviewing how a business handles personal data against the DPDP Act and Rules.',
+    'Privacy Policy & Consent Notice': 'Notices and consent wording that meet Section 5 and 6 of the Act.',
+    'Data Processing Agreements': 'Contracts with vendors who process personal data on your behalf.',
+    'Data Breach Response': 'Intimation to the Data Protection Board and to affected people.',
+    'Data Principal Rights': 'Access, correction, erasure and grievance requests over your own data.',
+    'Cross-Border Data Transfer': 'Sending personal data outside India within the Act’s limits.',
+    'IT Act & Cyber Security': 'IT Act obligations, CERT-In reporting and reasonable security practices.',
+    'Data Protection Board Matters': 'Complaints, inquiries and proceedings before the Board.',
+  },
 };
 
 /** One-line description for a matter, or an empty string when none is written. */

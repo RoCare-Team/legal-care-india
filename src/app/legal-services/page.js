@@ -76,6 +76,11 @@ const PROBLEM_MAP = [
     label: 'Tax Law',
     problem: 'An income tax or GST notice, an assessment you want to appeal, or a demand you believe is wrong.',
   },
+  {
+    slug: 'data-privacy-lawyer',
+    label: 'Data Privacy & DPDP',
+    problem: 'Making your business DPDP Act compliant, a privacy policy or consent notice, a data breach, or a company misusing your personal data.',
+  },
 ];
 
 /**

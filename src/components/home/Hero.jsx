@@ -101,10 +101,14 @@ export default async function Hero({ city, intro }) {
             Fast. Secure. Confidential.
           </p>
 
-          {/* No visible headline — the lead paragraph speaks first. The page
-              still needs one <h1> for search engines and screen readers. */}
-          <h1 className="sr-only">
-            {city ? `Consult verified lawyers in ${city.name}` : 'Consult verified lawyers online'}
+          {/* Says what the site is — a directory to find and talk to lawyers —
+              without promising a time or an outcome. */}
+          <h1 className="font-display text-[1.4rem] sm:text-[2.3rem] lg:text-[2.9rem] font-extrabold tracking-tight leading-[1.12] text-primary-dark">
+            <span className="sm:whitespace-nowrap">Find &amp; Consult Verified Lawyers</span>{' '}
+            <br className="hidden sm:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#B8912A] via-[#D4AF37] to-[#A67C1F]">
+              {city ? `in ${city.name}` : 'Across India'}
+            </span>
           </h1>
 
           {/* Secondary paragraph — the city's own opening line where there is

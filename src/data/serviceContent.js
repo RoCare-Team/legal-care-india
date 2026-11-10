@@ -533,6 +533,48 @@ export const SERVICE_CONTENT = {
       { q: 'Can a lawyer guarantee a visa?', a: 'No — and anyone who does should be avoided. The decision rests entirely with the immigration authority. What a lawyer controls is that the application is eligible, complete, consistent and properly presented.' },
     ],
   },
+  'Data Privacy & DPDP': {
+    intro: [
+      'The Digital Personal Data Protection Act, 2023 applies to any business that collects personal data of people in India — customers, users, patients, students or employees. It makes that business a Data Fiduciary, responsible for giving clear notice, taking valid consent, keeping data secure, and deleting it once its purpose is served.',
+      'The DPDP Rules, 2025 add the detail: what a notice must say, how a breach must be reported, and how long certain data may be kept. Individuals, for their part, gain rights to access, correct and erase their data and to complain to the Data Protection Board of India. A data privacy lawyer helps either side read the Act against real facts.',
+    ],
+    whenToConsult: [
+      { title: 'Your business collects personal data', text: 'Sign-up forms, apps, CRMs and payment flows all make you a Data Fiduciary under the Act.' },
+      { title: 'You need a privacy policy or consent notice', text: 'The Act sets what a notice must contain and how consent must be taken and withdrawn.' },
+      { title: 'A vendor handles data for you', text: 'Cloud, payments, SMS and analytics providers need a contract that meets Section 8.' },
+      { title: 'There has been a data breach', text: 'The Board and affected people must be informed, with a detailed report within 72 hours.' },
+      { title: 'A company is misusing your data', text: 'You can ask for access, correction or erasure, and escalate to the Board if ignored.' },
+      { title: 'You received a notice from the Data Protection Board', text: 'Inquiries carry penalties of up to ₹250 crore, so the reply needs care.' },
+    ],
+    whatLawyerDoes: [
+      'Maps what personal data a business collects, why, and who it is shared with.',
+      'Drafts privacy policies, consent notices and withdrawal processes.',
+      'Drafts and reviews data processing agreements with vendors.',
+      'Guides breach response and intimation to the Data Protection Board.',
+      'Sends and answers Data Principal requests for access, correction and erasure.',
+      'Represents businesses and individuals before the Data Protection Board.',
+    ],
+    documents: [
+      'Current privacy policy, terms and consent forms',
+      'List of personal data collected and where it is stored',
+      'Contracts with vendors that handle personal data',
+      'For a breach: what happened, when, and how many people are affected',
+      'For an individual: your request to the company and any reply received',
+      'Any notice or correspondence from the Data Protection Board',
+    ],
+    process: [
+      { title: 'Understand the data', text: 'What is collected, for what purpose, where it is stored and who receives it.' },
+      { title: 'Find the gaps', text: 'Those facts are read against the Act and the Rules — notice, consent, security, retention, rights.' },
+      { title: 'Fix the documents and processes', text: 'Notices, consent flows, vendor contracts and a breach-response plan are put in place.' },
+      { title: 'Respond when it matters', text: 'Breaches, Data Principal requests and Board inquiries are handled within the time the law allows.' },
+    ],
+    faqs: [
+      { q: 'Does the DPDP Act apply to a small business?', a: 'Yes. The Act applies to anyone processing digital personal data, whatever their size. Some obligations, such as appointing a Data Protection Officer and audits, apply only to businesses notified as Significant Data Fiduciaries.' },
+      { q: 'What are the penalties under the DPDP Act?', a: 'The Data Protection Board can impose penalties of up to ₹250 crore for failing to take reasonable security safeguards, and up to ₹200 crore for failing to report a breach, depending on the nature and gravity of the failure.' },
+      { q: 'How quickly must a data breach be reported?', a: 'Under the DPDP Rules, 2025, the Board and each affected person must be informed without delay, and a detailed report must reach the Board within 72 hours of the business becoming aware of the breach.' },
+      { q: 'Can I ask a company to delete my data?', a: 'Yes. As a Data Principal you can ask for your data to be erased once it is no longer needed for the purpose you gave it for, or when you withdraw consent, unless the law requires the company to keep it.' },
+    ],
+  },
 };
 
 /** Long-form content for one practice area, or null if none is written yet. */

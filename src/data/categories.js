@@ -11,6 +11,7 @@ import {
   Gavel,
   Globe2,
   Coins,
+  LockKeyhole,
 } from 'lucide-react';
 import { slugify } from '@/utils/slugify';
 import { getMatterDescription } from '@/data/matterContent';
@@ -91,6 +92,12 @@ export const CATEGORIES = [
     description: 'Visa, citizenship and travel matters.',
     overview:
       'Immigration law covers visas, work permits, citizenship, OCI/PIO and passport matters. An immigration lawyer guides you through applications, documentation and appeals for smooth and lawful travel, work and residency.',
+  },
+  {
+    slug: 'data-privacy-lawyer', name: 'Data Privacy & DPDP', icon: LockKeyhole, advocates: 0,
+    description: 'DPDP Act compliance, privacy and data breaches.',
+    overview:
+      'Data privacy law governs how businesses collect, use, share and protect personal data. Under the Digital Personal Data Protection Act, 2023 and the DPDP Rules, 2025, a data privacy lawyer helps businesses with notices, consent, contracts with vendors and breach reporting, and helps individuals enforce their rights over their own data.',
   },
 ];
 
@@ -186,6 +193,11 @@ export const SUB_SERVICES = {
   'Immigration Law': [
     'Visa Applications', 'Work Permits', 'Citizenship', 'PIO / OCI',
     'Passport Matters', 'Deportation', 'Student Visa', 'Permanent Residency',
+  ],
+  'Data Privacy & DPDP': [
+    'DPDP Act Compliance', 'Privacy Policy & Consent Notice', 'Data Processing Agreements',
+    'Data Breach Response', 'Data Principal Rights', 'Cross-Border Data Transfer',
+    'IT Act & Cyber Security', 'Data Protection Board Matters',
   ],
 };
 
