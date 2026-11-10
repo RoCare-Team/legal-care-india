@@ -79,7 +79,7 @@ export default function OgImage() {
         </div>
 
         <div style={{ display: 'flex', fontSize: 62, fontWeight: 800, lineHeight: 1.12, marginTop: 44 }}>
-          Get Anonymous Legal Help in Just 10 Minutes
+          Consult Verified Lawyers Online
         </div>
 
         <div style={{ display: 'flex', fontSize: 28, color: '#D4AF37', marginTop: 26, maxWidth: 940 }}>
