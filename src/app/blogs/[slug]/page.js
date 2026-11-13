@@ -57,11 +57,17 @@ function toBlocks(content = '') {
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter(Boolean)
-    .map((block) =>
-      block.startsWith('## ')
-        ? { type: 'heading', text: block.slice(3).trim() }
-        : { type: 'paragraph', text: block }
-    );
+    .map((block) => {
+      // "## " is the format; "# " and "### " arrive from markdown-minded
+      // writers and read as headings too rather than as literal hashes.
+      const heading = block.match(/^#{1,3} +(.+)$/s);
+      return heading
+        ? { type: 'heading', text: heading[1].trim() }
+        : { type: 'paragraph', text: block };
+    })
+    // A heading repeated straight after itself (pasted once as "## " and once
+    // as "# ") shows once.
+    .filter((b, i, all) => !(b.type === 'heading' && all[i - 1]?.type === 'heading' && all[i - 1].text === b.text));
 }
 
 /** This site's own address, so its links open in the same tab. */
@@ -131,14 +137,18 @@ export default async function BlogPostPage({ params }) {
         breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Blogs', href: '/blogs' }, { label: post.category }]}
       />
 
-      <Container size="narrow" className="py-10 sm:py-12">
+      {/* Wider than the old narrow column on a laptop, still a comfortable
+          reading measure; centred on every screen. */}
+      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 xl:max-w-6xl">
         {post.coverImage && (
-          <div className="relative mb-6 h-56 w-full overflow-hidden rounded-2xl sm:h-72">
+          // 16:9 box with `contain`, so the whole cover shows — including any
+          // text written on it — whatever its proportions.
+          <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-2xl bg-muted">
             <SmartImage
               src={post.coverImage}
               alt={post.title}
-              sizes="(max-width: 768px) 100vw, 768px"
-              className="object-cover"
+              sizes="(max-width: 1152px) 100vw, 1152px"
+              className="object-contain"
               priority
             />
           </div>
@@ -161,11 +171,11 @@ export default async function BlogPostPage({ params }) {
           </span>
         </div>
 
-        <article className="space-y-4 text-[15px] leading-relaxed text-ink/75">
+        <article className="space-y-5 text-[15px] leading-relaxed text-ink/75 sm:text-[18px] sm:leading-[1.8]">
           {blocks.length > 0 ? (
             blocks.map((b, i) =>
               b.type === 'heading' ? (
-                <h2 key={i} className="pt-2 font-display text-lg font-semibold text-ink">
+                <h2 key={i} className="pt-3 font-display text-xl font-semibold text-ink sm:text-[26px]">
                   <Inline text={b.text} />
                 </h2>
               ) : (
@@ -184,7 +194,7 @@ export default async function BlogPostPage({ params }) {
           <p className="font-medium text-ink">Need help with a {post.category.toLowerCase()} matter?</p>
           <Button href="/lawyers" className="mt-3">Find a Lawyer</Button>
         </div>
-      </Container>
+      </div>
 
       <Container className="pb-16">
         {related.length > 0 && (
