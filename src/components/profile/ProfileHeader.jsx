@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import {
   BadgeCheck, MapPin, Briefcase, Scale, Languages, Fingerprint, Star, Sparkles,
   Check, Users, TrendingUp, FolderCheck, IndianRupee,
@@ -8,6 +7,7 @@ import PresenceIndicator from '@/components/consultation/PresenceIndicator';
 import PlanTierBadge from '@/components/shared/PlanTierBadge';
 import Container from '@/components/ui/Container';
 import ProfileConsultPanel from './ProfileConsultPanel';
+import ProfilePortrait from './ProfilePortrait';
 
 /** Practice areas named in the header before the rest become "+N more". */
 const AREA_LIMIT = 4;
@@ -69,29 +69,7 @@ export default function ProfileHeader({ advocate }) {
               {/* Portrait — a rounded square, not a disc, for the same reason
                   as the cards: a disc crops the gown away. */}
               <div className="relative shrink-0">
-                {/* The frame takes the photo's own shape: a fixed height, and
-                    the width the photo needs at that height. Lawyers upload
-                    everything from head shots to campaign posters; a fixed
-                    square either cut the edges off anything that wasn't square
-                    (a poster lost its heading and its name) or, fitted inside
-                    it, left empty strips down both sides. Only a very wide
-                    photo is held to a maximum width and trimmed at its sides. */}
-                {photo ? (
-                  <div className="overflow-hidden rounded-2xl bg-primary/[0.06] shadow-[0_12px_28px_-14px_rgba(30,58,95,0.45)] ring-4 ring-white">
-                    <Image
-                      src={photo}
-                      alt={name}
-                      width={264}
-                      height={264}
-                      priority
-                      className="block h-[112px] w-auto min-w-[64px] max-w-[150px] object-cover sm:h-[160px] sm:min-w-[88px] sm:max-w-[220px]"
-                    />
-                  </div>
-                ) : (
-                  <div className="grid h-[112px] w-[92px] place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/[0.12] to-primary/[0.04] font-display text-4xl font-semibold text-primary/70 shadow-[0_12px_28px_-14px_rgba(30,58,95,0.45)] ring-4 ring-white sm:h-[160px] sm:w-[132px] sm:text-5xl">
-                    {initial}
-                  </div>
-                )}
+                <ProfilePortrait photo={photo} name={name} initial={initial} />
                 {verified && (
                   <span
                     className="absolute -bottom-1.5 -right-1.5 grid h-7 w-7 place-items-center rounded-full bg-emerald-500 text-white shadow-sm ring-[3px] ring-white sm:h-8 sm:w-8"

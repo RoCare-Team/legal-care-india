@@ -1,9 +1,16 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/utils/cn';
 
 /**
  * Avatar — lawyer photo with a graceful initials fallback.
  * Used on profile headers, cards, dashboard and reviews.
+ *
+ * While the photo loads, a shimmer stands in for it; if it fails (a dead or
+ * broken URL), the initials show instead of the browser's broken-image icon
+ * and alt text.
  *
  * @param {object} props
  * @param {string} [props.src]        photo URL (empty → initials)
@@ -22,25 +29,41 @@ const SIZES = {
 const PX = { sm: 40, md: 56, lg: 80, xl: 112 };
 
 export default function Avatar({ src, name = '', size = 'md', ring = false, className }) {
-  const initials = name.replace(/^Adv\.?\s*/, '').charAt(0).toUpperCase() || 'A';
+  const initials = name.replace(/^Adv\.?\s*/i, '').charAt(0).toUpperCase() || 'A';
+  // Keyed to the URL, so a new photo starts loading afresh.
+  const [state, setState] = useState({ src, status: 'loading' });
+  const status = state.src === src ? state.status : 'loading';
+  if (state.src !== src) setState({ src, status: 'loading' });
+
+  const showPhoto = Boolean(src) && status !== 'error';
 
   return (
     <span
       className={cn(
-        'grid shrink-0 place-items-center overflow-hidden rounded-2xl bg-primary/10 font-display font-semibold text-primary',
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-2xl bg-primary/10 font-display font-semibold text-primary',
         SIZES[size],
         ring && 'ring-4 ring-white',
         className
       )}
     >
-      {src ? (
-        <Image
-          src={src}
-          alt={name}
-          width={PX[size]}
-          height={PX[size]}
-          className="h-full w-full object-cover"
-        />
+      {showPhoto ? (
+        <>
+          {status === 'loading' && (
+            <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-primary/15" />
+          )}
+          <Image
+            src={src}
+            alt={name}
+            width={PX[size]}
+            height={PX[size]}
+            onLoad={() => setState({ src, status: 'loaded' })}
+            onError={() => setState({ src, status: 'error' })}
+            className={cn(
+              'h-full w-full object-cover transition-opacity duration-300',
+              status === 'loaded' ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+        </>
       ) : (
         initials
       )}
