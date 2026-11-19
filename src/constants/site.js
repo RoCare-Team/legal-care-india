@@ -82,6 +82,15 @@ export const SOCIAL = {
 };
 
 /**
+ * The mobile app in each store. `/appUrl` sends a visitor to the right one for
+ * their phone — share that one link rather than either of these.
+ */
+export const APP_STORE_URLS = {
+  android: 'https://play.google.com/store/apps/details?id=com.justiceland.care',
+  ios: 'https://apps.apple.com/in/app/justiceland/id6813851582',
+};
+
+/**
  * Meta (Facebook) Pixel ID for the ad account.
  *
  * Committed rather than kept in .env on purpose. This value is public — it

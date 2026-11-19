@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/db';
 import AppVersion from '@/models/AppVersion';
+import { APP_STORE_URLS } from '@/constants/site';
 
 /**
  * App version and force-update settings, and the one rule that decides what
@@ -11,10 +12,8 @@ export const PLATFORMS = ['android', 'ios'];
 
 /** Used until an admin has saved the platform once — nothing is announced. */
 const DEFAULTS = {
-  android: {
-    storeUrl: 'https://play.google.com/store/apps/details?id=com.justiceland.care',
-  },
-  ios: { storeUrl: '' },
+  android: { storeUrl: APP_STORE_URLS.android },
+  ios: { storeUrl: APP_STORE_URLS.ios },
 };
 
 const COPY = {

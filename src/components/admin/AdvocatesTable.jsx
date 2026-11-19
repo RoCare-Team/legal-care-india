@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2, ShieldCheck, ShieldOff, X } from 'lucide-react';
+import { Phone, Mail, MapPin, BadgeCheck, ExternalLink, ChevronRight, Check, EyeOff, Loader2, Trash2, ShieldCheck, ShieldOff, X, MessageCircle } from 'lucide-react';
 import DataTable, { AdminAvatar } from '@/components/admin/DataTable';
 import ImpersonateButton from '@/components/admin/ImpersonateButton';
+import WhatsAppCampaignModal from '@/components/admin/WhatsAppCampaignModal';
 import { SearchBox, FilterSelect } from '@/components/admin/TableControls';
 import ClientPager, { useClientPages } from '@/components/admin/ClientPager';
 import { formatDate } from '@/utils/formatters';
@@ -159,7 +160,8 @@ function DeleteAction({ advocate }) {
  * @param {() => void} props.onClear
  * @param {() => void} props.onDone       refresh once the write lands
  */
-function BulkBar({ ids, onClear, onDone }) {
+function BulkBar({ ids, total, onSelectAll, onClear, onDone }) {
+  const [whatsapp, setWhatsapp] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [done, setDone] = useState('');
@@ -250,6 +252,15 @@ function BulkBar({ ids, onClear, onDone }) {
         <span className="text-xs font-semibold text-primary">
           {ids.length} selected
         </span>
+        {ids.length < total && (
+          <button
+            type="button"
+            onClick={onSelectAll}
+            className="text-xs font-semibold text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+          >
+            Select all {total}
+          </button>
+        )}
         <span className="h-4 w-px bg-primary/20" aria-hidden="true" />
 
         <Action
@@ -281,6 +292,15 @@ function BulkBar({ ids, onClear, onDone }) {
         >
           Unpublish
         </Action>
+        <button
+          type="button"
+          disabled={Boolean(busy)}
+          onClick={() => setWhatsapp(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366]/15 px-3 py-1.5 text-xs font-semibold text-[#128C7E] transition-colors hover:bg-[#25D366]/25 disabled:opacity-50"
+        >
+          <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+          WhatsApp
+        </button>
 
         <button
           type="button"
@@ -301,6 +321,7 @@ function BulkBar({ ids, onClear, onDone }) {
           {done}
         </p>
       )}
+      {whatsapp && <WhatsAppCampaignModal ids={ids} onClose={() => setWhatsapp(false)} />}
     </div>
   );
 }
@@ -695,6 +716,9 @@ export default function AdvocatesTable({ advocates }) {
       {selectedVisible.length > 0 && (
         <BulkBar
           ids={selectedVisible}
+          total={filteredIds.length}
+          // Every lawyer the filters show, on every page — not just this one.
+          onSelectAll={() => setSelected(new Set(filteredIds))}
           onClear={() => setSelected(new Set())}
           onDone={() => router.refresh()}
         />

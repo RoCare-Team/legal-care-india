@@ -68,10 +68,12 @@ export function firstName(name) {
  * @param {object} options
  * @param {string} options.campaign               campaign name in the URL
  * @param {Array<{phone: string, params?: string[]}>} options.recipients
+ * @param {{url: string, filename?: string}} [options.media]
+ *   the template's header image, sent with every message
  * @returns {Promise<{sent: number, skipped: string}>}
  *   `skipped` carries a reason when nothing went out, and is empty when it did.
  */
-export async function sendWhatsAppCampaign({ campaign, recipients }) {
+export async function sendWhatsAppCampaign({ campaign, recipients, media }) {
   const key = process.env.LIMBU_WA_API_KEY;
   const base = process.env.LIMBU_WA_URL || DEFAULT_BASE;
 
@@ -86,6 +88,7 @@ export async function sendWhatsAppCampaign({ campaign, recipients }) {
     messages.push({
       destination,
       templateParams: (person.params || []).map((p) => String(p ?? '')),
+      ...(media?.url ? { media: { url: media.url, filename: media.filename || 'image' } } : {}),
     });
   }
 
