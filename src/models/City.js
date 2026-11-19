@@ -13,6 +13,9 @@ const CitySchema = new mongoose.Schema(
     // Set on a locality (Saket, Andheri): the city whose lawyers its page
     // lists. Empty for a city in its own right. See lawyerCityOf.
     parent: { type: String, default: '', trim: true },
+    // The court(s) that sit there, for a locality that has its own — shown
+    // under the locality's name on its parent city's page.
+    court: { type: String, default: '', trim: true },
     advocates: { type: Number, default: 0 },
     image: { type: String, default: '' },
   },

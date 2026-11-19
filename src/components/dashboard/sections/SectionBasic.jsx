@@ -35,6 +35,7 @@ import SmartImage from '@/components/shared/SmartImage';
 export default function SectionBasic({ data, set, cities = CITIES, identity = true, showErrors = false }) {
   const [error, setError] = useState('');
   const taglineMissing = showErrors && !String(data.tagline || '').trim();
+  const photoMissing = showErrors && !data.photo;
 
   // Suggestions for whichever state is selected, plus any city an admin added.
   const cityOptions = allCitiesForState(data.state, cities);
@@ -84,9 +85,17 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
         Recommended 1600×500px (a wide banner), landscape. JPG or PNG, up to 10MB — resized automatically.
       </p>
 
-      {/* Photo */}
+      {/* Photo — required: a profile is not published without one. */}
+      <p className="mb-2 text-sm font-medium text-ink">
+        Profile photo <span className="text-red-500">*</span>
+      </p>
       <div className="mb-2 flex flex-wrap items-center gap-4">
-        <Avatar src={data.photo} name={data.fullName} size="lg" />
+        <Avatar
+          src={data.photo}
+          name={data.fullName}
+          size="lg"
+          className={photoMissing ? 'ring-2 ring-red-400' : ''}
+        />
         <div className="flex flex-wrap items-center gap-2">
           <UploadButton label="Upload Photo" icon={Upload} onFile={handlePhoto} />
           <AiAvatarButton data={data} set={set} />
@@ -101,7 +110,11 @@ export default function SectionBasic({ data, set, cities = CITIES, identity = tr
           )}
         </div>
       </div>
-      <p className="mb-6 text-xs text-ink/45">Square, at least 512×512px. JPG or PNG, up to 10MB — resized automatically.</p>
+      <p className={photoMissing ? 'mb-6 text-xs font-medium text-red-600' : 'mb-6 text-xs text-ink/45'}>
+        {photoMissing
+          ? 'A profile photo is required — your profile cannot go live without one.'
+          : 'Square, at least 512×512px. JPG or PNG, up to 10MB — resized automatically.'}
+      </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 

@@ -380,7 +380,9 @@ export default function AdvocateListing({
     // the languages, which are the two things a visitor scans to decide what
     // to narrow by. Below lg the column would push the results off screen, so
     // FilterSidebar collapses itself to a button and a sheet.
-    <div className="lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:items-start lg:gap-6">
+    // Two columns only when there is a filter column to fill the first one;
+    // without it the results would be squeezed into that 264px track.
+    <div className={showFilters ? 'lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:items-start lg:gap-6' : ''}>
       {showFilters && (
         <FilterSidebar
           value={filters}

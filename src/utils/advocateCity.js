@@ -1,3 +1,5 @@
+import { aliasesOf } from '@/utils/cityAliases';
+
 /**
  * Does a lawyer serve a given city?
  *
@@ -8,16 +10,14 @@
  * in precisely so clients in those cities would find them.
  *
  * Compared case-insensitively, because city names are typed by hand in the
- * registration form and stored as typed.
+ * registration form and stored as typed — and by every name the city goes by,
+ * so a lawyer who wrote "Gurgaon" is on the Gurugram page too.
  */
 export function servesCity(advocate, cityName) {
   if (!cityName) return true;
-  const target = String(cityName).trim().toLowerCase();
-  if (!target) return true;
+  const targets = aliasesOf(cityName);
+  if (!targets.length) return true;
 
-  if (String(advocate?.city || '').trim().toLowerCase() === target) return true;
-
-  return (advocate?.practiceCities || []).some(
-    (c) => String(c || '').trim().toLowerCase() === target
-  );
+  const matches = (c) => targets.includes(String(c || '').trim().toLowerCase());
+  return matches(advocate?.city) || (advocate?.practiceCities || []).some(matches);
 }

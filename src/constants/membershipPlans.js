@@ -69,7 +69,7 @@ export const MEMBERSHIP_PLANS = [
       '10 client query credits every month',
       '5 practice areas, 10 matters and 5 cities',
       'Ranked above free listings',
-      'Silver badge on your profile',
+      'Verified badge on your profile',
     ],
   },
   {
@@ -88,7 +88,7 @@ export const MEMBERSHIP_PLANS = [
       '25 client query credits every month',
       'Unlimited practice areas, matters and cities',
       'Top placement in search results',
-      'Gold badge on your profile',
+      'Verified badge on your profile',
     ],
   },
 ];

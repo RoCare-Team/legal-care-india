@@ -79,6 +79,27 @@ export async function PATCH(request) {
     // The same query supplies the recipients: exactly the lawyers this action
     // is about to change, so re-approving someone already live cannot email
     // them a second time.
+    // A profile goes live only with a photo — the setup flow insists on one,
+    // and this is where that is actually enforced. Nothing in the batch is
+    // approved until every lawyer in it has one.
+    if (action === 'approve') {
+      const noPhoto = await Advocate.find({
+        _id: { $in: ids },
+        status: { $ne: 'published' },
+        $or: [{ photo: { $exists: false } }, { photo: { $in: ['', null] } }],
+      })
+        .select('name legalCareId')
+        .lean();
+      if (noPhoto.length) {
+        const who = noPhoto.slice(0, 5).map((a) => `${a.name} (${a.legalCareId})`).join(', ');
+        const more = noPhoto.length > 5 ? ` and ${noPhoto.length - 5} more` : '';
+        return NextResponse.json(
+          { error: `A profile photo is required before approval. Missing for: ${who}${more}.` },
+          { status: 400 }
+        );
+      }
+    }
+
     const affected = await Advocate.find({ _id: { $in: ids }, ...update.notYet })
       .select('name email phone')
       .lean();

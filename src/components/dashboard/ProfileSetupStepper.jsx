@@ -63,9 +63,18 @@ const STEP_META = {
  * whatever is filled in, it just does not insist on it.
  */
 const REQUIRED_ON_STEP = {
-  presence: (d) => String(d.tagline || '').trim().length > 0,
+  presence: (d) => Boolean(d.photo) && String(d.tagline || '').trim().length > 0,
   office: (d) => String(d.officeName || '').trim().length > 0,
 };
+
+/**
+ * Fields that cannot be put off at all — not even with "Do this later", and
+ * not by jumping past their step on the rail. A profile photo is one: an
+ * admin cannot publish a profile without it (see /api/admin/advocates).
+ */
+const MANDATORY = [
+  { step: 'presence', ok: (d) => Boolean(d.photo), message: 'Upload a profile photo — it is required before your profile can go live.' },
+];
 
 /**
  * A seventh, synthetic step appended after the six the completion score is
@@ -156,7 +165,32 @@ export default function ProfileSetupStepper({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  /** The first mandatory field still missing on this step or any step before
+   * the one being moved to — it sends the lawyer back there, red. */
+  const blockedBy = (target) =>
+    MANDATORY.find((m) => {
+      const at = steps.findIndex((s) => s.id === m.step);
+      return at !== -1 && at < target && !m.ok(data);
+    });
+
+  const guard = (target) => {
+    const missing = blockedBy(target);
+    if (!missing) return true;
+    const at = steps.findIndex((s) => s.id === missing.step);
+    if (at !== index) go(at);
+    setShowErrors(true);
+    setError(missing.message);
+    return false;
+  };
+
+  /** A rail click — backwards is always free, forwards not past a mandatory gap. */
+  const pick = (i) => {
+    if (i > index && !guard(i)) return;
+    go(i);
+  };
+
   const finishHere = async () => {
+    if (!guard(index + 1)) return;
     if (!(await save())) return;
     if (isLast) {
       setFinished(true);
@@ -221,7 +255,7 @@ export default function ProfileSetupStepper({
                 rail scrolling inside it. */}
             <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
               <ProgressCard progress={progress} />
-              <StepRail steps={steps} index={index} onPick={go} />
+              <StepRail steps={steps} index={index} onPick={pick} />
             </div>
 
             <div className="min-w-0">

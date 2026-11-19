@@ -5,6 +5,7 @@ import User from '@/models/User';
 import Consultation from '@/models/Consultation';
 import { getAllCities } from '@/lib/cities';
 import { lawyerCityOf } from '@/data/cities';
+import { aliasesOf } from '@/utils/cityAliases';
 import { ADVOCATES_TAG } from '@/lib/advocates';
 import { CATEGORIES } from '@/data/categories';
 import { PLATFORM_STATS } from '@/data/stats';
@@ -98,14 +99,32 @@ const _getLawyerCountsByCity = unstable_cache(
   { revalidate: 300, tags: [ADVOCATES_TAG] }
 );
 
-/** Lawyer counts keyed by city name; an empty map if the database is down. */
+/**
+ * Lawyer counts keyed by city name; an empty map if the database is down.
+ *
+ * Cities are typed by hand, so the raw keys are "Gurgaon", "gurgaon",
+ * "Gurugram"… Looking a city up by any of its names returns the total across
+ * all of them — `counts['Gurugram']` includes the lawyers who wrote Gurgaon.
+ */
 export async function getLawyerCountsByCity() {
+  let raw = {};
   try {
-    return await _getLawyerCountsByCity();
+    raw = await _getLawyerCountsByCity();
   } catch (err) {
     console.warn('getLawyerCountsByCity: MongoDB unavailable', err);
-    return {};
   }
+  const folded = {};
+  for (const [name, count] of Object.entries(raw)) {
+    const key = String(name).trim().toLowerCase();
+    folded[key] = (folded[key] || 0) + count;
+  }
+  return new Proxy(raw, {
+    get(target, prop) {
+      if (typeof prop !== 'string') return target[prop];
+      const total = aliasesOf(prop).reduce((sum, alias) => sum + (folded[alias] || 0), 0);
+      return total || target[prop];
+    },
+  });
 }
 
 /**

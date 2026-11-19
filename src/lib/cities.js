@@ -22,6 +22,7 @@ const _getDbCities = unstable_cache(
       name: r.name,
       state: r.state,
       ...(r.parent ? { parent: r.parent } : {}),
+      ...(r.court ? { court: r.court } : {}),
       advocates: r.advocates || 0,
       image: r.image || '',
       custom: true, // admin-added (so the panel can offer delete)

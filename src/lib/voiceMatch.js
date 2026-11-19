@@ -3,6 +3,7 @@ import { getAllCities } from '@/lib/cities';
 import { toCardAdvocate } from '@/lib/advocateCard';
 import { cheapestRate, planRank } from '@/lib/advocateSearch';
 import { servesCity } from '@/utils/advocateCity';
+import { aliasesOf } from '@/utils/cityAliases';
 import { MAX_RESULTS } from '@/constants/voiceSearch';
 
 /**
@@ -20,44 +21,6 @@ import { MAX_RESULTS } from '@/constants/voiceSearch';
  * ranked semantically, it belongs as a layer *after* this one — filter first,
  * then re-rank what survived.
  */
-
-/**
- * Cities Indians call by two names.
- *
- * The directory has a page for "Gurugram"; the person speaking says "Gurgaon";
- * and the lawyer typed whichever of the two they think of their own office as
- * being in. All three have to find each other or a perfectly good search for a
- * labour lawyer in Gurgaon returns nobody — which is exactly what it did
- * before this table existed.
- */
-const CITY_ALIASES = [
-  ['gurugram', 'gurgaon'],
-  ['bengaluru', 'bangalore'],
-  ['mumbai', 'bombay'],
-  ['kolkata', 'calcutta'],
-  ['chennai', 'madras'],
-  ['pune', 'poona'],
-  ['mysuru', 'mysore'],
-  ['vadodara', 'baroda'],
-  ['thiruvananthapuram', 'trivandrum'],
-  ['kochi', 'cochin'],
-  ['puducherry', 'pondicherry'],
-  ['prayagraj', 'allahabad'],
-  ['varanasi', 'banaras', 'benares'],
-  ['shimla', 'simla'],
-  ['guwahati', 'gauhati'],
-  ['indore', 'indhore'],
-  ['noida', 'gautam buddha nagar'],
-  ['navi mumbai', 'new bombay'],
-];
-
-/** Every name one city is known by, lowercase. */
-function aliasesOf(name) {
-  const want = String(name || '').trim().toLowerCase();
-  if (!want) return [];
-  const row = CITY_ALIASES.find((names) => names.includes(want));
-  return row ? [...row] : [want];
-}
 
 /** How the list is widened when a narrow search finds nobody. */
 const TIERS = [

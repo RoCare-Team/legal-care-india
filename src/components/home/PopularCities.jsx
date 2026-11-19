@@ -2,6 +2,7 @@ import { Section } from '@/components/ui';
 import CityTileRail from './CityTileRail';
 import { getAllCities } from '@/lib/cities';
 import { getLawyerCountsByCity } from '@/lib/stats';
+import { lawyerCityOf } from '@/data/cities';
 
 /**
  * How many city tiles the homepage rail carries. `getAllCities` returns the
@@ -21,13 +22,19 @@ const RAIL_LIMIT = 20;
  * PopularCities — quick access to lawyer listings by major city.
  */
 export default async function PopularCities() {
-  const [cities, counts] = await Promise.all([getAllCities(), getLawyerCountsByCity()]);
+  const [all, lookup] = await Promise.all([getAllCities(), getLawyerCountsByCity()]);
+  const cities = all.slice(0, RAIL_LIMIT);
+  // Resolved here, on the server: the lookup folds a city's other names
+  // (Gurgaon → Gurugram), which a plain object sent to the client cannot do.
+  const counts = Object.fromEntries(
+    cities.map((c) => [lawyerCityOf(c), lookup[lawyerCityOf(c)] || 0])
+  );
 
   return (
     <Section spacing="sm" className="pb-6 sm:pb-8">
       {/* The rail carries its own heading, its way out and its arrows, all on
           one row — see CityTileRail. */}
-      <CityTileRail cities={cities.slice(0, RAIL_LIMIT)} counts={counts} />
+      <CityTileRail cities={cities} counts={counts} />
     </Section>
   );
 }

@@ -6,6 +6,7 @@ import { cityPath } from '@/lib/serviceRoutes';
 import Hero from '@/components/home/Hero';
 import PopularCities from '@/components/home/PopularCities';
 import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
+import CityLocalities from '@/components/home/CityLocalities';
 import LawyerBanner from '@/components/home/LawyerBanner';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
@@ -68,6 +69,7 @@ export default function CityHomeView({ city }) {
       <Stats city={city} />
       <PopularCities />
       <FeaturedAdvocates city={city} />
+      <CityLocalities city={city} />
       <LawyerBanner />
       <Categories city={city} />
       <HowItWorks />
