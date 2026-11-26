@@ -89,12 +89,35 @@ module.exports = {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(500%)' },
         },
+        /* The app popup: the card rising into place, the sheet sliding up on
+           a phone, the backdrop fading in, and the phones drifting. */
+        'pop-in': {
+          '0%': { opacity: '0', transform: 'translateY(28px) scale(0.94)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'sheet-up': {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.5s ease-out both',
         shimmer: 'shimmer 1.6s infinite',
         scan: 'scan 2.4s ease-in-out infinite',
         'progress-sweep': 'progress-sweep 1.2s ease-in-out infinite',
+        'pop-in': 'pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'sheet-up': 'sheet-up 0.42s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in': 'fade-in 0.3s ease-out both',
+        float: 'float 4s ease-in-out infinite',
+        'float-slow': 'float 5.5s ease-in-out 0.6s infinite',
       },
     },
   },

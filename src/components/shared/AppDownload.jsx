@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { PhoneCall, MessageSquareText, Video, ShieldCheck, Smartphone, Check } from 'lucide-react';
 import { Container } from '@/components/ui';
 import { APP_STORE_URLS, SITE } from '@/constants/site';
+import { SIGNUP_BONUS } from '@/constants/callRates';
 
 /**
  * The app, offered wherever it helps — the home page, city pages, the
@@ -15,6 +16,7 @@ import { APP_STORE_URLS, SITE } from '@/constants/site';
  */
 
 const POINTS = [
+  `₹${SIGNUP_BONUS} free in your wallet when you sign up`,
   'Call, chat or video with verified lawyers',
   'Pay only for the minutes you use',
   'Anonymous mode — your name stays private',

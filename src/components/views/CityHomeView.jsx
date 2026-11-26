@@ -12,6 +12,7 @@ import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import HowItWorks from '@/components/home/HowItWorks';
 import { AppDownloadBanner } from '@/components/shared/AppDownload';
+import WelcomeBonus from '@/components/home/WelcomeBonus';
 import Testimonials from '@/components/home/Testimonials';
 import CTA from '@/components/home/CTA';
 
@@ -68,6 +69,7 @@ export default function CityHomeView({ city }) {
 
       <Hero city={city} />
       <Stats city={city} />
+      <WelcomeBonus />
       <PopularCities />
       <FeaturedAdvocates city={city} />
       <CityLocalities city={city} />

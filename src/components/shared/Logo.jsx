@@ -35,6 +35,9 @@ import { SITE } from '@/constants/site';
 /** The image's own pixel dimensions — the basis for every percentage below. */
 const FILE = { width: 2061, height: 512 };
 
+/** public/logo-header.webp: logo1.png resized to 1080px wide, same proportions. */
+const HEADER_FILE = { width: 1080, height: 268 };
+
 /**
  * The artwork's box within the file, as percentages of its own container.
  *
@@ -70,32 +73,17 @@ export default function Logo({ onDark = false, className }) {
         className="relative block h-8 overflow-hidden sm:h-9 xl:h-10"
         style={{ aspectRatio: ART.ratio }}
       >
+        {/* A prepared 1080px WebP (23KB), served as it is rather than through
+            the image optimizer: the logo is on every page, and a slow or failed
+            optimizer request — a dev server restarting, a cold first hit —
+            left a broken-image icon where the brand should be. 1080px is about
+            4x its drawn width, so it stays crisp at any zoom. */}
         <Image
-          src="/logo1.png"
+          src="/logo-header.webp"
           alt=""
-          width={FILE.width}
-          height={FILE.height}
-          // Deliberately far larger than the logo's own 202–253px. Two reasons.
-          //
-          // The first is a correctness one: this <img> is not the size of its
-          // box. It is drawn at 109.279% of it, because the box shows only the
-          // artwork and the file carries an empty margin around it. `sizes`
-          // describes the image, not the box, so anything near 254 asks the
-          // browser for a file narrower than the element it fills — which is
-          // how a logo ends up soft at 100% zoom on an ordinary screen.
-          //
-          // The second is zoom. `sizes` in fixed pixels pins the request to one
-          // density, and a visitor at 300% gets that same file stretched. At
-          // 1080 the source is roughly 4× the drawn width, so it stays crisp
-          // well past any zoom level anyone uses.
-          //
-          // The bytes make both free: 1080px of this artwork is a 12KB AVIF,
-          // against 3KB at 256px. Nine kilobytes is not a trade worth making
-          // against a blurry logo on every page of the site.
-          sizes="1080px"
-          // Above the default 75: the serifs on JUSTICELAND are thin, and at
-          // this size a re-encode at 75 puts visible mush on their edges.
-          quality={95}
+          width={HEADER_FILE.width}
+          height={HEADER_FILE.height}
+          unoptimized
           className="absolute max-w-none"
           style={{ width: ART.width, height: 'auto', left: ART.left, top: ART.top }}
           priority

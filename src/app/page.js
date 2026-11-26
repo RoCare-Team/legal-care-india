@@ -7,6 +7,8 @@ import FeaturedAdvocates from '@/components/home/FeaturedAdvocates';
 import HelpOptions from '@/components/home/HelpOptions';
 import HowItWorks from '@/components/home/HowItWorks';
 import { AppDownloadBanner } from '@/components/shared/AppDownload';
+import AppDownloadPopup from '@/components/home/AppDownloadPopup';
+import WelcomeBonus from '@/components/home/WelcomeBonus';
 import PopularCities from '@/components/home/PopularCities';
 import Testimonials from '@/components/home/Testimonials';
 import CTA from '@/components/home/CTA';
@@ -30,6 +32,7 @@ export default function HomePage() {
     <>
       <Hero />
       <Stats />
+      <WelcomeBonus />
       <FeaturedAdvocates />
       <HelpOptions />
       <AnonymousBand />
@@ -41,6 +44,7 @@ export default function HomePage() {
       <Categories />
       <HowItWorks />
       <AppDownloadBanner />
+      <AppDownloadPopup />
       <Testimonials />
       <CTA />
     </>

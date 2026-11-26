@@ -1,5 +1,7 @@
 import Image from 'next/image';
-import { Zap, BadgeCheck, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Zap, BadgeCheck, ShieldCheck, UserRoundCheck, Gift, ArrowRight } from 'lucide-react';
+import { SIGNUP_BONUS } from '@/constants/callRates';
 import Container from '@/components/ui/Container';
 import SearchBar from './SearchBar';
 import ConsultationPreview from './ConsultationPreview';
@@ -96,6 +98,19 @@ export default async function Hero({ city, intro }) {
               what it does. They are the objections a visitor arrives with —
               will this take days, is it safe, will anyone know — answered
               before the pitch rather than after it. */}
+          {/* The welcome credit, where a first-time visitor looks first — it leads to the app (/appUrl sends a phone to its store). */}
+          <Link
+            href="/appUrl"
+            className="animate-fade-up group mb-3 inline-flex w-fit max-w-full items-center gap-2 self-start rounded-full bg-white py-1 pl-1 pr-3 text-[12px] font-semibold text-ink shadow-sm ring-1 ring-[#D4AF37]/40 transition hover:ring-[#D4AF37] sm:text-[13px]"
+          >
+            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#E9C75A] to-[#B8912A] px-2.5 py-0.5 text-[11px] font-bold text-white sm:text-[12px]">
+              <Gift className="h-3.5 w-3.5" aria-hidden="true" />
+              ₹{SIGNUP_BONUS} FREE
+            </span>
+            in your wallet when you sign up
+            <ArrowRight className="h-3.5 w-3.5 text-ink/50 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+
           <p className="animate-fade-up mb-2.5 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.16em] text-[#9A7B1C] sm:text-[11.5px]">
             <Zap className="h-3.5 w-3.5 shrink-0 fill-accent text-accent" aria-hidden="true" />
             Fast. Secure. Confidential.
