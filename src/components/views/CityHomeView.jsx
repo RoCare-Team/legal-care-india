@@ -11,6 +11,7 @@ import LawyerBanner from '@/components/home/LawyerBanner';
 import Categories from '@/components/home/Categories';
 import Stats from '@/components/home/Stats';
 import HowItWorks from '@/components/home/HowItWorks';
+import { AppDownloadBanner } from '@/components/shared/AppDownload';
 import Testimonials from '@/components/home/Testimonials';
 import CTA from '@/components/home/CTA';
 
@@ -73,6 +74,7 @@ export default function CityHomeView({ city }) {
       <LawyerBanner />
       <Categories city={city} />
       <HowItWorks />
+      <AppDownloadBanner />
       <Testimonials />
       <CTA />
     </>

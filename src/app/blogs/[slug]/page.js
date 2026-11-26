@@ -10,6 +10,7 @@ import SmartImage from '@/components/shared/SmartImage';
 import { SeoSection, LinkCardGrid } from '@/components/shared/SeoSection';
 import { articleSchema, breadcrumbSchema } from '@/lib/schema';
 import { getAllBlogs, getBlogBySlug } from '@/lib/blogs';
+import { AppDownloadBanner } from '@/components/shared/AppDownload';
 
 export async function generateStaticParams() {
   const posts = await getAllBlogs();
@@ -193,6 +194,10 @@ export default async function BlogPostPage({ params }) {
         <div className="mt-8 rounded-2xl bg-muted/50 p-6 text-center">
           <p className="font-medium text-ink">Need help with a {post.category.toLowerCase()} matter?</p>
           <Button href="/lawyers" className="mt-3">Find a Lawyer</Button>
+        </div>
+
+        <div className="mt-6">
+          <AppDownloadBanner compact title="Read more on the app" />
         </div>
       </div>
 

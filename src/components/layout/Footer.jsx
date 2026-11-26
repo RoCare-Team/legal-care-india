@@ -5,6 +5,7 @@ import Logo from '@/components/shared/Logo';
 import NewsletterForm from './NewsletterForm';
 import { FOOTER_NAV } from '@/constants/navigation';
 import { SITE, CONTACT, SOCIAL } from '@/constants/site';
+import { AppStoreBadges } from '@/components/shared/AppDownload';
 
 
 const SOCIAL_LINKS = [
@@ -117,6 +118,9 @@ export default function Footer() {
                 </span>
               </p>
             </div>
+
+            <h3 className="mt-7 text-sm font-semibold text-white">Get the app</h3>
+            <AppStoreBadges small className="mt-3" />
           </div>
         </div>
 

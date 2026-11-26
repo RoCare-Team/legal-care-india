@@ -28,23 +28,21 @@ export default function AnonymousBand() {
   return (
     <section className="bg-muted/40 py-8 sm:py-10">
       <Container>
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#132C4B] via-[#0F172A] to-[#0F172A] shadow-card-hover">
+        <div className="overflow-hidden rounded-3xl border border-ink/8 bg-white shadow-card">
           <div className="flex flex-col gap-6 px-6 py-8 sm:px-9 sm:py-9 lg:flex-row lg:items-center lg:gap-8">
-            {/* The seal. A ring rather than a filled disc so the gold reads as
-                a stamp on the navy rather than a button competing with the
-                real one on the right. */}
+            {/* The seal: a soft navy tile, quieter than the button on the right. */}
             <span
-              className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#D4AF37]/10 ring-1 ring-[#D4AF37]/40"
+              className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary/[0.07] ring-1 ring-inset ring-primary/10"
               aria-hidden="true"
             >
-              <ShieldCheck className="h-8 w-8 text-[#D4AF37]" />
+              <ShieldCheck className="h-8 w-8 text-primary" />
             </span>
 
             <div className="min-w-0 flex-1">
-              <h2 className="font-display text-[1.35rem] font-bold leading-tight text-white sm:text-[1.6rem]">
+              <h2 className="font-display text-[1.35rem] font-bold leading-tight text-ink sm:text-[1.6rem]">
                 100% Anonymous Consultation
               </h2>
-              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-slate-300 sm:text-[15px]">
+              <p className="mt-2 max-w-xl text-[13.5px] leading-relaxed text-ink/60 sm:text-[15px]">
                 Your privacy is our priority. Talk to a verified lawyer without
                 revealing your identity — turn on anonymous mode and they see
                 “Anonymous” in place of your name.
@@ -57,7 +55,7 @@ export default function AnonymousBand() {
             <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row lg:flex-col xl:flex-row">
               <Link
                 href="/lawyers"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-6 py-3.5 text-sm font-bold text-[#0F172A] shadow-lg transition-all hover:bg-[#E7C766] hover:shadow-xl"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary-dark hover:shadow-md"
               >
                 Start Consultation
                 <ArrowRight
@@ -67,7 +65,7 @@ export default function AnonymousBand() {
               </Link>
               <Link
                 href="/ask"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:border-white/50 hover:bg-white/10"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-bold text-ink transition-colors hover:border-primary hover:text-primary"
               >
                 Ask a question — free
               </Link>
@@ -77,14 +75,14 @@ export default function AnonymousBand() {
           {/* The three claims, on their own rule under the pitch. Divided
               rather than merely spaced: at this width three centred phrases
               with nothing between them read as one broken sentence. */}
-          <div className="grid grid-cols-1 divide-y divide-white/10 border-t border-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-ink/[0.07] border-t border-ink/[0.07] bg-slate-50/70 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {PROMISES.map(({ icon: Icon, label }) => (
               <div
                 key={label}
                 className="flex items-center justify-center gap-2.5 px-4 py-3.5"
               >
-                <Icon className="h-4 w-4 shrink-0 text-[#D4AF37]" aria-hidden="true" />
-                <span className="text-[13px] font-semibold text-slate-200">{label}</span>
+                <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                <span className="text-[13px] font-semibold text-ink/70">{label}</span>
               </div>
             ))}
           </div>
