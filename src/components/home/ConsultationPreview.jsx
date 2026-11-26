@@ -54,7 +54,7 @@ function Avatar({ lawyer }) {
   return (
     <span
       className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
-        lawyer ? 'bg-primary text-accent' : 'bg-muted text-primary'
+        lawyer ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-500'
       }`}
     >
       <Icon className="h-4 w-4" aria-hidden="true" />
@@ -71,7 +71,7 @@ function Row({ from, label, children }) {
         {label && (
           <p
             className={`mb-1 flex items-center gap-1 text-[10.5px] font-semibold ${
-              lawyer ? 'justify-end text-[#9A7B1C]' : 'text-ink/50'
+              lawyer ? 'justify-end text-primary/70' : 'text-ink/50'
             }`}
           >
             {lawyer && <BadgeCheck className="h-3 w-3" aria-hidden="true" />}
@@ -80,7 +80,7 @@ function Row({ from, label, children }) {
         )}
         <div
           className={`inline-block rounded-2xl px-3 py-2 text-left text-[12.5px] leading-snug ${
-            lawyer ? 'rounded-br-md bg-primary text-white' : 'rounded-bl-md bg-muted text-ink/80'
+            lawyer ? 'rounded-br-md bg-primary/[0.07] text-ink ring-1 ring-inset ring-primary/10' : 'rounded-bl-md bg-white text-ink/80 ring-1 ring-inset ring-slate-200'
           }`}
         >
           {children}
@@ -97,7 +97,7 @@ function SystemNote({ kind, text }) {
     <div className="animate-fade-up flex justify-center">
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-semibold ${
-          done ? 'bg-emerald-500/10 text-emerald-700' : 'bg-accent/15 text-[#8A6D12]'
+          done ? 'bg-emerald-500/10 text-emerald-700' : 'bg-slate-100 text-slate-600'
         }`}
       >
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -194,14 +194,14 @@ export default function ConsultationPreview({ totalLawyers = 0 }) {
       className="w-[26rem] max-w-full overflow-hidden rounded-3xl border border-ink/8 bg-white shadow-[0_2px_4px_rgba(30,58,95,0.04),0_28px_56px_-28px_rgba(30,58,95,0.45)]"
     >
       {/* Who is available right now, and how many there are in all. */}
-      <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-primary-dark to-primary px-5 py-3.5 text-white">
+      <div className="flex items-center justify-between gap-3 border-b border-ink/[0.06] bg-white px-5 py-3.5 text-ink">
         <div>
           <p className="text-[13.5px] font-bold">Online consultation</p>
-          <p className="text-[11px] text-white/60">
+          <p className="text-[11px] text-ink/50">
             {totalLawyers > 0 ? `${totalLawyers.toLocaleString('en-IN')}+ verified lawyers` : 'Verified lawyers'}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[11.5px] font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11.5px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -218,7 +218,7 @@ export default function ConsultationPreview({ totalLawyers = 0 }) {
             <li key={label} className="flex flex-1 items-center gap-1.5">
               <span
                 className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10.5px] font-bold transition-colors duration-500 ${
-                  reached ? 'bg-accent text-primary-dark' : 'bg-ink/[0.07] text-ink/40'
+                  reached ? 'bg-primary text-white' : 'bg-ink/[0.07] text-ink/40'
                 }`}
               >
                 {i + 1}

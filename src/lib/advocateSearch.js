@@ -199,5 +199,9 @@ export function sortAdvocates(list, sort, context = {}) {
     }
   };
 
-  return [...list].sort((a, b) => planRank(b) - planRank(a) || within(a, b));
+  // Lawyers with a photograph always come before those without, under every
+  // sort — a page of initials reads as an empty directory. Then plan, then
+  // the chosen sort.
+  const photo = (x) => (x.photo ? 1 : 0);
+  return [...list].sort((a, b) => photo(b) - photo(a) || planRank(b) - planRank(a) || within(a, b));
 }

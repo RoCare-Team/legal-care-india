@@ -313,6 +313,10 @@ export function toPublicAdvocate(profile) {
   if (!profile) return profile;
   const out = { ...profile };
   for (const key of PRIVATE_FIELDS) delete out[key];
+  // A stored link back to our own photo route is not a photograph — the 31 Oct
+  // restore left those where the images were lost. Shown, it is a broken
+  // image; empty, the profile shows the lawyer's initial.
+  if (String(out.photo || '').startsWith('/api/advocates/')) out.photo = '';
 
   out.chatRate = advocateRate(profile, 'chat');
   out.audioRate = advocateRate(profile, 'audio');
@@ -385,16 +389,19 @@ const _getAllAdvocates = unstable_cache(
       // Whether there is a photograph, without reading it: a lawyer with none
       // must come back with an empty `photo` so the card falls back to their
       // initials rather than pointing at an image that 404s. This reads
-      // `photo`, so it has to come before the stage that drops it.
+      // `photo`, so it has to come before the stage that drops it. Only an
+      // actual image counts — a stored link back to the photo route (left by
+      // the 31 Oct restore, whose images were lost) is no photograph at all.
       {
         $addFields: {
-          hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
+          hasPhoto: { $regexMatch: { input: { $ifNull: ['$photo', ''] }, regex: '^(data:image/|https?://)' } },
         },
       },
       { $project: { photo: 0, coverImage: 0, gallery: 0, passwordHash: 0 } },
-      // Newest registrations first, so a freshly registered lawyer shows up
-      // at the start of the directory and the featured slider.
-      { $sort: { createdAt: -1 } },
+      // Lawyers with a photograph first, then newest registrations, so a
+      // freshly registered lawyer shows up early in the directory and the
+      // featured slider without a wall of initials leading the page.
+      { $sort: { hasPhoto: -1, createdAt: -1 } },
     ]);
 
     return rows.map((r) => {
@@ -403,9 +410,9 @@ const _getAllAdvocates = unstable_cache(
       return profile;
     });
   },
-  // v3: photo URLs now carry a version (see advocatePhotoUrl); a new key so
-  // entries cached before that are not served after a deploy.
-  ['all-advocates-public-v3'],
+  // v4: only a real image counts as a photo, and photo-first order; a new key
+  // so lists cached before that are not served after a deploy.
+  ['all-advocates-public-v4'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -442,7 +449,7 @@ const _getAdvocateBySlug = unstable_cache(
     const advocate = await Advocate.findOne({ slug }).lean();
     return advocate ? toPublicAdvocate(buildAdvocateProfile(serialize(advocate))) : null;
   },
-  ['advocate-by-slug-public-v2'],
+  ['advocate-by-slug-public-v3'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -466,7 +473,7 @@ const _getAdvocateByLegalCareId = unstable_cache(
     const advocate = await Advocate.findOne({ legalCareId }).lean();
     return advocate ? toPublicAdvocate(buildAdvocateProfile(serialize(advocate))) : null;
   },
-  ['advocate-by-lci-public-v2'],
+  ['advocate-by-lci-public-v3'],
   { revalidate: CACHE_TTL, tags: [ADVOCATES_TAG] }
 );
 
@@ -598,7 +605,7 @@ export async function getRawAdvocateById(id, { withImages = false } = {}) {
     { $match: { _id: new mongoose.Types.ObjectId(String(id)) } },
     {
       $addFields: {
-        hasPhoto: { $gt: [{ $strLenBytes: { $ifNull: ['$photo', ''] } }, 0] },
+        hasPhoto: { $regexMatch: { input: { $ifNull: ['$photo', ''] }, regex: '^(data:image/|https?://)' } },
       },
     },
     {

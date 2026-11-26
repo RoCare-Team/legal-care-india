@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
+import useImageStatus from '@/hooks/useImageStatus';
 
 const FRAME =
   'overflow-hidden rounded-2xl shadow-[0_12px_28px_-14px_rgba(30,58,95,0.45)] ring-4 ring-white';
@@ -26,9 +26,7 @@ const BLANK = 'h-[112px] w-[92px] sm:h-[160px] sm:w-[132px]';
  * @param {string} props.initial
  */
 export default function ProfilePortrait({ photo, name, initial }) {
-  const [state, setState] = useState({ photo, status: 'loading' });
-  const status = state.photo === photo ? state.status : 'loading';
-  if (state.photo !== photo) setState({ photo, status: 'loading' });
+  const { status, ref, onLoad, onError } = useImageStatus(photo);
 
   if (!photo || status === 'error') {
     return (
@@ -51,8 +49,9 @@ export default function ProfilePortrait({ photo, name, initial }) {
         width={264}
         height={264}
         priority
-        onLoad={() => setState({ photo, status: 'loaded' })}
-        onError={() => setState({ photo, status: 'error' })}
+        ref={ref}
+        onLoad={onLoad}
+        onError={onError}
         className={
           status === 'loaded'
             ? 'block h-[112px] w-auto min-w-[64px] max-w-[150px] object-cover sm:h-[160px] sm:min-w-[88px] sm:max-w-[220px]'

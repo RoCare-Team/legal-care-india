@@ -34,18 +34,18 @@ function StatItem({ value, suffix, label, icon }) {
       ref={ref}
       className="group flex items-center justify-center gap-3 px-2 py-1 sm:gap-4"
     >
-      <span className="shrink-0 text-accent transition-transform duration-300 group-hover:scale-105">
+      <span className="shrink-0 text-primary transition-transform duration-300 group-hover:scale-105">
         <Icon className="h-8 w-8 sm:h-10 sm:w-10" strokeWidth={1.5} aria-hidden="true" />
       </span>
 
       <div className="min-w-0 text-left">
-      <p className="font-display text-[26px] font-bold leading-none text-white sm:text-[30px]">
+      <p className="font-display text-[26px] font-bold leading-none text-ink sm:text-[30px]">
         {formatStat(count)}
-        <span className="text-gold">{suffix}</span>
+        <span className="text-primary/60">{suffix}</span>
       </p>
 
 
-      <p className="mt-1 text-[12px] font-medium text-white/65 sm:text-[13px]">
+      <p className="mt-1 text-[12px] font-medium text-ink/55 sm:text-[13px]">
         {label}
       </p>
       </div>
@@ -62,7 +62,7 @@ function StatItem({ value, suffix, label, icon }) {
  */
 export default function StatsCounters({ stats = [] }) {
   return (
-    <div className="grid grid-cols-2 gap-y-6 divide-white/10 sm:grid-cols-4 sm:gap-y-0 sm:divide-x">
+    <div className="grid grid-cols-2 gap-y-6 divide-ink/10 sm:grid-cols-4 sm:gap-y-0 sm:divide-x">
       {stats.map((stat) => (
         <StatItem key={stat.id} {...stat} />
       ))}

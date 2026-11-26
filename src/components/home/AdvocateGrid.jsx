@@ -107,7 +107,17 @@ function sortAdvocates(list, sort) {
     }
   };
 
-  return [...list].sort((a, b) => planRank(b) - planRank(a) || within(a, b));
+  // A photograph first, under every sort — see photoFirst.
+  return photoFirst([...list].sort((a, b) => planRank(b) - planRank(a) || within(a, b)));
+}
+
+/**
+ * Lawyers with a photograph ahead of those without, each group keeping its
+ * order. Applied last, so nothing else — not even being online — lifts a card
+ * of initials above a card with a face.
+ */
+function photoFirst(list) {
+  return [...list.filter((a) => a.photo), ...list.filter((a) => !a.photo)];
 }
 
 /**
@@ -311,10 +321,10 @@ export default function AdvocateGrid({
     // online, which leaves the order exactly as it was.
     if (sort !== 'relevance' || !presence) return byChosenOrder;
     const isOnline = (a) => presence.has(String(a._id || a.id || ''));
-    return [
+    return photoFirst([
       ...byChosenOrder.filter(isOnline),
       ...byChosenOrder.filter((a) => !isOnline(a)),
-    ];
+    ]);
   }, [list, sort, presence]);
 
   // The desktop grid reads in its natural order; the rail has to be re-threaded

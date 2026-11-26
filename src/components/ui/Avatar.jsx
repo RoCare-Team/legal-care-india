@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/utils/cn';
+import useImageStatus from '@/hooks/useImageStatus';
 
 /**
  * Avatar — lawyer photo with a graceful initials fallback.
@@ -30,10 +30,7 @@ const PX = { sm: 40, md: 56, lg: 80, xl: 112 };
 
 export default function Avatar({ src, name = '', size = 'md', ring = false, className }) {
   const initials = name.replace(/^Adv\.?\s*/i, '').charAt(0).toUpperCase() || 'A';
-  // Keyed to the URL, so a new photo starts loading afresh.
-  const [state, setState] = useState({ src, status: 'loading' });
-  const status = state.src === src ? state.status : 'loading';
-  if (state.src !== src) setState({ src, status: 'loading' });
+  const { status, ref, onLoad, onError } = useImageStatus(src);
 
   const showPhoto = Boolean(src) && status !== 'error';
 
@@ -56,8 +53,9 @@ export default function Avatar({ src, name = '', size = 'md', ring = false, clas
             alt={name}
             width={PX[size]}
             height={PX[size]}
-            onLoad={() => setState({ src, status: 'loaded' })}
-            onError={() => setState({ src, status: 'error' })}
+            ref={ref}
+            onLoad={onLoad}
+            onError={onError}
             className={cn(
               'h-full w-full object-cover transition-opacity duration-300',
               status === 'loaded' ? 'opacity-100' : 'opacity-0'

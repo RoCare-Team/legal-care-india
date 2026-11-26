@@ -20,16 +20,9 @@ export default async function Stats({ city }) {
     // No margins and little padding. Directly under the hero the strip reads
     // as the hero's own footer — the numbers behind the promise just made —
     // and a gap above would cut it loose from the thing it answers for.
-    <section className="relative overflow-hidden bg-primary-dark py-6 sm:py-7">
-      {/* A single wash for depth. The courthouse photograph and the dotted
-          texture that used to sit here were for a band three times this tall;
-          behind one line of figures they are noise. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-dark via-primary/80 to-primary-dark" />
-      {/* Gold hairlines top and bottom — frames the band like a letterhead rule
-          instead of letting it float as a plain coloured stripe. */}
-      <span className="rule-gold absolute inset-x-0 top-0 h-px opacity-70" aria-hidden="true" />
-      <span className="rule-gold absolute inset-x-0 bottom-0 h-px opacity-70" aria-hidden="true" />
-
+    // Light, between two hairlines: the figures carry the band, not a slab of
+    // dark colour under the hero.
+    <section className="relative border-y border-ink/[0.07] bg-white py-6 sm:py-7">
       <Container className="relative">
         <StatsCounters stats={stats} />
       </Container>

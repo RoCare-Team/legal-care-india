@@ -28,7 +28,7 @@ import AudioConsultModal from '@/components/profile/AudioConsultModal';
  *   action as a square. The three words cost a row of their own on a narrow
  *   grid card; the icons alone are understood, and the label stays on each
  *   button as its accessible name.
- * @param {'default'|'compact'|'quiet'|'mobile'} [props.variant='default']
+ * @param {'default'|'compact'|'quiet'|'clean'|'mobile'} [props.variant='default']
  *   'compact' for the condensed rail card, whose whole row is about the height
  *   of one full-size button — at the default size the three actions dominated a
  *   card meant to be a summary. 'quiet' is that same size with all three as
@@ -138,6 +138,17 @@ export default function CardContactActions({
       call: 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50',
       chat: 'border-blue-200/80 bg-blue-50/70 text-blue-700 hover:border-blue-300 hover:bg-blue-50',
       video: 'border-violet-200/80 bg-violet-50/70 text-violet-700 hover:border-violet-300 hover:bg-violet-50',
+    },
+    // One colour for all three: white buttons with a border and a lift that
+    // fill navy under the pointer and press in on click. For a card kept
+    // calm — they read as buttons by their shape and their response, not by
+    // three different hues.
+    clean: {
+      base: 'inline-flex h-12 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-1.5 text-[12.5px] font-semibold text-slate-800 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:bg-primary hover:text-white hover:shadow-[0_8px_16px_-8px_rgba(30,58,95,0.55)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+      icon: 'h-4 w-4 shrink-0',
+      call: '',
+      chat: '',
+      video: '',
     },
     // 44px tall — the minimum comfortable tap target, so the row never needs a
     // second attempt on a 360px phone.
